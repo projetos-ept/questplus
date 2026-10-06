@@ -122,6 +122,7 @@
 			<option value="">Todos</option>
 			<option value="mc">Múltipla escolha</option>
 			<option value="vf">Verdadeiro ou falso</option>
+			<option value="aberta">Aberta</option>
 		</select>
 	</label>
 	<label>Etiqueta
