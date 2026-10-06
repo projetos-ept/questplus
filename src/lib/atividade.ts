@@ -53,7 +53,7 @@ export type QuestaoSnapshot = {
 };
 
 export type QuestaoAluno = Omit<QuestaoSnapshot, 'config' | 'explicacao'> & {
-	config: { alternativas: string[] } | { afirmacoes: { texto: string }[] } | { max_chars: number };
+	config: { alternativas: string[] } | { afirmacoes: { texto: string }[] } | { max_chars: number; min_chars: number };
 };
 
 export function montarSnapshot(
@@ -96,7 +96,7 @@ export function versaoAluno(s: QuestaoSnapshot): QuestaoAluno {
 		s.tipo === 'mc'
 			? { alternativas: (s.config as Mc).alternativas }
 			: s.tipo === 'aberta'
-				? { max_chars: MAX_RESPOSTA_ABERTA }
+				? { max_chars: MAX_RESPOSTA_ABERTA, min_chars: (s.config as Aberta).min_chars }
 				: { afirmacoes: (s.config as Vf).afirmacoes.map((a) => ({ texto: a.texto })) };
 	return { id: s.id, tipo: s.tipo, enunciado: s.enunciado, pontos: s.pontos, suporte: s.suporte, config };
 }

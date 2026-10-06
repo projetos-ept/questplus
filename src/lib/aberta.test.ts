@@ -151,7 +151,7 @@ describe('questão aberta: cadastro, importação e resposta', () => {
 		if (!q.ok) throw new Error('x');
 		const v = versaoAluno({ id: 1, tipo: 'aberta', enunciado: 'E', config: q.valor.config, explicacao: 'segredo', pontos: 4, suporte: null });
 		expect(JSON.stringify(v)).not.toMatch(/Resposta modelo|conceitos|sinonimos|segredo|pontos_por_nivel/);
-		expect(v.config).toEqual({ max_chars: 1200 });
+		expect(v.config).toEqual({ max_chars: 1200, min_chars: 20 });
 	});
 	it('prompt da IA só fala de questão aberta quando marcada', () => {
 		expect(montarPromptIA(OPCOES_PROMPT_PADRAO)).not.toContain('"tipo": "aberta"');

@@ -9,7 +9,7 @@
 	type Q = {
 		id: number; tipo: 'mc' | 'vf' | 'aberta'; enunciado: string; pontos: number;
 		suporte: { titulo: string; texto: string; imagem_chave?: string | null; imagens?: ImagemSuporte[] } | null;
-		config: { alternativas?: string[]; afirmacoes?: { texto: string }[]; max_chars?: number };
+		config: { alternativas?: string[]; afirmacoes?: { texto: string }[]; max_chars?: number; min_chars?: number };
 	};
 	type Estado = {
 		id: number; status: 'andamento' | 'finalizada'; agora: string; prazo_em: string | null;
@@ -328,11 +328,14 @@
 				</div>
 			{:else if q.tipo === 'aberta'}
 				{@const max = q.config.max_chars ?? 1200}
+				{@const min = q.config.min_chars ?? 0}
 				{@const texto = String(rascunho[q.id] ?? '')}
+				{@const curta = min > 0 && texto.trim().length > 0 && texto.trim().length < min}
 				<div class="aberta">
 					<label for="aberta-{q.id}" class="suave">Escreva sua resposta com suas palavras.</label>
 					<textarea id="aberta-{q.id}" rows="7" maxlength={max} bind:value={rascunho[q.id] as string} disabled={travada || ocupado} oninput={() => aoMudar(1200)} onblur={() => aoMudar(0)}></textarea>
-					<p class="suave contador">{texto.length} de {max} caracteres</p>
+					<p class="suave contador">{texto.length} de {max} caracteres{#if min > 0} · mínimo {min}{/if}</p>
+					{#if curta}<p class="alerta-curta" role="alert">⚠ Resposta muito curta: respostas com menos de {min} caracteres podem não ser pontuadas. Faltam {min - texto.trim().length}.</p>{/if}
 				</div>
 			{:else}
 				<div class="vf">
@@ -453,6 +456,7 @@
 	.preenchido { height: 100%; background: var(--destaque); border-radius: 1rem; transition: width 0.25s; }
 	.aviso-tempo { margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; font-weight: 700; border: 2px solid var(--erro); border-radius: 0.4rem; }
 	.aberta textarea { width: 100%; box-sizing: border-box; font: inherit; }
+	.alerta-curta { margin: 0.35rem 0 0; padding: 0.5rem 0.75rem; font-weight: 600; color: var(--erro); border: 1px solid var(--erro); border-radius: 0.4rem; }
 	.contador { margin: 0.25rem 0 0; text-align: right; font-size: 0.85rem; }
 	.respondidas { margin: 0.35rem 0 0; font-size: 0.85rem; }
 	.obrigado { font-size: 1.1rem; }
