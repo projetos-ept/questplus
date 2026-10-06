@@ -124,7 +124,8 @@
 	tr.inativa td { opacity: 0.6; }
 	.cod { white-space: nowrap; }
 	.mini { margin: 0 0.25rem 0 0; padding: 0.25rem 0.55rem; font-size: 0.8rem; }
-	.acoes { white-space: nowrap; }
+	.acoes { min-width: 12rem; }
+	.acoes > * { margin-bottom: 0.3rem; }
 	.link-botao { display: inline-block; margin: 0 0.25rem 0 0; padding: 0.25rem 0.55rem; font-size: 0.8rem; font-weight: 600; color: var(--texto); text-decoration: none; border: 1px solid var(--borda); border-radius: 0.4rem; }
 	.excluir { color: var(--erro); border-color: var(--erro); }
 	.resumo { padding: 0.5rem 0.75rem; overflow-wrap: anywhere; background: var(--fundo); border-radius: 0.4rem; }
