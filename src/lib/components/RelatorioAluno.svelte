@@ -30,6 +30,16 @@
 
 	const LETRAS = ['A', 'B', 'C', 'D', 'E'];
 	const pts = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
+	/** Mesmo apoio em várias questões: só a primeira o mostra por inteiro; as outras apontam para ela (na ordem em que o aluno viu). */
+	const primeiraComApoio = $derived.by(() => {
+		const vistos = new Map<string, number>();
+		return dados.questoes.map((q, i) => {
+			if (!q.suporte) return null;
+			const chave = JSON.stringify([q.suporte.titulo, q.suporte.texto, q.suporte.imagens ?? q.suporte.imagem_chave ?? null]);
+			if (!vistos.has(chave)) vistos.set(chave, i);
+			return vistos.get(chave)!;
+		});
+	});
 	const textoVF = (v: boolean | null | undefined) => (v === true ? 'Verdadeiro' : v === false ? 'Falso' : 'Em branco');
 </script>
 
@@ -60,7 +70,9 @@
 				Questão {i + 1}
 				<span class="pontos">{r?.pendente ? `Aguardando correção do professor · 0 de ${pts(q.pontos)} por enquanto` : r ? `${pts(ganhos)} de ${pts(q.pontos)} ponto(s)` : `Sem resposta · 0 de ${pts(q.pontos)}`}</span>
 			</h3>
-			{#if apoio && q.suporte}
+			{#if apoio && q.suporte && primeiraComApoio[i] !== i}
+				<p class="suave apoio-ref">Mesmo texto de apoio da questão {(primeiraComApoio[i] ?? 0) + 1}: <em>{q.suporte.titulo}</em></p>
+			{:else if apoio && q.suporte}
 				<div class="apoio">
 					<strong>{q.suporte.titulo}</strong>
 					<div class="md">{@html renderSuporte(q.suporte.texto, imagensDe(q.suporte)).html}</div>
@@ -118,6 +130,7 @@
 
 <style>
 	.relatorio { max-width: 52rem; margin: 0 auto; }
+	.apoio-ref { margin: 0.25rem 0 0.5rem; }
 	.texto-aberta { margin: 0.25rem 0 0.75rem; padding: 0.5rem 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; border-left: 3px solid var(--borda); }
 	.marca { margin: 0; font-size: 0.85rem; }
 	h2 { margin: 0.1rem 0 0.5rem; font-size: 1.4rem; }
