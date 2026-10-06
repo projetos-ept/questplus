@@ -58,6 +58,8 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 
 ## Ordem para publicar as Fases 4 a 6
 
+> **Estado:** as migrações 0004, 0005 e 0006 já foram aplicadas no D1 de produção e conferidas. O commit que publica as Fases 4 a 6 foi enviado depois delas.
+
 O código novo grava e lê colunas que ainda não existem no banco de produção, então **o SQL vem antes do deploy**:
 
 1. No D1 `questplus` (Console, uma instrução por vez): as 2 de `migrations/0004_modo_prova.sql`, as 2 de `migrations/0005_suportes_imagens.sql` e a de `migrations/0006_limites.sql` (texto pronto em `docs/roteiro-extensao-fase2-3.md` e na Parte A de `docs/prompt-extensao-teste-completo.md`).
