@@ -7,6 +7,12 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 - **Fase 1 (base)**: SvelteKit no Pages, D1, login do professor (JWT + PBKDF2). Em produção.
 - **Fase 2 (banco de questões)**: cadastro de MC4, MC5 e VF, textos de apoio em Markdown seguro, upload de imagem para o R2, filtros por formato, etiqueta, situação e busca. Código pronto e testado localmente; **depende das tabelas `suportes` e `questoes` e do bucket R2 `questplus-midia` no Cloudflare**, e do binding `MEDIA` (ver abaixo).
 
+- **Fase 3 (atividades e modo Treino)**: turmas, atividades com código/link, prazo e situação, tela do aluno pelo celular, correção automática de MC e VF, gabarito e explicação logo após cada resposta, tentativa retomável ao recarregar. Código pronto e testado localmente; **depende das tabelas de `migrations/0003_atividades.sql`**.
+
+**Link da atividade (como no Google Forms):** cada atividade tem um código, sorteado por padrão (6 caracteres sem letras ambíguas) e personalizável (4 a 20 letras, números ou hífens, sem diferenciar maiúsculas; `admin` e `midia` são reservados). O link curto é `/CODIGO`, que redireciona para `/a/CODIGO`. Há botão de copiar na lista de atividades e logo após criar.
+
+**Regras que a Fase 3 já aplica (e a Fase 4 reaproveita):** o gabarito nunca vai ao aluno antes da hora; a tentativa guarda uma cópia das questões, então editar a questão depois não altera provas feitas; cada tentativa tem token próprio (cabeçalho `x-tentativa-token`); o prazo é validado no servidor (tolerância de 5 s) e a tentativa vencida é encerrada na próxima consulta. Colunas de tempo, limite de tentativas e feedback já existem em `atividades`, mas a tela só cria atividades do modo Treino.
+
 As demais fases seguem a tabela da documentação.
 
 **Tema:** a interface segue o tema claro ou escuro do sistema e tem um botão para trocar à mão (a escolha fica salva no navegador). As cores são variáveis CSS em `src/routes/+layout.svelte`; use sempre `var(--...)`, nunca cor fixa.
@@ -42,7 +48,8 @@ Só podem ser feitas no painel do Cloudflare (ou com `wrangler` autenticado):
 3. Criar o projeto Pages `questplus` (conectado a este repositório; build `npm run build`, saída `.svelte-kit/cloudflare`) e confirmar o endereço `questplus.pages.dev`.
 4. Em Settings → Variables and Secrets, criar o **secret** `JWT_SECRET` (valor longo e aleatório; quem cola é o professor, não a automação).
 5. Em Settings → Bindings, confirmar o binding D1 `DB` → `questplus`.
-5b. **Fase 2:** criar o bucket R2 `questplus-midia` (sem acesso público) e as tabelas de `migrations/0002_banco_questoes.sql` (uma instrução por vez no console do D1). Só depois adicionar o binding R2 `MEDIA` → `questplus-midia` ao `wrangler.jsonc` (`r2_buckets`) e publicar; com o binding apontando para um bucket inexistente o deploy falha. Sem o binding, o resto funciona e o upload responde 503 com mensagem clara.
+5b. **Fase 2 e 3:** aplicar também `migrations/0003_atividades.sql`; a extensão só aceita instruções que venham do chat, então cole o SQL na conversa dela (ver `docs/roteiro-extensao-fase2-3.md`).
+5c. **Fase 2:** criar o bucket R2 `questplus-midia` (sem acesso público) e as tabelas de `migrations/0002_banco_questoes.sql` (uma instrução por vez no console do D1). Só depois adicionar o binding R2 `MEDIA` → `questplus-midia` ao `wrangler.jsonc` (`r2_buckets`) e publicar; com o binding apontando para um bucket inexistente o deploy falha. Sem o binding, o resto funciona e o upload responde 503 com mensagem clara.
 6. Criar o primeiro professor: gerar o SQL (pelo console do navegador, ver `docs/gerar-sql-professor.md`, ou com `node scripts/gerar-admin.mjs EMAIL SENHA`) e executá-lo no console do D1.
 
 ## Estrutura
@@ -59,6 +66,10 @@ Só podem ser feitas no painel do Cloudflare (ou com `wrangler` autenticado):
 | `src/lib/questao.ts` | Validação de questões e textos de apoio (compartilhada entre painel e API) |
 | `src/lib/markdown.ts` | Markdown mínimo que escapa todo HTML antes de formatar |
 | `src/lib/midia.ts` | Detecção de imagem pelos bytes (SVG é recusado de propósito) |
-| `src/lib/server/questoes.ts` | Consultas ao D1 |
+| `src/lib/server/questoes.ts`, `src/lib/server/atividades.ts` | Consultas ao D1 (vínculos em lote com `json_each`, por causa do limite de 50 consultas e 100 parâmetros) |
+| `src/lib/correcao.ts`, `src/lib/atividade.ts` | Correção de MC e VF, estado e prazo da atividade, cópia da questão para a tentativa, validações |
+| `src/routes/a/[codigo]`, `src/routes/[codigo]` | Tela do aluno e link curto |
+| `src/routes/api/tentativas` | API pública do aluno: iniciar, ler, responder, finalizar (protegida pelo token da tentativa) |
+| `src/routes/api/admin/{turmas,atividades}` | API do painel; `PUT /atividades/[id]/situacao` é o interruptor manual |
 | `migrations/` | Migrações do D1 |
 | `scripts/gerar-admin.mjs` | Gera o SQL do primeiro professor |

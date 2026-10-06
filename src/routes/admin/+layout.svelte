@@ -9,6 +9,8 @@
 			<a href="/admin">Painel</a>
 			<a href="/admin/questoes">Questões</a>
 			<a href="/admin/suportes">Textos de apoio</a>
+			<a href="/admin/turmas">Turmas</a>
+			<a href="/admin/atividades">Atividades</a>
 		</nav>
 		<div class="direita">
 			<TemaBotao />
