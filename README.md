@@ -63,7 +63,7 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 - Imports de componentes usam `#lib/components/...`; o resto de `#lib/...` aponta para arquivos `.ts`.
 - Não existe mais `event.platform`. Bindings e segredos vêm de `import { env } from 'cloudflare:workers'`, encapsulado em `src/lib/server/env.ts`.
 
-## Ordem para publicar as Fases 4 a 6
+## Ordem para publicar as Fases 4 a 6 (a 0007 da Fase 7 já foi aplicada em produção em 06/10/2026)
 
 > **Estado:** as migrações 0004, 0005 e 0006 já foram aplicadas no D1 de produção e conferidas. O commit que publica as Fases 4 a 6 foi enviado depois delas.
 
