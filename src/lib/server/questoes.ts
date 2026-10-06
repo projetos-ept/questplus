@@ -7,6 +7,8 @@ export type QuestaoLinha = Omit<QuestaoValida, 'config'> & {
 	config: unknown;
 	criado_em: string;
 	atualizado_em: string;
+	/** só na listagem: em quantas atividades a questão está */
+	em_atividades?: number;
 };
 type QuestaoBruta = Omit<QuestaoLinha, 'config' | 'etiquetas' | 'ativa'> & {
 	config: string;
@@ -43,7 +45,7 @@ export async function listarQuestoes(f: Filtros) {
 
 	const [itens, total] = await db().batch([
 		db()
-			.prepare(`SELECT * FROM questoes ${clausula} ORDER BY id DESC LIMIT ? OFFSET ?`)
+			.prepare(`SELECT *, (SELECT COUNT(*) FROM atividade_questoes aq WHERE aq.questao_id = questoes.id) AS em_atividades FROM questoes ${clausula} ORDER BY id DESC LIMIT ? OFFSET ?`)
 			.bind(...valores, limite, offset),
 		db()
 			.prepare(`SELECT COUNT(*) AS n FROM questoes ${clausula}`)

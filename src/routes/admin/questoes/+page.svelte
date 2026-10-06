@@ -143,10 +143,13 @@
 
 {#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 
-<ConfirmarModal bind:this={modal} titulo="Excluir esta questão?" rotuloConfirmar="Excluir questão" perigo onconfirmar={excluir}>
+<ConfirmarModal bind:this={modal} titulo="Excluir esta questão?" rotuloConfirmar="Excluir questão" perigo bloqueado={(alvo?.em_atividades ?? 0) > 0} onconfirmar={excluir}>
 	{#if alvo}
 		<p class="resumo">{resumo(alvo.enunciado)}</p>
 		<p>Esta ação <strong>não pode ser desfeita</strong>. Provas já respondidas guardam uma cópia da questão e não são afetadas. Para só tirá-la de circulação, use <em>Inativar</em>.</p>
+		{#if (alvo.em_atividades ?? 0) > 0}
+			<p class="aviso-uso">Esta questão está em <strong>{alvo.em_atividades} atividade(s)</strong> e por isso <strong>não pode ser excluída</strong>. Tire-a das atividades ou use <em>Inativar</em>.</p>
+		{/if}
 	{/if}
 </ConfirmarModal>
 
@@ -272,4 +275,5 @@
 		align-items: center;
 		justify-content: center;
 	}
+	.aviso-uso { padding: 0.5rem 0.75rem; border: 1px solid var(--erro); border-radius: 0.4rem; }
 </style>
