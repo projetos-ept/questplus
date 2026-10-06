@@ -352,3 +352,46 @@ export async function acrescentarTempo(id: number, minutos: number): Promise<'ok
 	await db().prepare('UPDATE tentativas SET acrescimo_segundos = acrescimo_segundos + ? WHERE id = ? AND status = ?').bind(minutos * 60, id, 'andamento').run();
 	return 'ok';
 }
+
+// ---------- clonar e excluir atividade ----------
+
+/** Cópia inativa, sem datas e com código novo; mantém questões (com pontos próprios), turmas e as opções do modo. */
+export async function clonarAtividade(id: number): Promise<{ id: number; codigo: string } | { erro: string } | null> {
+	const a = await obterAtividade(id);
+	if (!a) return null;
+	const det = await detalhesAtividade(id);
+	const prefixo = 'Cópia de ';
+	return criarAtividade({
+		titulo: (prefixo + a.titulo).slice(0, 200),
+		codigo: null,
+		ativa: false,
+		modo: a.modo,
+		tempo_total: a.tempo_total,
+		tentativas_max: a.tentativas_max,
+		navegacao: a.navegacao,
+		embaralhar: a.embaralhar,
+		mostra_nota: a.mostra_nota,
+		abre_em: null,
+		fecha_em: null,
+		questoes: det.questoes.map((q) => ({ questao_id: q.questao_id, pontos: q.pontos })),
+		turmas: det.turmas
+	});
+}
+
+/**
+ * Exclui a atividade. Com tentativas, só apaga se `comTentativas` (apaga também as respostas dos alunos);
+ * caso contrário devolve quantas existem, para a tela pedir a confirmação reforçada.
+ */
+export async function excluirAtividade(id: number, comTentativas: boolean): Promise<'ok' | 'inexistente' | { tentativas: number }> {
+	if (!(await obterAtividade(id))) return 'inexistente';
+	const n = (await db().prepare('SELECT COUNT(*) AS n FROM tentativas WHERE atividade_id = ?').bind(id).first<{ n: number }>())!.n;
+	if (n > 0 && !comTentativas) return { tentativas: n };
+	await db().batch([
+		db().prepare('DELETE FROM respostas WHERE tentativa_id IN (SELECT id FROM tentativas WHERE atividade_id = ?)').bind(id),
+		db().prepare('DELETE FROM tentativas WHERE atividade_id = ?').bind(id),
+		db().prepare('DELETE FROM atividade_questoes WHERE atividade_id = ?').bind(id),
+		db().prepare('DELETE FROM atividade_turmas WHERE atividade_id = ?').bind(id),
+		db().prepare('DELETE FROM atividades WHERE id = ?').bind(id)
+	]);
+	return 'ok';
+}

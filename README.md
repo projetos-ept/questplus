@@ -17,6 +17,10 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 - **Exclusão de questão** com modal de confirmação (recusa se a questão está em alguma atividade; provas já feitas guardam cópia e não são afetadas).
 - **Aluno:** barra de progresso "Questão X de N" e mensagens de encerramento por modo (Treino: incentivo a refazer até acertar tudo; Prova: tentativas restantes e "aguarde o retorno detalhado do professor").
 
+- **Importar e exportar questões (JSON)**: `/admin/questoes/importar` (colar o texto ou enviar o arquivo; confere antes de gravar, mostra o gabarito de cada questão, importa em blocos de 40, pula duplicadas) e exportação do banco ou do filtro atual. A tela gera a **instrução pronta para uma IA** produzir o JSON no formato certo (tema, quantidade, nível, formatos, etiquetas) com botão de copiar. A importação tolera erros comuns de IA (cerca de código markdown, "A)" no começo das alternativas, gabarito em letra, V/F em texto). Formato: `{ "formato": "questplus-questoes", "versao": 1, "suportes": [...], "questoes": [...] }`.
+- **Filtros em tempo real** na lista de questões e no seletor de questões da atividade (busca no servidor, paginada de 20 em 20, com "adicionar todas as N do filtro", limite de 100 por atividade): feito para bancos de centenas de questões.
+- **Atividades:** botões **Clonar** (cópia inativa, sem datas, com código novo) e **Excluir** (com tentativas exige confirmação reforçada, porque apaga as respostas dos alunos).
+
 As demais fases seguem a tabela da documentação.
 
 > Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.

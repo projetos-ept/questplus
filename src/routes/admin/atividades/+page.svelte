@@ -1,11 +1,36 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import ConfirmarModal from '#lib/components/ConfirmarModal.svelte';
 	import { formatarData } from '#lib/data';
 
 	let { data } = $props();
 	let filtro = $state<'todas' | 'no_prazo' | 'antes' | 'encerrada' | 'inativa'>('todas');
 	let erro = $state('');
 	let copiado = $state<number | null>(null);
+	let alvo = $state<(typeof data.atividades)[number] | null>(null);
+	let ciente = $state(false);
+	let modal: ConfirmarModal;
+
+	async function clonar(id: number) {
+		erro = '';
+		const r = await fetch(`/api/admin/atividades/${id}/clonar`, { method: 'POST' });
+		const j = (await r.json().catch(() => ({}))) as { id?: number; erros?: string[] };
+		if (r.ok) await goto(`/admin/atividades/${j.id}?clonada=1`);
+		else erro = j.erros?.[0] ?? 'Não foi possível clonar a atividade.';
+	}
+
+	function pedirExclusao(a: (typeof data.atividades)[number]) {
+		alvo = a;
+		ciente = false;
+		modal.abrir();
+	}
+
+	async function excluir(): Promise<string | void> {
+		if (!alvo) return;
+		const r = await fetch(`/api/admin/atividades/${alvo.id}${alvo.n_tentativas > 0 ? '?tentativas=1' : ''}`, { method: 'DELETE' });
+		if (r.ok) return void (await invalidateAll());
+		return ((await r.json().catch(() => ({}))) as { erros?: string[] }).erros?.[0] ?? 'Não foi possível excluir a atividade.';
+	}
 
 	const nomes = { no_prazo: 'No prazo', antes: 'Ainda não abriu', encerrada: 'Encerrada', inativa: 'Inativa' } as const;
 	const abas = [['todas', 'Todas'], ['no_prazo', 'No prazo'], ['antes', 'Ainda não abriu'], ['encerrada', 'Encerradas'], ['inativa', 'Inativas']] as const;
@@ -48,6 +73,18 @@
 
 {#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 
+<ConfirmarModal bind:this={modal} titulo="Excluir esta atividade?" rotuloConfirmar="Excluir atividade" perigo bloqueado={!!alvo && alvo.n_tentativas > 0 && !ciente} onconfirmar={excluir}>
+	{#if alvo}
+		<p class="resumo"><strong>{alvo.titulo}</strong> · código <code>{alvo.codigo}</code></p>
+		<p>Esta ação <strong>não pode ser desfeita</strong>. As questões e as turmas não são apagadas, só a atividade e o link dela.</p>
+		{#if alvo.n_tentativas > 0}
+			<p class="aviso-tent">Há <strong>{alvo.n_tentativas} tentativa(s)</strong> de alunos. Excluir apaga também as respostas e notas delas.</p>
+			<label class="ciente"><input type="checkbox" bind:checked={ciente} /> Entendo que as tentativas e respostas dos alunos serão apagadas.</label>
+			<p class="suave">Para só fechar o link, use <em>Inativar</em>.</p>
+		{/if}
+	{/if}
+</ConfirmarModal>
+
 {#if lista.length === 0}
 	<p class="suave">Nenhuma atividade {filtro === 'todas' ? 'cadastrada' : 'neste filtro'}.</p>
 {:else}
@@ -63,7 +100,11 @@
 						<td>{nomes[a.estado]}</td>
 						<td>{a.n_questoes}</td>
 						<td><a href="/admin/atividades/{a.id}/tentativas">{a.n_tentativas}</a></td>
-						<td><button class="sec mini" onclick={() => alternar(a.id, !a.ativa)}>{a.ativa ? 'Inativar' : 'Ativar'}</button></td>
+						<td class="acoes">
+							<button class="sec mini" onclick={() => alternar(a.id, !a.ativa)}>{a.ativa ? 'Inativar' : 'Ativar'}</button>
+							<button class="sec mini" onclick={() => clonar(a.id)}>Clonar</button>
+							<button class="sec mini excluir" onclick={() => pedirExclusao(a)}>Excluir</button>
+						</td>
 					</tr>
 				{/each}
 			</tbody>
@@ -80,5 +121,10 @@
 	.rolagem { overflow-x: auto; }
 	tr.inativa td { opacity: 0.6; }
 	.cod { white-space: nowrap; }
-	.mini { margin: 0; padding: 0.25rem 0.55rem; font-size: 0.8rem; }
+	.mini { margin: 0 0.25rem 0 0; padding: 0.25rem 0.55rem; font-size: 0.8rem; }
+	.acoes { white-space: nowrap; }
+	.excluir { color: var(--erro); border-color: var(--erro); }
+	.resumo { padding: 0.5rem 0.75rem; overflow-wrap: anywhere; background: var(--fundo); border-radius: 0.4rem; }
+	.aviso-tent { padding: 0.5rem 0.75rem; border: 1px solid var(--erro); border-radius: 0.4rem; }
+	.ciente { display: flex; gap: 0.5rem; align-items: flex-start; font-weight: 400; }
 </style>

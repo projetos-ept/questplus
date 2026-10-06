@@ -22,7 +22,7 @@ const mapear = (r: QuestaoBruta): QuestaoLinha => ({
 
 export type Filtros = { tipo?: string; etiqueta?: string; ativa?: boolean; q?: string; limite?: number; offset?: number };
 
-export async function listarQuestoes(f: Filtros) {
+function montarWhere(f: Filtros) {
 	const onde: string[] = [];
 	const valores: (string | number)[] = [];
 	if (f.tipo) (onde.push('tipo = ?'), valores.push(f.tipo));
@@ -32,7 +32,11 @@ export async function listarQuestoes(f: Filtros) {
 		onde.push("enunciado LIKE ? ESCAPE '\\'");
 		valores.push(`%${f.q.replace(/[\\%_]/g, '\\$&')}%`);
 	}
-	const clausula = onde.length ? `WHERE ${onde.join(' AND ')}` : '';
+	return { clausula: onde.length ? `WHERE ${onde.join(' AND ')}` : '', valores };
+}
+
+export async function listarQuestoes(f: Filtros) {
+	const { clausula, valores } = montarWhere(f);
 	const limite = Math.min(Math.max(f.limite ?? 25, 1), 100);
 	const offset = Math.max(f.offset ?? 0, 0);
 
@@ -50,6 +54,22 @@ export async function listarQuestoes(f: Filtros) {
 		limite,
 		offset
 	};
+}
+
+/** Todas as questões do filtro (sem paginar), para exportar. */
+export async function todasQuestoes(f: Filtros) {
+	const { clausula, valores } = montarWhere(f);
+	const r = await db().prepare(`SELECT * FROM questoes ${clausula} ORDER BY id`).bind(...valores).all<QuestaoBruta>();
+	return r.results.map(mapear);
+}
+
+export async function suportesPorIds(ids: number[]) {
+	if (!ids.length) return [];
+	const r = await db()
+		.prepare('SELECT id, titulo, texto, imagem_chave FROM suportes WHERE id IN (SELECT value FROM json_each(?)) ORDER BY id')
+		.bind(JSON.stringify(ids))
+		.all<{ id: number; titulo: string; texto: string; imagem_chave: string | null }>();
+	return r.results;
 }
 
 export async function etiquetasExistentes() {

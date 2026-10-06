@@ -13,6 +13,12 @@
 	</div>
 {/if}
 
+{#if data.clonada}
+	<div class="cartao aviso" role="status">
+		<strong>Cópia criada.</strong> Ela começa <strong>inativa</strong> e sem datas, com um código novo (<code>{data.atividade.codigo}</code>). Ajuste o título e o prazo e marque <em>Atividade ativa</em> quando quiser abrir.
+	</div>
+{/if}
+
 <h1>{data.atividade.titulo}</h1>
 <p><a href="/admin/atividades/{data.id}/tentativas">Ver tentativas</a></p>
 

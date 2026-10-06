@@ -1,11 +1,57 @@
 <script lang="ts">
-	import { invalidateAll } from '$app/navigation';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { untrack } from 'svelte';
 	import ConfirmarModal from '#lib/components/ConfirmarModal.svelte';
+	import { OPCOES_PROMPT_PADRAO, montarPromptIA } from '#lib/importacao';
 	import { formatoDe } from '#lib/questao';
 
 	let { data } = $props();
 	let erro = $state('');
+
+	// filtros em tempo real: digitar (com pausa de 300 ms) ou trocar uma lista já refaz a busca, sem botão
+	let fq = $state(untrack(() => data.filtros.q));
+	let ftipo = $state(untrack(() => data.filtros.tipo));
+	let fetiqueta = $state(untrack(() => data.filtros.etiqueta));
+	let fativa = $state(untrack(() => data.filtros.ativa));
+	let pausa: ReturnType<typeof setTimeout>;
+
+	function aplicar() {
+		const p = new URLSearchParams();
+		if (fq.trim()) p.set('q', fq.trim());
+		if (ftipo) p.set('tipo', ftipo);
+		if (fetiqueta) p.set('etiqueta', fetiqueta);
+		if (fativa) p.set('ativa', fativa);
+		goto(`?${p}`, { reset: false, replace: true });
+	}
+	function aoDigitar() {
+		clearTimeout(pausa);
+		pausa = setTimeout(aplicar, 300);
+	}
+	function limpar() {
+		fq = ftipo = fetiqueta = fativa = '';
+		aplicar();
+	}
+	let promptCopiado = $state(false);
 	let alvo = $state<(typeof data.itens)[number] | null>(null);
+
+	async function copiarPrompt() {
+		try {
+			await navigator.clipboard.writeText(montarPromptIA(OPCOES_PROMPT_PADRAO));
+			promptCopiado = true;
+			setTimeout(() => (promptCopiado = false), 2500);
+		} catch {
+			erro = 'Não consegui copiar. Abra "Importar" e copie a instrução de lá.';
+		}
+	}
+
+	const filtrosExportar = $derived.by(() => {
+		const p = new URLSearchParams();
+		if (fq.trim()) p.set('q', fq.trim());
+		if (ftipo) p.set('tipo', ftipo);
+		if (fetiqueta) p.set('etiqueta', fetiqueta);
+		if (fativa) p.set('ativa', fativa);
+		return p.toString();
+	});
 	let modal: ConfirmarModal;
 
 	function pedirExclusao(q: (typeof data.itens)[number]) {
@@ -47,32 +93,38 @@
 
 <div class="topo">
 	<h1>Questões <span class="suave">({data.total})</span></h1>
-	<a class="botao" href="/admin/questoes/nova">Nova questão</a>
+	<div class="topo-acoes">
+		<button type="button" class="sec" onclick={copiarPrompt} title="Copia a instrução que ensina uma IA a gerar o JSON de importação">{promptCopiado ? 'Instrução copiada ✔' : 'Copiar instrução para IA'}</button>
+		<a class="botao sec-link" href="/admin/questoes/importar">Importar</a>
+		<a class="botao sec-link" href="/api/admin/questoes/exportar{filtrosExportar ? `?${filtrosExportar}` : ''}" download>Exportar JSON{filtrosExportar ? ' (filtro atual)' : ' (todas)'}</a>
+		<a class="botao" href="/admin/questoes/nova">Nova questão</a>
+	</div>
 </div>
 
-<form method="GET" class="filtros cartao">
-	<label>Busca <input name="q" value={data.filtros.q} placeholder="Trecho do enunciado" /></label>
+<form method="GET" class="filtros cartao" onsubmit={(e) => { e.preventDefault(); clearTimeout(pausa); aplicar(); }}>
+	<label>Busca <input name="q" bind:value={fq} oninput={aoDigitar} placeholder="Trecho do enunciado" type="search" /></label>
 	<label>Formato
-		<select name="tipo" value={data.filtros.tipo}>
+		<select name="tipo" bind:value={ftipo} onchange={aplicar}>
 			<option value="">Todos</option>
 			<option value="mc">Múltipla escolha</option>
 			<option value="vf">Verdadeiro ou falso</option>
 		</select>
 	</label>
 	<label>Etiqueta
-		<select name="etiqueta" value={data.filtros.etiqueta}>
+		<select name="etiqueta" bind:value={fetiqueta} onchange={aplicar}>
 			<option value="">Todas</option>
 			{#each data.etiquetas as e}<option value={e}>{e}</option>{/each}
 		</select>
 	</label>
 	<label>Situação
-		<select name="ativa" value={data.filtros.ativa}>
+		<select name="ativa" bind:value={fativa} onchange={aplicar}>
 			<option value="">Todas</option>
 			<option value="1">Ativas</option>
 			<option value="0">Inativas</option>
 		</select>
 	</label>
-	<button type="submit">Filtrar</button>
+	{#if fq || ftipo || fetiqueta || fativa}<button type="button" class="sec" onclick={limpar}>Limpar filtros</button>{/if}
+	<noscript><button type="submit">Filtrar</button></noscript>
 </form>
 
 {#if erro}<p class="erro" role="alert">{erro}</p>{/if}
@@ -126,6 +178,9 @@
 		align-items: center;
 		justify-content: space-between;
 	}
+	.topo-acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+	.topo-acoes button { margin: 0; padding: 0.5rem 0.9rem; }
+	.sec-link { color: var(--texto); background: transparent; border: 1px solid var(--borda); }
 	.botao {
 		padding: 0.55rem 1rem;
 		font-weight: 600;

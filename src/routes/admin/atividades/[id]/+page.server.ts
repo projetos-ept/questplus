@@ -14,6 +14,7 @@ export const load: PageServerLoad = async ({ params, url }) => {
 		questoes: det.questoes.map((q) => ({ questao_id: q.questao_id, enunciado: q.enunciado, tipo: q.tipo, pontos: q.pontos, pontos_padrao: q.pontos_padrao })),
 		turmasSel: det.turmas,
 		turmas,
-		criada: url.searchParams.get('criada') === '1'
+		criada: url.searchParams.get('criada') === '1',
+		clonada: url.searchParams.get('clonada') === '1'
 	};
 };

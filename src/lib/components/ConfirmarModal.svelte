@@ -5,12 +5,15 @@
 		titulo,
 		rotuloConfirmar = 'Confirmar',
 		perigo = false,
+		bloqueado = false,
 		onconfirmar,
 		children
 	}: {
 		titulo: string;
 		rotuloConfirmar?: string;
 		perigo?: boolean;
+		/** Mantém o botão de confirmar desabilitado (ex.: até marcar uma caixa de ciência). */
+		bloqueado?: boolean;
 		/** Devolve uma mensagem de erro para mostrar no modal, ou nada para fechar. */
 		onconfirmar: () => Promise<string | void>;
 		children?: Snippet;
@@ -50,7 +53,7 @@
 		{#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 		<div class="acoes">
 			<button type="button" class="sec" onclick={fechar} disabled={ocupado}>Cancelar</button>
-			<button type="button" class:perigo onclick={confirmar} disabled={ocupado}>{ocupado ? 'Aguarde…' : rotuloConfirmar}</button>
+			<button type="button" class:perigo onclick={confirmar} disabled={ocupado || bloqueado}>{ocupado ? 'Aguarde…' : rotuloConfirmar}</button>
 		</div>
 	</div>
 </dialog>
