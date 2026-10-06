@@ -161,3 +161,25 @@ export function celulaCsv(valor: string | number | null | undefined): string {
 export function montarCsv(linhas: (string | number | null | undefined)[][]): string {
 	return '﻿' + linhas.map((l) => l.map(celulaCsv).join(';')).join('\r\n') + '\r\n';
 }
+
+// ---------- mesmo nome, e-mails diferentes ----------
+
+const semAcento = (t: string) => t.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+export const normalizarNome = (n: string) => semAcento(n).toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * O aluno é identificado pelo e-mail, então quem troca de e-mail aparece como outra pessoa (e ganha tentativas novas).
+ * Isto aponta nomes iguais (sem acento, caixa e espaços) com e-mails diferentes, para o professor conferir.
+ */
+export function nomesComEmailsDiferentes(alunos: Pick<AlunoConsolidado, 'nome' | 'email' | 'turma'>[]) {
+	const por = new Map<string, { nome: string; emails: Set<string>; turmas: Set<string> }>();
+	for (const a of alunos) {
+		const k = normalizarNome(a.nome);
+		if (!k) continue;
+		const g = por.get(k) ?? { nome: a.nome, emails: new Set<string>(), turmas: new Set<string>() };
+		g.emails.add(a.email.trim().toLowerCase());
+		g.turmas.add(a.turma);
+		por.set(k, g);
+	}
+	return [...por.values()].filter((g) => g.emails.size > 1).map((g) => ({ nome: g.nome, emails: [...g.emails].sort(), turmas: [...g.turmas].sort() }));
+}

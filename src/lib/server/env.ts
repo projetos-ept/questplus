@@ -16,3 +16,9 @@ export function midia() {
 export function permitirUrlLocal() {
 	return env.MIDIA_URL_LOCAL === '1';
 }
+
+/** Limite numérico vindo das variáveis do wrangler; valor ausente ou inválido usa o padrão. */
+export function limiteConfigurado(nome: 'LIMITE_PALPITES_IP_DIA' | 'LIMITE_INICIOS_IP_ATIVIDADE_DIA', padrao: number) {
+	const n = Number(env[nome]);
+	return Number.isInteger(n) && n > 0 ? n : padrao;
+}

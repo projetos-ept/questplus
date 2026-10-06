@@ -13,8 +13,9 @@ Cloudflare, conta logada. Não digite senhas. D1 → banco questplus → Console
 2) ALTER TABLE tentativas ADD COLUMN anulada INTEGER NOT NULL DEFAULT 0;
 3) ALTER TABLE suportes ADD COLUMN imagens TEXT NOT NULL DEFAULT '[]';
 4) UPDATE suportes SET imagens = json_array(json_object('n', 1, 'chave', imagem_chave, 'legenda', '', 'tamanho', 'media', 'largura', NULL, 'origem', NULL)) WHERE imagem_chave IS NOT NULL;
+5) CREATE TABLE limites (chave TEXT PRIMARY KEY, inicio TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0);
 
-Depois, em Explore Data, confirme: atividades tem a coluna mostra_nota; tentativas tem anulada; suportes tem imagens (nas linhas que já tinham imagem, imagens começa com [{"n":1). Liste o que encontrou.
+Depois, em Explore Data, confirme: atividades tem a coluna mostra_nota; tentativas tem anulada; suportes tem imagens (nas linhas que já tinham imagem, imagens começa com [{"n":1); existe a tabela limites com as colunas chave, inicio e n. Liste o que encontrou.
 ```
 
 ## PARTE B: teste completo (colar depois que o deploy estiver verde)
@@ -109,12 +110,15 @@ ETAPA 7 - RELATÓRIOS (painel)
 7.7 Inicie uma tentativa do Aluno Três (aluno3@teste.com) na prova e NÃO finalize. No painel, Tentativas: clique "+ tempo" (5 min) nela: aparece "+5 min". No aluno, o cronômetro aumenta ~5 min após recarregar.
 7.8 Anule a tentativa 2 do Aluno Um (modal de confirmação). O relatório da atividade passa a: Aluno Um 1 tentativa, 6 / 8 (75%); Média 62,5%; Maior·menor 75% · 50%; Aluno Três (em andamento) não aparece. A tentativa anulada aparece riscada na lista.
 
+7.9 (por último, depois do 7.8) Inicie e finalize uma tentativa na prova com o nome "Aluno Um" e o e-mail aluno1b@teste.com (outro e-mail, mesmo nome). No relatório da atividade deve aparecer o quadro "Atenção: mesmo nome com e-mails diferentes" listando aluno1@teste.com e aluno1b@teste.com.
+
 ETAPA 8 - USABILIDADE E LIMITES
 8.1 https://questplus.pages.dev/naoexiste123 → "Página não encontrada" com link para o início.
 8.2 Painel (/admin): números de questões, turmas e atividades coerentes com o que você viu; a atividade aberta aparece em "Atividades abertas agora".
 8.3 Crie a Prova "[TESTE] Relâmpago" (código teste-1min, tempo 1 minuto, 1 tentativa, as 3 questões, [TESTE] Turma A). Como aluno, abra: aparece "Falta menos de 1 minuto". Espere 1 minuto sem finalizar e confira se a tentativa termina sozinha (mensagem de fim); tente responder depois.
 8.4 Se conseguir reduzir a janela para ~375 px de largura, confira a tela do aluno (sem rolagem lateral). Se não, NÃO VERIFICADO.
 8.5 Lentidão: anote qualquer tela que demorou mais de ~3 segundos.
+8.6 Limite por endereço de rede (50 palpites errados por IP em 24 h): NÃO tente estourar; marque NÃO VERIFICADO (foi testado pelo desenvolvedor com limites pequenos).
 
 ETAPA 9 - LIMPEZA
 Pelo painel, exclua tudo o que começa com [TESTE]: as atividades (as com tentativas pedem marcar a caixa de ciência), os textos de apoio e as questões; as turmas só podem ser inativadas (inative as 2). Confirme que NADA que não seja [TESTE] foi apagado ou alterado.

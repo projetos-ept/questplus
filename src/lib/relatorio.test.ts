@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aproveitamentoPorQuestao, celulaCsv, consolidar, formatarTempo, montarCsv, percentualDe, resumir, tempoGasto, type TentativaResumo } from './relatorio';
+import { aproveitamentoPorQuestao, celulaCsv, consolidar, formatarTempo, montarCsv, nomesComEmailsDiferentes, percentualDe, resumir, tempoGasto, type TentativaResumo } from './relatorio';
 
 let n = 0;
 const t = (nome: string, email: string, nota: number | null, extra: Partial<TentativaResumo> = {}): TentativaResumo => ({
@@ -106,5 +106,19 @@ describe('CSV', () => {
 		const csv = montarCsv([['Aluno', 'Nota'], ['Ana', 8.5]]);
 		expect(csv.startsWith('﻿')).toBe(true);
 		expect(csv).toBe('﻿Aluno;Nota\r\nAna;8,5\r\n');
+	});
+});
+
+describe('mesmo nome, e-mails diferentes', () => {
+	const a = (nome: string, email: string, turma = 'A') => ({ nome, email, turma });
+	it('aponta nomes iguais ignorando acento, caixa e espaços', () => {
+		const r = nomesComEmailsDiferentes([a('José da Silva', 'jose@x.com'), a('  jose  DA silva', 'jose2@x.com', 'B'), a('Ana', 'ana@x.com')]);
+		expect(r).toHaveLength(1);
+		expect(r[0]).toMatchObject({ emails: ['jose2@x.com', 'jose@x.com'], turmas: ['A', 'B'] });
+	});
+	it('não aponta o mesmo e-mail com outra caixa nem nomes diferentes', () => {
+		expect(nomesComEmailsDiferentes([a('Ana', 'ana@x.com'), a('Ana', 'ANA@x.com')])).toEqual([]);
+		expect(nomesComEmailsDiferentes([a('Ana Lima', 'a@x.com'), a('Ana Souza', 'b@x.com')])).toEqual([]);
+		expect(nomesComEmailsDiferentes([])).toEqual([]);
 	});
 });

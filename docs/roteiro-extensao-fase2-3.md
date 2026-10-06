@@ -41,3 +41,14 @@ UPDATE suportes SET imagens = json_array(json_object('n', 1, 'chave', imagem_cha
 ```
 
 Depois, em Explore Data → `suportes`, a coluna `imagens` deve existir e, nas linhas que tinham imagem, conter algo como `[{"n":1,"chave":"…png",…}]`.
+
+
+## Limite por endereço de rede: 1 instrução SQL
+
+`migrations/0006_limites.sql`. Também antes de publicar:
+
+```sql
+CREATE TABLE limites (chave TEXT PRIMARY KEY, inicio TEXT NOT NULL, n INTEGER NOT NULL DEFAULT 0);
+```
+
+Depois, em Explore Data, deve existir a tabela `limites` (vazia).

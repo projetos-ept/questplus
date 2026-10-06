@@ -66,6 +66,15 @@
 		Vale a <strong>maior nota</strong> de cada aluno (identificado pelo e-mail). Tentativas anuladas ({r.anuladas}) e em andamento ({r.emAndamento}) não contam.
 	</p>
 
+	{#if data.possiveisDuplicados.length}
+		<div class="cartao atencao" role="status">
+			<strong>Atenção: mesmo nome com e-mails diferentes.</strong> O aluno é identificado pelo e-mail; quem troca de e-mail aparece como outra pessoa e ganha tentativas novas. Confira:
+			<ul>
+				{#each data.possiveisDuplicados as d}<li><strong>{d.nome}</strong> — {d.emails.join(', ')}{d.turmas.length > 1 ? ` (turmas: ${d.turmas.join(', ')})` : ''}</li>{/each}
+			</ul>
+		</div>
+	{/if}
+
 	<h2>Distribuição das notas</h2>
 	<table class="dist" aria-label="Distribuição das notas">
 		<tbody>
@@ -138,6 +147,8 @@
 	.cards strong { font-size: 1.5rem; }
 	.rot { font-size: 0.8rem; font-weight: 600; color: var(--suave); }
 	.nota { font-size: 0.85rem; }
+	.atencao { margin-top: 1rem; border-color: var(--erro); }
+	.atencao ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
 	.rolagem { overflow-x: auto; }
 	.dist { width: auto; min-width: 22rem; }
 	.dist th { white-space: nowrap; }

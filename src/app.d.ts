@@ -8,6 +8,10 @@ declare global {
 			JWT_SECRET: string;
 			/** Bucket R2 das imagens; ausente até o binding ser configurado. */
 			MEDIA?: R2Bucket;
+			/** Palpites errados (código ou turma) por endereço de rede em 24 h; passado o limite, o endereço fica sem iniciar tentativas até a janela acabar. */
+			LIMITE_PALPITES_IP_DIA?: string;
+			/** Tentativas iniciadas por endereço de rede em uma mesma atividade em 24 h. */
+			LIMITE_INICIOS_IP_ATIVIDADE_DIA?: string;
 			/** Só para testes locais: libera o download de imagens de endereços locais. Nunca definir em produção. */
 			MIDIA_URL_LOCAL?: string;
 		}

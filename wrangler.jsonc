@@ -2,6 +2,7 @@
 	"name": "questplus",
 	"compatibility_date": "2026-10-01",
 	"compatibility_flags": ["nodejs_compat"],
+	"vars": { "LIMITE_PALPITES_IP_DIA": "50", "LIMITE_INICIOS_IP_ATIVIDADE_DIA": "200" },
 	"pages_build_output_dir": ".svelte-kit/cloudflare",
 	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "questplus-midia" }],
 	"d1_databases": [

@@ -16,6 +16,20 @@ Embeddings medem se dois textos falam do mesmo assunto, não se dizem a mesma co
 
 O que o professor recebe por questão aberta: distribuição dos níveis, média de aproximação, e a lista de respostas ordenada pela maior divergência entre os dois números (as que mais precisam de olho humano). Por aluno: nível, %, conceitos presentes e faltantes, justificativa, e o botão de confirmar ou ajustar. A nota final só existe depois da confirmação.
 
+## Pré-processamento (decidido: o máximo de instruções predefinidas antes da IA)
+
+Quanto mais o sistema decide por regra, mais barato, previsível e auditável fica, e menos o modelo precisa "adivinhar". Antes de chamar qualquer modelo:
+
+1. **Triagem sem IA** (nota 0 automática, sem gastar cota): resposta em branco, curta demais (abaixo de um mínimo definido na questão), só pontuação ou caracteres repetidos, ou que apenas copia o enunciado.
+2. **Normalização:** caixa baixa, sem acentos, espaços e pontuação padronizados, abreviações comuns expandidas por um glossário da disciplina.
+3. **Conferência de conceitos por regra:** o professor cadastra em cada conceito-chave os **sinônimos aceitos** (ex.: "captação de glicose", "entrada de glicose na célula"). O sistema marca quais conceitos aparecem no texto e entrega isso ao modelo como **evidência**, não como veredito.
+4. **Pares de oposição:** lista de antônimos da disciplina (aumenta/reduz, inibe/estimula, hiper/hipo). Se a resposta usa o lado oposto ao da referência, o sistema levanta um alerta de **possível erro conceitual** e o modelo é instruído a olhar aquele ponto.
+5. **Limite de tamanho** (1200 caracteres) e **texto do aluno isolado como dado**, com a instrução fixa de ignorar ordens escritas dentro dele.
+6. **Rubrica fixa em JSON:** o modelo só pode responder no esquema combinado (nível 0 a 4, conceitos presentes e faltantes, erro conceitual, justificativa de uma frase), validado antes de gravar; resposta fora do esquema vai para revisão manual.
+7. Depois, o cálculo da **% de aproximação** (embeddings) e os alertas de divergência.
+
+Para isso, o cadastro da questão aberta ganha: resposta de referência, 3 a 6 conceitos com sinônimos, pares de oposição opcionais, mínimo de caracteres e tabela de pontos por nível.
+
 ## Fluxo técnico
 
 1. O aluno finaliza; cada resposta aberta vira uma mensagem na fila (Queues).

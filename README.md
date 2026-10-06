@@ -27,6 +27,9 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 - **Relatório individual** (`/admin/tentativas/[id]/relatorio`): é o "retorno detalhado" da Prova: cada questão com a resposta do aluno, o gabarito e a explicação, com a opção de imprimir com ou sem gabarito e com ou sem textos de apoio. **Todos os alunos** em um documento (`/admin/atividades/[id]/relatorios`, uma folha por aluno): o navegador busca um aluno de cada vez, para o servidor não montar um documento enorme (limite de CPU do plano gratuito).
 - **Usabilidade:** painel inicial com números e passo a passo; ver o gabarito e **duplicar** questão na lista; aviso antes de sair de um formulário com alterações não salvas; na Prova, aviso ao fechar a aba e aviso de tempo ("faltam 5 minutos", "falta 1 minuto"); sessão expirada volta ao login com explicação; página de erro em português.
 
+- **Proteção contra abuso do início de tentativas** (`POST /api/tentativas`, o único endpoint público que grava): dois limites por endereço de rede em janela de 24 h, **sem guardar o IP** (só um hash com o segredo do sistema). (1) **Palpites errados** (código inexistente ou turma que não pode responder): 50 por IP; passado o limite, aquele IP não inicia mais nada até a janela vencer (429). (2) **Inícios por atividade**: 200 por IP e por atividade; é por atividade e alto de propósito, porque uma turma inteira costuma sair do mesmo IP da escola. Pedidos bloqueados não gravam nada (não gastam a cota de escritas do D1), e dados inválidos ou a regra de tentativas do aluno (409) não contam. Os valores ficam em `vars` do `wrangler.jsonc` (`LIMITE_PALPITES_IP_DIA`, `LIMITE_INICIOS_IP_ATIVIDADE_DIA`). Exige `migrations/0006_limites.sql`. Risco conhecido: quem usa a mesma rede de um brincalhão que errar 50 códigos fica sem poder iniciar por até 24 h; nesse caso é só aumentar o valor ou limpar a tabela `limites`.
+- **Aviso de nomes iguais com e-mails diferentes** no relatório da atividade (o aluno é identificado pelo e-mail).
+
 As demais fases seguem a tabela da documentação.
 
 > Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.
@@ -57,7 +60,7 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 
 O código novo grava e lê colunas que ainda não existem no banco de produção, então **o SQL vem antes do deploy**:
 
-1. No D1 `questplus` (Console, uma instrução por vez): as 2 de `migrations/0004_modo_prova.sql` e as 2 de `migrations/0005_suportes_imagens.sql` (texto pronto em `docs/roteiro-extensao-fase2-3.md`).
+1. No D1 `questplus` (Console, uma instrução por vez): as 2 de `migrations/0004_modo_prova.sql`, as 2 de `migrations/0005_suportes_imagens.sql` e a de `migrations/0006_limites.sql` (texto pronto em `docs/roteiro-extensao-fase2-3.md` e na Parte A de `docs/prompt-extensao-teste-completo.md`).
 2. Publicar (commit **sem** a expressão de pular CI na mensagem) e esperar o deploy ficar verde.
 3. Rodar o teste completo com a extensão (`docs/prompt-extensao-teste-completo.md`).
 

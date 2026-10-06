@@ -1,4 +1,4 @@
-import { aproveitamentoPorQuestao, consolidar, resumir, tempoGasto, percentualDe, valida, type TentativaResumo } from '#lib/relatorio';
+import { aproveitamentoPorQuestao, consolidar, nomesComEmailsDiferentes, resumir, tempoGasto, percentualDe, valida, type TentativaResumo } from '#lib/relatorio';
 import type { QuestaoSnapshot } from '#lib/atividade';
 import { obterAtividade, obterTentativa } from './atividades';
 import { db } from './env';
@@ -65,6 +65,7 @@ export async function relatorioDaAtividade(atividadeId: number, turmaId?: number
 		turmas,
 		turmaId: turmaId ?? null,
 		resumo: resumir(tentativas, alunos),
+		possiveisDuplicados: nomesComEmailsDiferentes(alunos),
 		questoes: questoes.map((q) => ({ ...q, ...(aproveitamento.find((x) => x.id === q.id) ?? { alunos: 0, respondida: 0, emBranco: 0, aproveitamento: 0 }) })),
 		alunos: alunos.map((a) => ({
 			nome: a.nome,
