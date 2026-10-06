@@ -1,0 +1,3 @@
+CREATE TABLE suportes (id INTEGER PRIMARY KEY AUTOINCREMENT, titulo TEXT NOT NULL, texto TEXT NOT NULL DEFAULT '', imagem_chave TEXT, criado_em TEXT NOT NULL DEFAULT (datetime('now')), atualizado_em TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE TABLE questoes (id INTEGER PRIMARY KEY AUTOINCREMENT, tipo TEXT NOT NULL CHECK (tipo IN ('mc','vf','assoc','aberta')), enunciado TEXT NOT NULL, config TEXT NOT NULL, explicacao TEXT, pontos REAL NOT NULL DEFAULT 1, suporte_id INTEGER REFERENCES suportes(id), etiquetas TEXT NOT NULL DEFAULT '[]', ativa INTEGER NOT NULL DEFAULT 1, criado_em TEXT NOT NULL DEFAULT (datetime('now')), atualizado_em TEXT NOT NULL DEFAULT (datetime('now')));
+CREATE INDEX idx_questoes_suporte ON questoes(suporte_id);
