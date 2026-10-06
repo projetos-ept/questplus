@@ -12,6 +12,10 @@ declare global {
 			LIMITE_PALPITES_IP_DIA?: string;
 			/** Tentativas iniciadas por endereço de rede em uma mesma atividade em 24 h. */
 			LIMITE_INICIOS_IP_ATIVIDADE_DIA?: string;
+			/** Senhas erradas no login do professor por endereço de rede em 1 h. */
+			LIMITE_LOGIN_FALHAS_IP_HORA?: string;
+			/** Senhas erradas no login do professor por e-mail em 1 h (freio geral contra tentativas distribuídas). */
+			LIMITE_LOGIN_FALHAS_EMAIL_HORA?: string;
 			/** Só para testes locais: libera o download de imagens de endereços locais. Nunca definir em produção. */
 			MIDIA_URL_LOCAL?: string;
 		}

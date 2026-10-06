@@ -18,7 +18,7 @@ export function permitirUrlLocal() {
 }
 
 /** Limite numérico vindo das variáveis do wrangler; valor ausente ou inválido usa o padrão. */
-export function limiteConfigurado(nome: 'LIMITE_PALPITES_IP_DIA' | 'LIMITE_INICIOS_IP_ATIVIDADE_DIA', padrao: number) {
+export function limiteConfigurado(nome: 'LIMITE_PALPITES_IP_DIA' | 'LIMITE_INICIOS_IP_ATIVIDADE_DIA' | 'LIMITE_LOGIN_FALHAS_IP_HORA' | 'LIMITE_LOGIN_FALHAS_EMAIL_HORA', padrao: number) {
 	const n = Number(env[nome]);
 	return Number.isInteger(n) && n > 0 ? n : padrao;
 }
