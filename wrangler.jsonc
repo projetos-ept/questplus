@@ -1,0 +1,14 @@
+{
+	"name": "questplus",
+	"compatibility_date": "2026-10-01",
+	"compatibility_flags": ["nodejs_compat"],
+	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	"d1_databases": [
+		{
+			"binding": "DB",
+			"database_name": "questplus",
+			"database_id": "SUBSTITUIR_PELO_ID_DO_D1",
+			"migrations_dir": "migrations"
+		}
+	]
+}
