@@ -47,7 +47,12 @@
 	const tudoCerto = $derived(!!estado?.resultado && estado.resultado.pontos_max > 0 && estado.resultado.nota >= estado.resultado.pontos_max);
 	/** Prova: tentativas que ainda restam (Infinity = ilimitadas). */
 	const restantes = $derived(estado ? (estado.tentativas.max === null ? Infinity : Math.max(estado.tentativas.max - estado.tentativas.usadas, 0)) : 0);
-	const respondidas = $derived(estado ? Object.keys(estado.respostas).length : 0);
+	/** Questão só conta como respondida com tudo marcado: V ou F com afirmação em branco fica "incompleta". */
+	const completa = (id: number) => {
+		const r = estado?.respostas[id]?.resposta;
+		return !!r && (r.valores ? r.valores.every((x) => x !== null) : r.escolha !== undefined && r.escolha !== null);
+	};
+	const respondidas = $derived(estado ? estado.questoes.filter((x) => completa(x.id)).length : 0);
 
 	async function api(caminho: string, metodo = 'GET', corpo?: unknown) {
 		const r = await fetch(caminho, {
@@ -191,7 +196,7 @@
 		await descarregar();
 		if (!automatico) {
 			const faltam = estado.questoes.length - respondidas;
-			if (faltam > 0 && !confirm(`Você deixou ${faltam} questão(ões) sem resposta. Finalizar mesmo assim?`)) return;
+			if (faltam > 0 && !confirm(`Você deixou ${faltam} questão(ões) sem resposta completa (inclui as com alguma afirmação em branco). Finalizar mesmo assim?`)) return;
 		}
 		ocupado = true;
 		const r = await api(`/api/tentativas/${estado.id}/finalizar`, 'POST').catch(() => null);
@@ -213,7 +218,8 @@
 	const pode = $derived.by(() => {
 		if (!q || travada) return false;
 		const v = rascunho[q.id];
-		return q.tipo === 'mc' ? v !== null && v !== undefined : Array.isArray(v) && v.some((x) => x !== null);
+		if (q.tipo === 'mc') return v !== null && v !== undefined;
+		return Array.isArray(v) && (imediato ? v.every((x) => x !== null) : v.some((x) => x !== null));
 	});
 	/** Aviso de tempo na Prova: aparece uma vez em cada limite (5 min e 1 min), para quem não está olhando o relógio. */
 	const avisoTempo = $derived(restante === null || restante <= 0 ? '' : restante <= 60_000 ? 'Falta menos de 1 minuto.' : restante <= 300_000 ? 'Faltam menos de 5 minutos.' : '');
@@ -280,8 +286,8 @@
 	{#if estado.atividade.navegacao === 'livre'}
 		<nav class="pontos" aria-label="Questões">
 			{#each estado.questoes as x, i (x.id)}
-				<button type="button" class="sec" aria-current={i === atual} aria-label="Questão {i + 1}{estado.respostas[x.id] ? ', respondida' : ''}" onclick={() => (atual = i)}>
-					{i + 1}{estado.respostas[x.id] ? '✔' : ''}
+				<button type="button" class="sec" aria-current={i === atual} aria-label="Questão {i + 1}{completa(x.id) ? ', respondida' : estado.respostas[x.id] ? ', incompleta' : ''}" onclick={() => (atual = i)}>
+					{i + 1}{completa(x.id) ? '✔' : estado.respostas[x.id] ? '◐' : ''}
 				</button>
 			{/each}
 		</nav>

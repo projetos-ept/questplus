@@ -21,6 +21,10 @@ export const PUT: RequestHandler = async ({ request, params }) => {
 
 	const correcao = corrigir(q.tipo, q.config, v.valor, q.pontos);
 	const imediato = a.feedback === 'imediato';
+	// resposta imediata trava a questão: uma afirmação em branco travaria o aluno sem querer
+	if (imediato && 'valores' in v.valor && v.valor.valores.some((x) => x === null)) {
+		return erros(['Marque verdadeiro ou falso em todas as afirmações antes de responder.']);
+	}
 	if (!(await gravarResposta(t.id, q.id, v.valor, correcao.pontos, imediato))) {
 		return erros(['Esta questão já foi respondida.'], 409);
 	}
