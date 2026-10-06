@@ -60,8 +60,13 @@ export async function relatorioDaAtividade(atividadeId: number, turmaId?: number
 	const alunos = consolidar(tentativas);
 	const pontos = await pontosPorTentativa(alunos.map((a) => a.melhor.id));
 	const aproveitamento = aproveitamentoPorQuestao(alunos.map((a) => ({ questoes, pontosPorQuestao: pontos.get(a.melhor.id) ?? new Map() })));
+	const pend = await db()
+		.prepare("SELECT COUNT(*) AS n FROM respostas r JOIN tentativas t ON t.id = r.tentativa_id WHERE t.atividade_id = ? AND t.status = 'finalizada' AND t.anulada = 0 AND r.status = 'pendente'")
+		.bind(atividadeId)
+		.first<{ n: number }>();
 	return {
 		atividade,
+		abertasPendentes: pend?.n ?? 0,
 		turmas,
 		turmaId: turmaId ?? null,
 		resumo: resumir(tentativas, alunos),
@@ -91,13 +96,19 @@ export async function relatorioDaTentativa(id: number) {
 	const [a, turma, resp, irmas] = await Promise.all([
 		obterAtividade(t.atividade_id),
 		db().prepare('SELECT nome FROM turmas WHERE id = ?').bind(t.turma_id).first<{ nome: string }>(),
-		db().prepare('SELECT questao_id, resposta, pontos_auto, pontos_final FROM respostas WHERE tentativa_id = ?').bind(id).all<{ questao_id: number; resposta: string; pontos_auto: number | null; pontos_final: number | null }>(),
+		db()
+			.prepare(
+				`SELECT r.questao_id, r.resposta, r.pontos_auto, r.pontos_final, r.status, c.nivel_final, c.justificativa, c.aproximacao
+				 FROM respostas r LEFT JOIN correcoes_abertas c ON c.tentativa_id = r.tentativa_id AND c.questao_id = r.questao_id WHERE r.tentativa_id = ?`
+			)
+			.bind(id)
+			.all<{ questao_id: number; resposta: string; pontos_auto: number | null; pontos_final: number | null; status: string; nivel_final: number | null; justificativa: string | null; aproximacao: number | null }>(),
 		tentativasDoAluno(t.atividade_id, t.email)
 	]);
 	const consolidado = consolidar(irmas)[0];
-	type Dada = { escolha?: number; valores?: (boolean | null)[] };
-	const respostas: Record<number, { resposta: Dada; pontos_auto: number | null; pontos_final: number | null }> = {};
-	for (const r of resp.results) respostas[r.questao_id] = { resposta: JSON.parse(r.resposta) as Dada, pontos_auto: r.pontos_auto, pontos_final: r.pontos_final };
+	type Dada = { escolha?: number; valores?: (boolean | null)[]; texto?: string };
+	const respostas: Record<number, { resposta: Dada; pontos_auto: number | null; pontos_final: number | null; pendente: boolean; nivel_final: number | null; justificativa: string | null; aproximacao: number | null }> = {};
+	for (const r of resp.results) respostas[r.questao_id] = { resposta: JSON.parse(r.resposta) as Dada, pontos_auto: r.pontos_auto, pontos_final: r.pontos_final, pendente: r.status === 'pendente', nivel_final: r.nivel_final, justificativa: r.justificativa, aproximacao: r.aproximacao };
 	const numero = irmas.filter((x) => x.id <= id).length;
 	return {
 		id: t.id,

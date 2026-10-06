@@ -34,6 +34,7 @@
 		<label class="check"><input type="checkbox" bind:checked={opcoes.formatos.mc4} /> Múltipla escolha (4)</label>
 		<label class="check"><input type="checkbox" bind:checked={opcoes.formatos.mc5} /> Múltipla escolha (5)</label>
 		<label class="check"><input type="checkbox" bind:checked={opcoes.formatos.vf} /> Verdadeiro ou falso</label>
+		<label class="check"><input type="checkbox" bind:checked={opcoes.formatos.aberta} /> Aberta (resposta escrita)</label>
 		<label class="check"><input type="checkbox" bind:checked={opcoes.comApoio} /> Incluir texto de apoio</label>
 	</fieldset>
 	<label>Instrução pronta para a IA

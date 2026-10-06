@@ -3,7 +3,7 @@
 	import { formatarData } from '#lib/data';
 	import { formatarTempo } from '#lib/relatorio';
 	import { renderSuporte } from '#lib/suporte';
-	import type { Mc, Vf } from '#lib/questao';
+	import type { Aberta, Mc, Vf } from '#lib/questao';
 	import type { QuestaoSnapshot } from '#lib/atividade';
 
 	export type DadosRelatorio = {
@@ -22,7 +22,7 @@
 		tentativasTotal: number;
 		melhor: boolean;
 		questoes: QuestaoSnapshot[];
-		respostas: Record<number, { resposta: { escolha?: number; valores?: (boolean | null)[] }; pontos_final: number | null }>;
+		respostas: Record<number, { resposta: { escolha?: number; valores?: (boolean | null)[]; texto?: string }; pontos_final: number | null; pendente?: boolean; nivel_final?: number | null; justificativa?: string | null; aproximacao?: number | null }>;
 	};
 
 	let { dados, gabarito = true, apoio = true }: { dados: DadosRelatorio; gabarito?: boolean; apoio?: boolean } = $props();
@@ -57,7 +57,7 @@
 		<section class="questao nao-quebrar">
 			<h3>
 				Questão {i + 1}
-				<span class="pontos">{r ? `${pts(ganhos)} de ${pts(q.pontos)} ponto(s)` : `Sem resposta · 0 de ${pts(q.pontos)}`}</span>
+				<span class="pontos">{r?.pendente ? `Aguardando correção do professor · 0 de ${pts(q.pontos)} por enquanto` : r ? `${pts(ganhos)} de ${pts(q.pontos)} ponto(s)` : `Sem resposta · 0 de ${pts(q.pontos)}`}</span>
 			</h3>
 			{#if apoio && q.suporte}
 				<div class="apoio">
@@ -83,6 +83,16 @@
 					{/each}
 				</ol>
 				{#if !r}<p class="suave">O aluno não respondeu esta questão.</p>{/if}
+			{:else if q.tipo === 'aberta'}
+				{@const c = q.config as Aberta}
+				<p class="rotulo">Resposta do aluno</p>
+				<blockquote class="texto-aberta">{r?.resposta.texto ?? 'O aluno não respondeu esta questão.'}</blockquote>
+				{#if r && !r.pendente && r.nivel_final !== null && r.nivel_final !== undefined}<p class="suave">Nível confirmado pelo professor: {r.nivel_final} de 4.</p>{/if}
+				{#if gabarito}
+					<p class="rotulo">✔ Resposta de referência</p>
+					<blockquote class="texto-aberta">{c.referencia}</blockquote>
+					{#if r?.justificativa}<p class="suave"><em>Observação da correção:</em> {r.justificativa}</p>{/if}
+				{/if}
 			{:else}
 				{@const c = q.config as Vf}
 				<table class="vf">
@@ -107,6 +117,7 @@
 
 <style>
 	.relatorio { max-width: 52rem; margin: 0 auto; }
+	.texto-aberta { margin: 0.25rem 0 0.75rem; padding: 0.5rem 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; border-left: 3px solid var(--borda); }
 	.marca { margin: 0; font-size: 0.85rem; }
 	h2 { margin: 0.1rem 0 0.5rem; font-size: 1.4rem; }
 	dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.35rem 1rem; margin: 0.5rem 0; }

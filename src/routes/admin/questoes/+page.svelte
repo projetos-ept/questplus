@@ -3,7 +3,7 @@
 	import { untrack } from 'svelte';
 	import ConfirmarModal from '#lib/components/ConfirmarModal.svelte';
 	import { OPCOES_PROMPT_PADRAO, montarPromptIA } from '#lib/importacao';
-	import { formatoDe, type Mc, type Vf } from '#lib/questao';
+	import { formatoDe, type Aberta, type Mc, type Vf } from '#lib/questao';
 
 	let { data } = $props();
 	let erro = $state('');
@@ -174,6 +174,9 @@
 												<li class:certa={(q.config as Mc).correta === k}>{LETRAS[k]}) {alt}{#if (q.config as Mc).correta === k}<strong class="gab">✔ gabarito</strong>{/if}</li>
 											{/each}
 										</ol>
+									{:else if q.tipo === 'aberta'}
+										<p><strong>Referência:</strong> {(q.config as Aberta).referencia}</p>
+										<p class="suave">Conceitos: {(q.config as Aberta).conceitos.map((c) => c.nome).join(' · ')}</p>
 									{:else}
 										<ul class="alts">
 											{#each (q.config as Vf).afirmacoes as af}

@@ -2,11 +2,19 @@ import { imagensDe, validarImagens, type ImagemSuporte } from './imagens';
 
 export type Mc = { alternativas: string[]; correta: number };
 export type Vf = { afirmacoes: { texto: string; valor: boolean }[] };
+/** Questão aberta, corrigida por rubrica (nível 0 a 4). `pontos_por_nivel` são percentuais da pontuação da questão. */
+export type Aberta = {
+	referencia: string;
+	conceitos: { nome: string; sinonimos: string[] }[];
+	oposicoes: [string, string][];
+	min_chars: number;
+	pontos_por_nivel: number[];
+};
 
 export type QuestaoValida = {
-	tipo: 'mc' | 'vf';
+	tipo: 'mc' | 'vf' | 'aberta';
 	enunciado: string;
-	config: Mc | Vf;
+	config: Mc | Vf | Aberta;
 	explicacao: string | null;
 	pontos: number;
 	suporte_id: number | null;
@@ -31,13 +39,57 @@ export function normalizarEtiquetas(v: unknown): string[] {
 	return [...vistas];
 }
 
+export const MAX_RESPOSTA_ABERTA = 1200;
+export const NIVEIS_PADRAO = [0, 25, 50, 75, 100];
+
+
+function validarAberta(c: Record<string, unknown>): Resultado<Aberta> {
+	const erros: string[] = [];
+	const referencia = texto(c.referencia);
+	if (!referencia) erros.push('Escreva a resposta de referência.');
+	if (referencia.length > MAX_RESPOSTA_ABERTA) erros.push(`A resposta de referência passa de ${MAX_RESPOSTA_ABERTA} caracteres.`);
+
+	const bruto = Array.isArray(c.conceitos) ? c.conceitos : [];
+	const conceitos = bruto
+		.map((x) => {
+			const o = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>;
+			const sin = Array.isArray(o.sinonimos) ? o.sinonimos : typeof o.sinonimos === 'string' ? o.sinonimos.split(',') : [];
+			return { nome: texto(o.nome), sinonimos: [...new Set(sin.map(texto).filter(Boolean))] };
+		})
+		.filter((x) => x.nome);
+	if (conceitos.length < 1 || conceitos.length > 6) erros.push('Cadastre de 1 a 6 conceitos-chave (o ideal são 3 a 6).');
+	if (conceitos.some((x) => x.nome.length > 100 || x.sinonimos.length > 10 || x.sinonimos.some((s) => s.length > 100))) {
+		erros.push('Cada conceito tem até 100 caracteres e no máximo 10 sinônimos.');
+	}
+
+	const ops = Array.isArray(c.oposicoes) ? c.oposicoes : [];
+	const oposicoes: [string, string][] = [];
+	for (const par of ops) {
+		const a = Array.isArray(par) ? [texto(par[0]), texto(par[1])] : [];
+		if (a.length === 2 && a[0] && a[1]) oposicoes.push([a[0], a[1]]);
+		else if (par !== null && par !== undefined && par !== '') erros.push('Cada par de oposição precisa de dois termos.');
+	}
+	if (oposicoes.length > 10 || oposicoes.some(([a, b]) => a.length > 60 || b.length > 60)) erros.push('Use até 10 pares de oposição de até 60 caracteres.');
+
+	const min_chars = c.min_chars === undefined || c.min_chars === '' || c.min_chars === null ? 20 : Number(c.min_chars);
+	if (!Number.isInteger(min_chars) || min_chars < 0 || min_chars > 500) erros.push('O mínimo de caracteres deve ser um número inteiro de 0 a 500.');
+
+	const niveis = c.pontos_por_nivel === undefined || c.pontos_por_nivel === null ? NIVEIS_PADRAO : c.pontos_por_nivel;
+	if (!Array.isArray(niveis) || niveis.length !== 5 || niveis.some((n) => typeof n !== 'number' || !Number.isFinite(n) || n < 0 || n > 100)) {
+		erros.push('A tabela de pontos por nível precisa de 5 valores entre 0 e 100 (níveis 0 a 4).');
+	} else if (niveis.some((n, i) => i > 0 && n < niveis[i - 1])) erros.push('A tabela de pontos não pode diminuir de um nível para o seguinte.');
+
+	if (erros.length) return { ok: false, erros };
+	return { ok: true, valor: { referencia, conceitos, oposicoes, min_chars, pontos_por_nivel: niveis as number[] } };
+}
+
 export function validarQuestao(entrada: unknown): Resultado<QuestaoValida> {
 	const erros: string[] = [];
 	const e = (entrada && typeof entrada === 'object' ? entrada : {}) as Record<string, unknown>;
 
 	const tipo = e.tipo;
-	if (tipo !== 'mc' && tipo !== 'vf') {
-		return { ok: false, erros: ['Tipo de questão inválido ou ainda não disponível (use mc ou vf).'] };
+	if (tipo !== 'mc' && tipo !== 'vf' && tipo !== 'aberta') {
+		return { ok: false, erros: ['Tipo de questão inválido ou ainda não disponível (use mc, vf ou aberta).'] };
 	}
 
 	const enunciado = texto(e.enunciado);
@@ -64,7 +116,7 @@ export function validarQuestao(entrada: unknown): Resultado<QuestaoValida> {
 	if (etiquetas.some((t) => t.length > 40)) erros.push('Cada etiqueta pode ter até 40 caracteres.');
 
 	const c = (e.config && typeof e.config === 'object' ? e.config : {}) as Record<string, unknown>;
-	let config: Mc | Vf = { alternativas: [], correta: 0 };
+	let config: Mc | Vf | Aberta = { alternativas: [], correta: 0 };
 
 	if (tipo === 'mc') {
 		const alt = Array.isArray(c.alternativas) ? c.alternativas.map(texto) : [];
@@ -76,6 +128,10 @@ export function validarQuestao(entrada: unknown): Resultado<QuestaoValida> {
 			erros.push('Marque exatamente uma alternativa correta.');
 		}
 		config = { alternativas: alt, correta: correta as number };
+	} else if (tipo === 'aberta') {
+		const r = validarAberta(c);
+		if (r.ok) config = r.valor;
+		else erros.push(...r.erros);
 	} else {
 		const af = Array.isArray(c.afirmacoes) ? c.afirmacoes : [];
 		if (af.length < 1 || af.length > 10) erros.push('Use de 1 a 10 afirmações.');
@@ -99,12 +155,13 @@ export function validarQuestao(entrada: unknown): Resultado<QuestaoValida> {
 export function formatoDe(tipo: string, config: unknown): 'MC4' | 'MC5' | 'VF' | string {
 	if (tipo === 'mc') return (config as Mc).alternativas.length === 5 ? 'MC5' : 'MC4';
 	if (tipo === 'vf') return 'VF';
+	if (tipo === 'aberta') return 'Aberta';
 	return tipo;
 }
 
 /** Estado do formulário do painel (alternativas sempre com 5 campos; MC4 usa os 4 primeiros). */
 export type Formulario = {
-	formato: 'mc4' | 'mc5' | 'vf';
+	formato: 'mc4' | 'mc5' | 'vf' | 'aberta';
 	enunciado: string;
 	alternativas: string[];
 	correta: number | null;
@@ -114,6 +171,12 @@ export type Formulario = {
 	suporte_id: number | null;
 	etiquetas: string;
 	ativa: boolean;
+	// questão aberta
+	referencia: string;
+	conceitos: { nome: string; sinonimos: string }[];
+	oposicoes: { a: string; b: string }[];
+	min_chars: number;
+	niveis: number[];
 };
 
 export const formularioVazio = (): Formulario => ({
@@ -126,7 +189,12 @@ export const formularioVazio = (): Formulario => ({
 	pontos: 1,
 	suporte_id: null,
 	etiquetas: '',
-	ativa: true
+	ativa: true,
+	referencia: '',
+	conceitos: [{ nome: '', sinonimos: '' }, { nome: '', sinonimos: '' }, { nome: '', sinonimos: '' }],
+	oposicoes: [],
+	min_chars: 20,
+	niveis: [...NIVEIS_PADRAO]
 });
 
 export function formularioDe(q: {
@@ -151,6 +219,14 @@ export function formularioDe(q: {
 		f.formato = c.alternativas.length === 5 ? 'mc5' : 'mc4';
 		f.alternativas = [...c.alternativas, '', '', '', '', ''].slice(0, 5);
 		f.correta = c.correta;
+	} else if (q.tipo === 'aberta') {
+		const c = q.config as Aberta;
+		f.formato = 'aberta';
+		f.referencia = c.referencia;
+		f.conceitos = c.conceitos.map((x) => ({ nome: x.nome, sinonimos: x.sinonimos.join(', ') }));
+		f.oposicoes = c.oposicoes.map(([a, b]) => ({ a, b }));
+		f.min_chars = c.min_chars;
+		f.niveis = [...c.pontos_por_nivel];
 	} else if (q.tipo === 'vf') {
 		f.formato = 'vf';
 		f.afirmacoes = (q.config as Vf).afirmacoes.map((a) => ({ ...a }));
@@ -167,6 +243,19 @@ export function entradaDe(f: Formulario) {
 		etiquetas: normalizarEtiquetas(f.etiquetas),
 		ativa: f.ativa
 	};
+	if (f.formato === 'aberta') {
+		return {
+			...base,
+			tipo: 'aberta',
+			config: {
+				referencia: f.referencia,
+				conceitos: f.conceitos.map((x) => ({ nome: x.nome, sinonimos: x.sinonimos.split(',') })),
+				oposicoes: f.oposicoes.filter((o) => o.a.trim() || o.b.trim()).map((o) => [o.a, o.b]),
+				min_chars: f.min_chars,
+				pontos_por_nivel: f.niveis
+			}
+		};
+	}
 	if (f.formato === 'vf') return { ...base, tipo: 'vf', config: { afirmacoes: f.afirmacoes } };
 	const n = f.formato === 'mc5' ? 5 : 4;
 	return { ...base, tipo: 'mc', config: { alternativas: f.alternativas.slice(0, n), correta: f.correta } };

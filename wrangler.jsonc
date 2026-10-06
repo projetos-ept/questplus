@@ -4,6 +4,7 @@
 	"compatibility_flags": ["nodejs_compat"],
 	"vars": { "LIMITE_PALPITES_IP_DIA": "50", "LIMITE_INICIOS_IP_ATIVIDADE_DIA": "200", "LIMITE_LOGIN_FALHAS_IP_HORA": "10", "LIMITE_LOGIN_FALHAS_EMAIL_HORA": "50" },
 	"pages_build_output_dir": ".svelte-kit/cloudflare",
+	"ai": { "binding": "AI" },
 	"r2_buckets": [{ "binding": "MEDIA", "bucket_name": "questplus-midia" }],
 	"d1_databases": [
 		{

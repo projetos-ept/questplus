@@ -20,7 +20,7 @@
 {/if}
 
 <h1>{data.atividade.titulo}</h1>
-<p><a href="/admin/atividades/{data.id}/tentativas">Ver tentativas</a></p>
+<p><a href="/admin/atividades/{data.id}/tentativas">Ver tentativas</a>{#if data.questoes.some((q) => q.tipo === 'aberta')} · <a href="/admin/atividades/{data.id}/abertas">Correção das questões abertas</a>{/if}</p>
 
 <AtividadeForm
 	id={data.id}

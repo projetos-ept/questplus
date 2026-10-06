@@ -1,5 +1,5 @@
 import { chaveDuplicada, normalizarQuestao, type SuporteImportado } from '#lib/importacao';
-import { formatoDe, type Mc, type Vf } from '#lib/questao';
+import { formatoDe, type Aberta, type Mc, type Vf } from '#lib/questao';
 import { db, midia } from './env';
 
 export const MAX_QUESTOES_POR_REQUISICAO = 100;
@@ -49,9 +49,11 @@ export async function processarBloco(
 		existentes.add(chave);
 
 		const gabarito =
-			q.tipo === 'mc'
-				? `${LETRAS[(q.config as Mc).correta]}) ${(q.config as Mc).alternativas[(q.config as Mc).correta]}`
-				: (q.config as Vf).afirmacoes.map((a) => (a.valor ? 'V' : 'F')).join(' ');
+			q.tipo === 'aberta'
+				? `${(q.config as Aberta).conceitos.length} conceito(s)`
+				: q.tipo === 'mc'
+					? `${LETRAS[(q.config as Mc).correta]}) ${(q.config as Mc).alternativas[(q.config as Mc).correta]}`
+					: (q.config as Vf).afirmacoes.map((a) => (a.valor ? 'V' : 'F')).join(' ');
 		itens.push({ indice, ok: erros.length === 0, erros, duplicada, formato: formatoDe(q.tipo, q.config), enunciado: q.enunciado, gabarito });
 
 		if (erros.length === 0 && !(duplicada && opcoes.pularDuplicadas)) {

@@ -66,9 +66,10 @@ export function lerArquivo(texto: string): Resultado<{ suportes: SuporteImportad
 
 const SEM_ACENTO = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '');
 
-const MAPA_TIPO: Record<string, 'mc' | 'vf'> = {
+const MAPA_TIPO: Record<string, 'mc' | 'vf' | 'aberta'> = {
 	mc: 'mc', mc4: 'mc', mc5: 'mc', multipla_escolha: 'mc', multiplaescolha: 'mc', alternativas: 'mc',
-	vf: 'vf', verdadeiro_falso: 'vf', verdadeirofalso: 'vf', certo_errado: 'vf'
+	vf: 'vf', verdadeiro_falso: 'vf', verdadeirofalso: 'vf', certo_errado: 'vf',
+	aberta: 'aberta', dissertativa: 'aberta', discursiva: 'aberta'
 };
 
 function tipoDe(v: unknown) {
@@ -122,6 +123,22 @@ export function normalizarQuestao(bruta: unknown): Resultado<QuestaoNormalizada>
 					})
 				: af
 		};
+	} else if (tipo === 'aberta') {
+		const conceitos = o.conceitos ?? c.conceitos;
+		const oposicoes = o.oposicoes ?? c.oposicoes;
+		config = {
+			referencia: o.referencia ?? c.referencia ?? o.resposta_referencia,
+			conceitos: Array.isArray(conceitos)
+				? conceitos.map((x) => {
+						if (typeof x === 'string') return { nome: x, sinonimos: [] };
+						const k = (x && typeof x === 'object' ? x : {}) as Record<string, unknown>;
+						return { nome: k.nome ?? k.conceito, sinonimos: k.sinonimos ?? [] };
+					})
+				: conceitos,
+			oposicoes: Array.isArray(oposicoes) ? oposicoes.map((x) => (Array.isArray(x) ? x : x && typeof x === 'object' ? [(x as Record<string, unknown>).a, (x as Record<string, unknown>).b] : x)) : [],
+			min_chars: o.min_chars ?? c.min_chars,
+			pontos_por_nivel: o.pontos_por_nivel ?? c.pontos_por_nivel
+		};
 	}
 
 	const suporteRef = o.suporte === null || o.suporte === undefined || o.suporte === '' ? null : String(o.suporte).trim();
@@ -166,7 +183,7 @@ export type OpcoesPrompt = {
 	tema: string;
 	quantidade: number;
 	nivel: string;
-	formatos: { mc4: boolean; mc5: boolean; vf: boolean };
+	formatos: { mc4: boolean; mc5: boolean; vf: boolean; aberta: boolean };
 	etiquetas: string;
 	comApoio: boolean;
 };
@@ -175,13 +192,30 @@ export const OPCOES_PROMPT_PADRAO: OpcoesPrompt = {
 	tema: '[ESCREVA O TEMA OU COLE O CONTEÚDO BASE AQUI]',
 	quantidade: 10,
 	nivel: 'médio',
-	formatos: { mc4: true, mc5: false, vf: true },
+	formatos: { mc4: true, mc5: false, vf: true, aberta: false },
 	etiquetas: '',
 	comApoio: false
 };
 
+const ABERTA_REGRAS = `
+12. Questão ABERTA (resposta escrita, corrigida por rubrica): use "tipo": "aberta" neste formato, sem "alternativas" nem "afirmacoes":
+    {
+      "tipo": "aberta",
+      "enunciado": "Explique o papel da insulina na regulação da glicemia.",
+      "referencia": "Resposta modelo completa, de 2 a 5 frases, com até 1200 caracteres.",
+      "conceitos": [
+        { "nome": "captação de glicose pelas células", "sinonimos": ["entrada de glicose na célula", "transporte de glicose"] },
+        { "nome": "redução da glicemia", "sinonimos": ["diminui o açúcar no sangue"] }
+      ],
+      "oposicoes": [["aumenta", "reduz"]],
+      "min_chars": 30,
+      "pontos": 4,
+      "etiquetas": ["assunto"]
+    }
+13. Em "aberta": de 3 a 6 conceitos-chave que uma boa resposta precisa conter, cada um com até 10 sinônimos reais que o aluno poderia usar; "oposicoes" são pares de termos contrários que revelam erro conceitual se trocados (pode ser lista vazia); "min_chars" entre 20 e 80.`;
+
 export function montarPromptIA(o: OpcoesPrompt): string {
-	const formatos = [o.formatos.mc4 && 'múltipla escolha com 4 alternativas', o.formatos.mc5 && 'múltipla escolha com 5 alternativas', o.formatos.vf && 'verdadeiro ou falso']
+	const formatos = [o.formatos.mc4 && 'múltipla escolha com 4 alternativas', o.formatos.mc5 && 'múltipla escolha com 5 alternativas', o.formatos.vf && 'verdadeiro ou falso', o.formatos.aberta && 'aberta (resposta escrita)']
 		.filter(Boolean)
 		.join(', ');
 	const etiquetas = o.etiquetas
@@ -240,5 +274,5 @@ REGRAS OBRIGATÓRIAS:
 8. "suportes" e o campo "suporte" só se houver texto de apoio; caso contrário, deixe "suportes" como lista vazia e omita "suporte". Cada "ref" é única.
 9. Português do Brasil, linguagem técnica correta, sem ambiguidade, sem "todas as anteriores" e sem "nenhuma das anteriores".
 10. Nada de HTML. Markdown simples só dentro do texto de apoio.
-11. Confira o gabarito de cada questão antes de responder: a alternativa no índice "correta" tem de ser mesmo a certa.`;
+11. Confira o gabarito de cada questão antes de responder: a alternativa no índice "correta" tem de ser mesmo a certa.${o.formatos.aberta ? ABERTA_REGRAS : ''}`;
 }

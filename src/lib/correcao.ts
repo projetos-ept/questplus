@@ -1,7 +1,9 @@
 import type { Mc, Vf } from './questao';
+import { MAX_RESPOSTA_ABERTA } from './questao';
 
 export type RespostaMc = { escolha: number };
 export type RespostaVf = { valores: (boolean | null)[] };
+export type RespostaAberta = { texto: string };
 
 export type Correcao = {
 	pontos: number;
@@ -16,7 +18,7 @@ export function validarResposta(
 	tipo: string,
 	config: unknown,
 	resposta: unknown
-): { ok: true; valor: RespostaMc | RespostaVf } | { ok: false; erro: string } {
+): { ok: true; valor: RespostaMc | RespostaVf | RespostaAberta } | { ok: false; erro: string } {
 	const r = (resposta && typeof resposta === 'object' ? resposta : {}) as Record<string, unknown>;
 	if (tipo === 'mc') {
 		const n = (config as Mc).alternativas.length;
@@ -32,6 +34,11 @@ export function validarResposta(
 			return { ok: false, erro: 'Responda cada afirmação com verdadeiro ou falso.' };
 		}
 		return { ok: true, valor: { valores: v as (boolean | null)[] } };
+	}
+	if (tipo === 'aberta') {
+		if (typeof r.texto !== 'string' || !r.texto.trim()) return { ok: false, erro: 'Escreva sua resposta.' };
+		if (r.texto.length > MAX_RESPOSTA_ABERTA) return { ok: false, erro: `A resposta pode ter até ${MAX_RESPOSTA_ABERTA} caracteres.` };
+		return { ok: true, valor: { texto: r.texto.trim() } };
 	}
 	return { ok: false, erro: 'Tipo de questão ainda não suportado.' };
 }

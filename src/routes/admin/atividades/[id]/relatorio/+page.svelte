@@ -53,6 +53,10 @@
 	</p>
 </header>
 
+{#if data.abertasPendentes > 0}
+	<p class="cartao aviso-abertas" role="status"><strong>{data.abertasPendentes} resposta(s) de questões abertas aguardam sua correção</strong>; as notas abaixo ainda são parciais. <a href="/admin/atividades/{data.atividade.id}/abertas">Corrigir agora</a></p>
+{/if}
+
 {#if r.alunos === 0}
 	<p class="suave">Nenhum aluno finalizou esta atividade{turmaAtual ? ` nesta turma` : ''} ainda.{r.emAndamento ? ` ${r.emAndamento} tentativa(s) em andamento.` : ''}</p>
 {:else}
@@ -97,7 +101,7 @@
 					<tr>
 						<td>{i + 1}</td>
 						<td>{resumo(q.enunciado)}</td>
-						<td>{q.tipo === 'vf' ? 'VF' : 'MC'}</td>
+						<td>{q.tipo === 'vf' ? 'VF' : q.tipo === 'aberta' ? 'Aberta' : 'MC'}</td>
 						<td>{q.emBranco} de {q.alunos}</td>
 						<td class="aprov"><div class="barra-celula"><div class="preench" style="width: {q.aproveitamento}%"></div></div><span class="num">{pct(q.aproveitamento)}</span></td>
 					</tr>
@@ -133,6 +137,7 @@
 {/if}
 
 <style>
+	.aviso-abertas { border-color: var(--erro); }
 	.barra { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.6rem 0.8rem; background: var(--superficie); border: 1px solid var(--borda); border-radius: 0.5rem; }
 	.filtro { display: flex; gap: 0.4rem; align-items: center; margin: 0; font-weight: 600; }
 	.filtro select { width: auto; margin: 0; }

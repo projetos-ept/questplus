@@ -1,4 +1,4 @@
-import type { Mc, Resultado, Vf } from './questao';
+import { MAX_RESPOSTA_ABERTA, type Aberta, type Mc, type Resultado, type Vf } from './questao';
 
 export type Estado = 'inativa' | 'antes' | 'no_prazo' | 'encerrada';
 
@@ -44,16 +44,16 @@ export type SuporteSnapshot = { titulo: string; texto: string; imagem_chave?: st
 
 export type QuestaoSnapshot = {
 	id: number;
-	tipo: 'mc' | 'vf';
+	tipo: 'mc' | 'vf' | 'aberta';
 	enunciado: string;
-	config: Mc | Vf; // MC já na ordem em que o aluno vê, com `correta` remapeada
+	config: Mc | Vf | Aberta; // MC já na ordem em que o aluno vê, com `correta` remapeada
 	explicacao: string | null;
 	pontos: number;
 	suporte: SuporteSnapshot | null;
 };
 
 export type QuestaoAluno = Omit<QuestaoSnapshot, 'config' | 'explicacao'> & {
-	config: { alternativas: string[] } | { afirmacoes: { texto: string }[] };
+	config: { alternativas: string[] } | { afirmacoes: { texto: string }[] } | { max_chars: number };
 };
 
 export function montarSnapshot(
@@ -80,7 +80,7 @@ export function montarSnapshot(
 	}
 	return {
 		id: q.id,
-		tipo: q.tipo as 'mc' | 'vf',
+		tipo: q.tipo as QuestaoSnapshot['tipo'],
 		enunciado: q.enunciado,
 		config,
 		explicacao: q.explicacao,
@@ -91,10 +91,13 @@ export function montarSnapshot(
 
 /** O que o aluno pode receber: nunca o gabarito nem a explicação. */
 export function versaoAluno(s: QuestaoSnapshot): QuestaoAluno {
+	// questão aberta: a resposta de referência, os conceitos e a rubrica nunca saem do servidor
 	const config =
 		s.tipo === 'mc'
 			? { alternativas: (s.config as Mc).alternativas }
-			: { afirmacoes: (s.config as Vf).afirmacoes.map((a) => ({ texto: a.texto })) };
+			: s.tipo === 'aberta'
+				? { max_chars: MAX_RESPOSTA_ABERTA }
+				: { afirmacoes: (s.config as Vf).afirmacoes.map((a) => ({ texto: a.texto })) };
 	return { id: s.id, tipo: s.tipo, enunciado: s.enunciado, pontos: s.pontos, suporte: s.suporte, config };
 }
 

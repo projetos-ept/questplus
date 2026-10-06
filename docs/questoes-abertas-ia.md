@@ -1,4 +1,6 @@
-# Questões abertas com correção por IA: proposta
+# Questões abertas com correção por IA
+
+> **Estado:** implementada (Fase 7), com a IA ainda **não verificada em produção**. O desenho abaixo continua valendo; as diferenças e o que falta medir estão no fim, em "Implementado".
 
 Pedido: o professor recebe um relatório com a **% de aproximação** da resposta do aluno em relação à resposta verdadeira, calculada por aproximação semântica. Esta proposta mantém isso e acrescenta uma proteção, porque semelhança de texto não é o mesmo que acerto.
 
@@ -44,3 +46,18 @@ Para isso, o cadastro da questão aberta ganha: resposta de referência, 3 a 6 c
 - **Calibração:** antes do uso real, cerca de 30 respostas corrigidas à mão comparadas com a IA, ajustando os descritores (já previsto na documentação do projeto).
 - **Privacidade:** o modelo recebe só o texto da resposta, sem nome nem e-mail; limite de 1200 caracteres por resposta.
 - **Quem vê a %:** só o professor.
+
+## Implementado (Fase 7)
+
+- Sem fila (Queues): a correção é disparada pelo navegador do professor, uma resposta por chamada (`POST /api/admin/abertas/corrigir`), e a confirmação em outra (`/confirmar`). Cada chamada faz 1 consulta ao modelo de linguagem e 1 aos embeddings (referência + resposta numa só chamada), dentro do limite de CPU. Uma atividade de 40 alunos com 3 abertas = 120 chamadas, feitas em sequência na tela.
+- Tabela `correcoes_abertas` (migração 0007): triagem, nível sugerido, aproximação, conceitos presentes/faltantes, erro conceitual, justificativa, alertas, falha, modelo e versão do prompt, e o nível final com quem confirmou e quando. A nota (`respostas.pontos_final`) só muda na confirmação, exceto na triagem (nota 0 imediata, ajustável).
+- Triagem: em branco, menor que o mínimo da questão, só símbolos, mesma palavra repetida, caracteres repetidos, cópia do enunciado.
+- Pares de oposição: duas regras. (1) a referência usa um lado e a resposta só o contrário; (2) a referência usa os dois lados ("aumenta a captação… reduz a glicemia"), mas a resposta junta cada termo às palavras que, na referência, acompanham o termo contrário ("reduz a captação"). A segunda regra foi necessária porque referências reais costumam usar os dois lados.
+- Alertas: "parecido mas erro" (≥ 80% com nível ≤ 1), "diferente mas bom" (< 40% com nível ≥ 3), oposição, cópia entre alunos (trigramas de palavras, ≥ 90%, comparando só conjuntos de até 60 respostas por questão).
+- A saída do modelo é validada contra o esquema (nível 0 a 4, listas, booleano, justificativa); fora do esquema a resposta fica marcada como falha, sem sugestão, para correção manual. Texto do aluno vai como dado, dentro de um JSON, com instrução fixa de ignorar ordens escritas nele.
+- Modo simulado (`IA_FAKE=1`, só local) para testar o fluxo sem rede.
+
+### Ainda não verificado
+
+- Os ids padrão dos modelos (`@cf/meta/llama-3.3-70b-instruct-fp8-fast` e `@cf/baai/bge-m3`) e o formato exato de saída dos embeddings no Workers AI real: o código aceita `data`, `embeddings` ou `response`, e qualquer outra forma vira "falha" com mensagem, sem quebrar. Se o modelo escolhido na calibração for outro (o teste no playground favoreceu o `glm-4.7-flash`), troque `IA_MODELO_LLM`.
+- Consumo real de neurônios por resposta e a qualidade dos níveis: precisa de uma rodada em produção e da calibração com cerca de 30 respostas corrigidas à mão.

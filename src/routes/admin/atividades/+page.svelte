@@ -103,6 +103,7 @@
 						<td class="acoes">
 							<button class="sec mini" onclick={() => alternar(a.id, !a.ativa)}>{a.ativa ? 'Inativar' : 'Ativar'}</button>
 							<a class="sec mini link-botao" href="/admin/atividades/{a.id}/relatorio">Relatório</a>
+								{#if a.abertas_pendentes > 0}<a class="sec mini link-botao" href="/admin/atividades/{a.id}/abertas">Corrigir abertas ({a.abertas_pendentes})</a>{/if}
 							<button class="sec mini" onclick={() => clonar(a.id)}>Clonar</button>
 							<button class="sec mini excluir" onclick={() => pedirExclusao(a)}>Excluir</button>
 						</td>

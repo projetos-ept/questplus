@@ -7,16 +7,16 @@
 
 	type Fb = { pontos: number; max: number; acertou: 'sim' | 'parcial' | 'nao'; gabarito: { correta: number } | { valores: boolean[] }; explicacao: string | null };
 	type Q = {
-		id: number; tipo: 'mc' | 'vf'; enunciado: string; pontos: number;
+		id: number; tipo: 'mc' | 'vf' | 'aberta'; enunciado: string; pontos: number;
 		suporte: { titulo: string; texto: string; imagem_chave?: string | null; imagens?: ImagemSuporte[] } | null;
-		config: { alternativas?: string[]; afirmacoes?: { texto: string }[] };
+		config: { alternativas?: string[]; afirmacoes?: { texto: string }[]; max_chars?: number };
 	};
 	type Estado = {
 		id: number; status: 'andamento' | 'finalizada'; agora: string; prazo_em: string | null;
 		atividade: { titulo: string; modo: 'treino' | 'prova'; feedback: 'imediato' | 'final' | 'nenhum'; navegacao: 'livre' | 'sequencial' };
 		tentativas: { usadas: number; max: number | null };
-		questoes: Q[]; respostas: Record<number, { resposta: { escolha?: number; valores?: (boolean | null)[] }; feedback?: Fb }>;
-		resultado: { nota: number; pontos_max: number } | null;
+		questoes: Q[]; respostas: Record<number, { resposta: { escolha?: number; valores?: (boolean | null)[]; texto?: string }; pendente?: boolean; feedback?: Fb }>;
+		resultado: { nota: number; pontos_max: number; abertas_pendentes: number } | null;
 	};
 
 	type Regras = { modo: 'treino' | 'prova'; tempo_total: number | null; tentativas_max: number | null; mostra_nota: boolean };
@@ -29,7 +29,7 @@
 	let salva = $state<{ id: number; token: string } | null>(null);
 	let estado = $state<Estado | null>(null);
 	let atual = $state(0);
-	let rascunho = $state<Record<number, number | null | (boolean | null)[]>>({});
+	let rascunho = $state<Record<number, number | string | null | (boolean | null)[]>>({});
 	let erro = $state('');
 	let ocupado = $state(false);
 	let nome = $state('');
@@ -50,7 +50,7 @@
 	/** Questão só conta como respondida com tudo marcado: V ou F com afirmação em branco fica "incompleta". */
 	const completa = (id: number) => {
 		const r = estado?.respostas[id]?.resposta;
-		return !!r && (r.valores ? r.valores.every((x) => x !== null) : r.escolha !== undefined && r.escolha !== null);
+		return !!r && (r.texto !== undefined ? r.texto.trim().length > 0 : r.valores ? r.valores.every((x) => x !== null) : r.escolha !== undefined && r.escolha !== null);
 	};
 	const respondidas = $derived(estado ? estado.questoes.filter((x) => completa(x.id)).length : 0);
 
@@ -79,7 +79,9 @@
 			// o que já está salvo no servidor volta marcado na tela (recarregar a página não pode parecer que perdeu a resposta)
 			const salvaNoServidor = e.respostas[x.id]?.resposta;
 			rascunho[x.id] =
-				x.tipo === 'mc'
+				x.tipo === 'aberta'
+					? (salvaNoServidor?.texto ?? '')
+					: x.tipo === 'mc'
 					? (salvaNoServidor?.escolha ?? null)
 					: salvaNoServidor?.valores
 						? [...salvaNoServidor.valores]
@@ -139,7 +141,7 @@
 		if (!quest || !estado) return;
 		const valor = $state.snapshot(rascunho[qid]);
 		if (!silencioso) { erro = ''; ocupado = true; }
-		const r = await api(`/api/tentativas/${estado.id}/respostas/${qid}`, 'PUT', { resposta: quest.tipo === 'mc' ? { escolha: valor } : { valores: valor } }).catch(() => null);
+		const r = await api(`/api/tentativas/${estado.id}/respostas/${qid}`, 'PUT', { resposta: quest.tipo === 'aberta' ? { texto: valor } : quest.tipo === 'mc' ? { escolha: valor } : { valores: valor } }).catch(() => null);
 		ocupado = false;
 		if (!r?.ok) {
 			erro = r?.mensagem ?? 'Falha de conexão. Sua resposta não foi enviada.';
@@ -147,7 +149,11 @@
 			return;
 		}
 		erro = '';
-		estado.respostas[qid] = { resposta: quest.tipo === 'mc' ? { escolha: valor as number } : { valores: valor as (boolean | null)[] }, feedback: r.j.feedback as Fb | undefined };
+		estado.respostas[qid] = {
+			resposta: quest.tipo === 'aberta' ? { texto: String(valor).trim() } : quest.tipo === 'mc' ? { escolha: valor as number } : { valores: valor as (boolean | null)[] },
+			...(quest.tipo === 'aberta' && { pendente: true }),
+			feedback: r.j.feedback as Fb | undefined
+		};
 	}
 
 	const responder = () => (q ? enviarResposta(q.id, false) : undefined);
@@ -159,9 +165,10 @@
 	function valida(qid: number) {
 		const quest = estado?.questoes.find((x) => x.id === qid);
 		const v = rascunho[qid];
+		if (quest?.tipo === 'aberta') return typeof v === 'string' && v.trim().length > 0;
 		return !!quest && (quest.tipo === 'mc' ? v !== null && v !== undefined : Array.isArray(v) && v.some((x) => x !== null));
 	}
-	function aoMudar() {
+	function aoMudar(ms = 300) {
 		if (imediato || !q) return;
 		const qid = q.id;
 		clearTimeout(agendado);
@@ -170,7 +177,7 @@
 		agendado = setTimeout(() => {
 			agendado = undefined;
 			if (valida(qid)) pendente = enviarResposta(qid, true);
-		}, 300);
+		}, ms);
 	}
 	async function descarregar() {
 		if (agendado !== undefined) {
@@ -218,6 +225,7 @@
 	const pode = $derived.by(() => {
 		if (!q || travada) return false;
 		const v = rascunho[q.id];
+		if (q.tipo === 'aberta') return typeof v === 'string' && v.trim().length > 0;
 		if (q.tipo === 'mc') return v !== null && v !== undefined;
 		return Array.isArray(v) && (imediato ? v.every((x) => x !== null) : v.some((x) => x !== null));
 	});
@@ -310,13 +318,21 @@
 					{#each q.config.alternativas! as texto, i}
 						{@const gab = resp?.feedback && 'correta' in resp.feedback.gabarito ? resp.feedback.gabarito.correta : null}
 						<label class="op" class:certa={gab === i} class:minha={resp?.resposta.escolha === i && gab !== i && !!resp?.feedback}>
-							<input type="radio" name="q{q.id}" value={i} bind:group={rascunho[q.id] as number | null} disabled={travada || ocupado} onchange={aoMudar} />
+							<input type="radio" name="q{q.id}" value={i} bind:group={rascunho[q.id] as number | null} disabled={travada || ocupado} onchange={() => aoMudar()} />
 							<span class="letra">{LETRAS[i]}</span>
 							<span class="t">{texto}</span>
 							{#if gab === i}<span class="sel">✔ Gabarito</span>{/if}
 							{#if resp?.resposta.escolha === i && gab !== i && resp.feedback}<span class="sel">✘ Sua resposta</span>{/if}
 						</label>
 					{/each}
+				</div>
+			{:else if q.tipo === 'aberta'}
+				{@const max = q.config.max_chars ?? 1200}
+				{@const texto = String(rascunho[q.id] ?? '')}
+				<div class="aberta">
+					<label for="aberta-{q.id}" class="suave">Escreva sua resposta com suas palavras.</label>
+					<textarea id="aberta-{q.id}" rows="7" maxlength={max} bind:value={rascunho[q.id] as string} disabled={travada || ocupado} oninput={() => aoMudar(1200)} onblur={() => aoMudar(0)}></textarea>
+					<p class="suave contador">{texto.length} de {max} caracteres</p>
 				</div>
 			{:else}
 				<div class="vf">
@@ -325,8 +341,8 @@
 						{@const dada = resp?.resposta.valores?.[i]}
 						<fieldset class="afirm">
 							<legend>{af.texto}</legend>
-							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={true} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} onchange={aoMudar} /> Verdadeiro</label>
-							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={false} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} onchange={aoMudar} /> Falso</label>
+							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={true} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} onchange={() => aoMudar()} /> Verdadeiro</label>
+							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={false} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} onchange={() => aoMudar()} /> Falso</label>
 							{#if resp?.feedback && gab !== null}
 								<span class="sel">{dada === gab ? '✔ Acertou' : '✘ Errou'} — gabarito: {gab ? 'Verdadeiro' : 'Falso'}</span>
 							{/if}
@@ -335,7 +351,9 @@
 				</div>
 			{/if}
 
-			{#if resp?.feedback}
+			{#if q.tipo === 'aberta' && resp && imediato}
+				<p class="suave" role="status">✔ Resposta enviada. O professor vai corrigir esta questão.</p>
+			{:else if resp?.feedback}
 				<div class="feedback cartao" role="status">
 					<strong>{rotulo(resp.feedback)}</strong> · {pts(resp.feedback.pontos)} de {pts(resp.feedback.max)} ponto(s)
 					{#if resp.feedback.explicacao}<p class="explic"><em>Explicação:</em> {resp.feedback.explicacao}</p>{/if}
@@ -367,7 +385,8 @@
 	<p class="obrigado">Obrigado por participar! 🙌</p>
 	{#if estado.resultado}
 		<div class="cartao resultado" role="status">
-			Você fez <strong>{pts(estado.resultado.nota)} de {pts(estado.resultado.pontos_max)} pontos</strong>. Seu percentual de rendimento foi de <strong>{String(percentualDe(estado.resultado.nota, estado.resultado.pontos_max)).replace('.', ',')}%</strong>.
+			Você fez <strong>{pts(estado.resultado.nota)} de {pts(estado.resultado.pontos_max)} pontos</strong>{#if estado.resultado.abertas_pendentes > 0}&nbsp;(parcial){/if}. Seu percentual de rendimento foi de <strong>{String(percentualDe(estado.resultado.nota, estado.resultado.pontos_max)).replace('.', ',')}%</strong>.
+			{#if estado.resultado.abertas_pendentes > 0}<p class="suave">{estado.resultado.abertas_pendentes} questão(ões) aberta(s) ainda serão corrigidas pelo professor; a nota final pode mudar.</p>{/if}
 		</div>
 	{:else}
 		<p>Suas respostas foram enviadas.</p>
@@ -433,6 +452,8 @@
 	.progresso { height: 0.6rem; margin-top: 0.5rem; overflow: hidden; background: var(--borda); border-radius: 1rem; }
 	.preenchido { height: 100%; background: var(--destaque); border-radius: 1rem; transition: width 0.25s; }
 	.aviso-tempo { margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; font-weight: 700; border: 2px solid var(--erro); border-radius: 0.4rem; }
+	.aberta textarea { width: 100%; box-sizing: border-box; font: inherit; }
+	.contador { margin: 0.25rem 0 0; text-align: right; font-size: 0.85rem; }
 	.respondidas { margin: 0.35rem 0 0; font-size: 0.85rem; }
 	.obrigado { font-size: 1.1rem; }
 	.incentivo { margin: 1rem 0; border-color: var(--destaque); }

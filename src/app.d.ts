@@ -16,6 +16,13 @@ declare global {
 			LIMITE_LOGIN_FALHAS_IP_HORA?: string;
 			/** Senhas erradas no login do professor por e-mail em 1 h (freio geral contra tentativas distribuídas). */
 			LIMITE_LOGIN_FALHAS_EMAIL_HORA?: string;
+			/** Workers AI (correção de questões abertas). Ausente: a correção por IA fica indisponível e o professor corrige à mão. */
+			AI?: Ai;
+			/** Modelos configuráveis sem mexer no código (ids do catálogo do Workers AI). */
+			IA_MODELO_LLM?: string;
+			IA_MODELO_EMBEDDING?: string;
+			/** Só para testes locais: troca o Workers AI por um modelo simulado e determinístico. Nunca definir em produção. */
+			IA_FAKE?: string;
 			/** Só para testes locais: libera o download de imagens de endereços locais. Nunca definir em produção. */
 			MIDIA_URL_LOCAL?: string;
 		}

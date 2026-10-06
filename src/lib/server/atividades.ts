@@ -302,11 +302,11 @@ export async function obterTentativa(id: number): Promise<TentativaLinha | null>
 	return r ? { ...r, questoes: JSON.parse(r.questoes) } : null;
 }
 
-export type RespostaLinha = { questao_id: number; resposta: unknown; pontos_auto: number | null; pontos_final: number | null };
+export type RespostaLinha = { questao_id: number; resposta: unknown; pontos_auto: number | null; pontos_final: number | null; status: string };
 
 export async function respostasDaTentativa(id: number) {
 	const r = await db()
-		.prepare('SELECT questao_id, resposta, pontos_auto, pontos_final FROM respostas WHERE tentativa_id = ?')
+		.prepare('SELECT questao_id, resposta, pontos_auto, pontos_final, status FROM respostas WHERE tentativa_id = ?')
 		.bind(id)
 		.all<Omit<RespostaLinha, 'resposta'> & { resposta: string }>();
 	return r.results.map((x) => ({ ...x, resposta: JSON.parse(x.resposta) as unknown }));
@@ -316,16 +316,17 @@ export async function respostasDaTentativa(id: number) {
  * Grava a resposta. Com `travar`, a primeira resposta vale e as seguintes são ignoradas (atômico, resiste a
  * clique duplo); devolve false quando já havia resposta. Sem `travar`, a nova substitui a anterior.
  */
-export async function gravarResposta(tentativaId: number, questaoId: number, resposta: unknown, pontos: number, travar: boolean) {
+export async function gravarResposta(tentativaId: number, questaoId: number, resposta: unknown, pontos: number | null, travar: boolean) {
 	const conflito = travar
 		? 'DO NOTHING'
-		: 'DO UPDATE SET resposta = excluded.resposta, pontos_auto = excluded.pontos_auto, pontos_final = excluded.pontos_final';
+		: 'DO UPDATE SET resposta = excluded.resposta, pontos_auto = excluded.pontos_auto, pontos_final = excluded.pontos_final, status = excluded.status';
+	// pontos null = questão aberta: fica "pendente" até o professor confirmar o nível
 	const r = await db()
 		.prepare(
-			`INSERT INTO respostas (tentativa_id, questao_id, resposta, pontos_auto, pontos_final) VALUES (?, ?, ?, ?, ?)
+			`INSERT INTO respostas (tentativa_id, questao_id, resposta, pontos_auto, pontos_final, status) VALUES (?, ?, ?, ?, ?, ?)
 			 ON CONFLICT (tentativa_id, questao_id) ${conflito}`
 		)
-		.bind(tentativaId, questaoId, JSON.stringify(resposta), pontos, pontos)
+		.bind(tentativaId, questaoId, JSON.stringify(resposta), pontos, pontos, pontos === null ? 'pendente' : 'corrigida')
 		.run();
 	return r.meta.changes > 0;
 }
@@ -398,6 +399,7 @@ export async function excluirAtividade(id: number, comTentativas: boolean): Prom
 	const n = (await db().prepare('SELECT COUNT(*) AS n FROM tentativas WHERE atividade_id = ?').bind(id).first<{ n: number }>())!.n;
 	if (n > 0 && !comTentativas) return { tentativas: n };
 	await db().batch([
+		db().prepare('DELETE FROM correcoes_abertas WHERE tentativa_id IN (SELECT id FROM tentativas WHERE atividade_id = ?)').bind(id),
 		db().prepare('DELETE FROM respostas WHERE tentativa_id IN (SELECT id FROM tentativas WHERE atividade_id = ?)').bind(id),
 		db().prepare('DELETE FROM tentativas WHERE atividade_id = ?').bind(id),
 		db().prepare('DELETE FROM atividade_questoes WHERE atividade_id = ?').bind(id),

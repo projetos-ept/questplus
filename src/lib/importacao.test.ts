@@ -106,7 +106,7 @@ describe('exportar e reimportar', () => {
 
 describe('instrução para IA', () => {
 	it('inclui tema, quantidade, nível, formatos e etiquetas', () => {
-		const p = montarPromptIA({ ...OPCOES_PROMPT_PADRAO, tema: 'Ciclo da malária', quantidade: 7, nivel: 'difícil', formatos: { mc4: false, mc5: true, vf: true }, etiquetas: 'Malária, Parasitologia', comApoio: true });
+		const p = montarPromptIA({ ...OPCOES_PROMPT_PADRAO, tema: 'Ciclo da malária', quantidade: 7, nivel: 'difícil', formatos: { mc4: false, mc5: true, vf: true, aberta: false }, etiquetas: 'Malária, Parasitologia', comApoio: true });
 		expect(p).toContain('7 questões');
 		expect(p).toContain('Ciclo da malária');
 		expect(p).toContain('NÍVEL DE DIFICULDADE: difícil');

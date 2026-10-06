@@ -22,3 +22,15 @@ export function limiteConfigurado(nome: 'LIMITE_PALPITES_IP_DIA' | 'LIMITE_INICI
 	const n = Number(env[nome]);
 	return Number.isInteger(n) && n > 0 ? n : padrao;
 }
+
+export const MODELO_LLM_PADRAO = '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
+export const MODELO_EMBEDDING_PADRAO = '@cf/baai/bge-m3';
+
+export function configIa() {
+	return {
+		fake: env.IA_FAKE === '1',
+		ai: env.AI,
+		llm: env.IA_MODELO_LLM || MODELO_LLM_PADRAO,
+		embedding: env.IA_MODELO_EMBEDDING || MODELO_EMBEDDING_PADRAO
+	};
+}

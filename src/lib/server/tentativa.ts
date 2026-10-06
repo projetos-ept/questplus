@@ -27,13 +27,14 @@ export const prazoEfetivo = (t: TentativaLinha) =>
 export async function montarEstado(t: TentativaLinha, a: AtividadeLinha) {
 	const mostrar = a.feedback === 'imediato' || (t.status === 'finalizada' && a.feedback !== 'nenhum');
 	const porId = new Map(t.questoes.map((q) => [q.id, q]));
-	const respostas: Record<number, { resposta: unknown; feedback?: ReturnType<typeof corrigir> & { explicacao: string | null } }> = {};
+	const respostas: Record<number, { resposta: unknown; pendente?: boolean; feedback?: ReturnType<typeof corrigir> & { explicacao: string | null } }> = {};
 	for (const r of await respostasDaTentativa(t.id)) {
 		const q = porId.get(r.questao_id);
 		if (!q) continue;
 		respostas[r.questao_id] = {
 			resposta: r.resposta,
-			...(mostrar && { feedback: { ...corrigir(q.tipo, q.config, r.resposta as never, q.pontos), explicacao: q.explicacao } })
+			...(q.tipo === 'aberta' && { pendente: r.status === 'pendente' }),
+			...(mostrar && q.tipo !== 'aberta' && { feedback: { ...corrigir(q.tipo, q.config, r.resposta as never, q.pontos), explicacao: q.explicacao } })
 		};
 	}
 	return {
@@ -47,6 +48,6 @@ export async function montarEstado(t: TentativaLinha, a: AtividadeLinha) {
 		questoes: t.questoes.map(versaoAluno),
 		respostas,
 		// a nota aparece com o gabarito (Treino) ou, na Prova, quando o professor liberou; o gabarito nunca depende disto
-		resultado: t.status === 'finalizada' && t.anulada === 0 && (mostrar || a.mostra_nota) ? { nota: t.nota ?? 0, pontos_max: t.pontos_max ?? 0 } : null
+		resultado: t.status === 'finalizada' && t.anulada === 0 && (mostrar || a.mostra_nota) ? { nota: t.nota ?? 0, pontos_max: t.pontos_max ?? 0, abertas_pendentes: Object.values(respostas).filter((r) => r.pendente).length } : null
 	};
 }
