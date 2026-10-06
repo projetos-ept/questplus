@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { alertasDe, conferirConceitos, conferirOposicoes, cosseno, divergenciaDe, normalizar, percentualDe, pontosDoNivel, triar } from './aberta';
+import { rotuloDoNivel, alertasDe, conferirConceitos, conferirOposicoes, cosseno, divergenciaDe, normalizar, percentualDe, pontosDoNivel, triar } from './aberta';
 
 const cfg = {
 	referencia: 'A insulina aumenta a captação de glicose pelas células e reduz a glicemia.',
@@ -57,6 +57,14 @@ describe('conferirOposicoes', () => {
 	it('referência com os dois lados: resposta certa não levanta alerta', () => {
 		expect(conferirOposicoes('A insulina aumenta a captação de glicose pelas células e por isso reduz a glicemia.', cfg)).toEqual([]);
 		expect(conferirOposicoes('reduz', cfg)).toEqual([]);
+	});
+});
+
+describe('indicador qualitativo', () => {
+	it('mapeia os níveis 0 a 4', () => {
+		expect([0, 1, 2, 3, 4].map(rotuloDoNivel)).toEqual(['Não atende', 'Insuficiente', 'Regular', 'Bom', 'Excelente']);
+		expect(rotuloDoNivel(9)).toBe('Excelente');
+		expect(rotuloDoNivel(-1)).toBe('Não atende');
 	});
 });
 

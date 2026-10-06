@@ -2,6 +2,7 @@
 	import { imagensDe } from '#lib/imagens';
 	import { formatarData } from '#lib/data';
 	import { formatarTempo } from '#lib/relatorio';
+	import { rotuloDoNivel } from '#lib/aberta';
 	import { renderSuporte } from '#lib/suporte';
 	import type { Aberta, Mc, Vf } from '#lib/questao';
 	import type { QuestaoSnapshot } from '#lib/atividade';
@@ -87,7 +88,7 @@
 				{@const c = q.config as Aberta}
 				<p class="rotulo">Resposta do aluno</p>
 				<blockquote class="texto-aberta">{r?.resposta.texto ?? 'O aluno não respondeu esta questão.'}</blockquote>
-				{#if r && !r.pendente && r.nivel_final !== null && r.nivel_final !== undefined}<p class="suave">Nível confirmado pelo professor: {r.nivel_final} de 4.</p>{/if}
+				{#if r && !r.pendente && r.nivel_final !== null && r.nivel_final !== undefined}<p class="suave">Avaliação do professor: <strong>{rotuloDoNivel(r.nivel_final)}</strong></p>{/if}
 				{#if gabarito}
 					<p class="rotulo">✔ Resposta de referência</p>
 					<blockquote class="texto-aberta">{c.referencia}</blockquote>

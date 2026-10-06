@@ -95,6 +95,10 @@ export const pontosDoNivel = (nivel: number, pontos: number, cfg: Pick<Aberta, '
 	return Math.round(((pontos * pct) / 100) * 100) / 100;
 };
 
+/** Indicador qualitativo do nível, para o aluno e o relatório (o número fica só na tela de correção). */
+export const ROTULOS_NIVEL = ['Não atende', 'Insuficiente', 'Regular', 'Bom', 'Excelente'] as const;
+export const rotuloDoNivel = (nivel: number) => ROTULOS_NIVEL[Math.min(Math.max(Math.round(nivel), 0), 4)];
+
 export const nivelValido = (n: unknown): n is Nivel => typeof n === 'number' && Number.isInteger(n) && n >= 0 && n <= 4;
 
 // ---------- similaridade e alertas de divergência ----------
