@@ -98,7 +98,7 @@ ETAPA 6 - ALUNO NA PROVA (aba nova)
 6.6 Aluno Dois (aluno2@teste.com, [TESTE] Turma A), 1 tentativa: Q1=B, Q2="3", Q3 só a 1ª afirmação como Verdadeiro (deixe a outra em branco) → finalize: "4 de 8 pontos" e "Você ainda tem 1 tentativa".
 
 ETAPA 7 - RELATÓRIOS (painel)
-7.1 Atividades → "[TESTE] Prova" → Relatório. Esperado: Alunos 2; Média 75% (6 pontos); Mediana 75%; Maior·menor 100% · 50%; distribuição: 40-60% = 1 aluno e 80-100% = 1 aluno; aproveitamento por questão Q1 100%, Q2 50%, Q3 75% (Q3 tem 1 em branco? não: 0 em branco). Alunos: Aluno Um, 2 tentativas, 8 / 8, 100%, pontos 2,2,4; Aluno Dois, 1 tentativa, 4 / 8, 50%, pontos 2,0,2.
+7.1 Atividades → "[TESTE] Prova" → Relatório. Esperado: Alunos 2; Média 75% (6 pontos); Mediana 75%; Maior·menor 100% · 50%; distribuição: 40-60% = 1 aluno e 80-100% = 1 aluno; aproveitamento por questão Q1 100%, Q2 50%, Q3 75% (nenhuma em branco). Alunos: Aluno Um, 2 tentativas, 8 / 8, 100%, pontos 2,2,4; Aluno Dois, 1 tentativa, 4 / 8, 50%, pontos 2,0,2.
 7.2 Filtro "Filtrar por turma": [TESTE] Turma A mantém os mesmos números; "Todas" volta.
 7.3 "Exportar JSON" e "Exportar CSV": cada um baixa um arquivo (relate os nomes). Se puder executar JavaScript no console de uma aba do painel, rode e relate a saída (troque ID pelo número da atividade na URL):
   (async()=>{const r=await fetch('/api/admin/atividades/ID/respostas?formato=json');const j=await r.json();console.log(r.status,j.alunos.length,j.tentativas.length)})()
