@@ -8,6 +8,8 @@ declare global {
 			JWT_SECRET: string;
 			/** Bucket R2 das imagens; ausente até o binding ser configurado. */
 			MEDIA?: R2Bucket;
+			/** Só para testes locais: libera o download de imagens de endereços locais. Nunca definir em produção. */
+			MIDIA_URL_LOCAL?: string;
 		}
 	}
 	namespace App {

@@ -1,5 +1,5 @@
 import { error } from '@sveltejs/kit';
-import { CHAVE_IMAGEM } from '#lib/questao';
+import { CHAVE_IMAGEM } from '#lib/imagens';
 import { midia } from '#lib/server/env';
 import type { RequestHandler } from './$types';
 

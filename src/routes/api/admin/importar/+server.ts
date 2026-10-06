@@ -29,9 +29,9 @@ export const POST: RequestHandler = async ({ request, url }) => {
 		const problemas: string[] = [];
 		for (const bruto of corpo.suportes) {
 			const o = (bruto && typeof bruto === 'object' ? bruto : {}) as Record<string, unknown>;
-			const v = validarSuporte({ titulo: o.titulo, texto: o.texto, imagem_chave: null });
+			const v = validarSuporte({ titulo: o.titulo, texto: o.texto, imagens: o.imagens, imagem_chave: o.imagem_chave });
 			if (!v.ok || typeof o.ref !== 'string' || !o.ref) problemas.push(`Texto de apoio "${String(o.ref ?? '?')}" inválido.`);
-			else validos.push({ ref: o.ref, ...v.valor, imagem_chave: typeof o.imagem_chave === 'string' && o.imagem_chave ? o.imagem_chave : null });
+			else validos.push({ ref: o.ref, ...v.valor });
 		}
 		const r = await importarSuportes(validos, gravar);
 		return json({ ...r, erros: problemas });

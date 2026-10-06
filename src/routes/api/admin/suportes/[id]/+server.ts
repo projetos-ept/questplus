@@ -20,11 +20,15 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 	return (await atualizarSuporte(id, r.valor)) ? json({ id }) : naoEncontrado();
 };
 
-export const DELETE: RequestHandler = async ({ params }) => {
+/** Sem `?desvincular=1`, recusa se houver questões usando o texto de apoio. */
+export const DELETE: RequestHandler = async ({ params, url }) => {
 	const id = idDe(params.id);
 	if (!id) return naoEncontrado();
-	const r = await excluirSuporte(id);
+	const r = await excluirSuporte(id, url.searchParams.get('desvincular') === '1');
 	if (r === 'inexistente') return naoEncontrado();
-	if (r === 'em-uso') return erros(['Há questões usando este texto de apoio. Remova o vínculo antes de excluir.'], 409);
-	return json({ id });
+	if (r === 'ok') return json({ id });
+	return json(
+		{ erros: [`Há ${r.emUso} questão(ões) usando este texto de apoio. Confirme para excluir e desvincular, ou mantenha o texto.`], emUso: r.emUso },
+		{ status: 409 }
+	);
 };

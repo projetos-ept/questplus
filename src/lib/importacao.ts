@@ -54,9 +54,9 @@ export function lerArquivo(texto: string): Resultado<{ suportes: SuporteImportad
 		if (!ref) return void erros.push(`Texto de apoio ${i + 1}: falta o campo "ref" (um nome curto, como "s1").`);
 		if (refs.has(ref)) return void erros.push(`Texto de apoio ${i + 1}: a ref "${ref}" está repetida.`);
 		refs.add(ref);
-		const v = validarSuporte({ titulo: o.titulo, texto: o.texto, imagem_chave: null });
+		const v = validarSuporte({ titulo: o.titulo, texto: o.texto, imagens: o.imagens, imagem_chave: o.imagem_chave });
 		if (!v.ok) return void erros.push(`Texto de apoio "${ref}": ${v.erros.join(' ')}`);
-		suportes.push({ ref, ...v.valor, imagem_chave: typeof o.imagem_chave === 'string' && o.imagem_chave ? o.imagem_chave : null });
+		suportes.push({ ref, ...v.valor });
 	});
 	if (erros.length) return { ok: false, erros };
 	return { ok: true, valor: { suportes, questoes: bruto } };
@@ -138,7 +138,7 @@ export const chaveDuplicada = (tipo: string, enunciado: string) =>
 // ---------- exportar ----------
 
 type QuestaoExportavel = Omit<QuestaoValida, 'suporte_id'> & { suporte_id: number | null };
-type SuporteExportavel = { id: number; titulo: string; texto: string; imagem_chave: string | null };
+type SuporteExportavel = { id: number; titulo: string; texto: string; imagens: Suporte['imagens'] };
 
 export function montarExportacao(questoes: QuestaoExportavel[], suportes: SuporteExportavel[], quando = new Date()) {
 	const refDe = (id: number) => `s${id}`;
@@ -146,7 +146,7 @@ export function montarExportacao(questoes: QuestaoExportavel[], suportes: Suport
 		formato: FORMATO_ARQUIVO,
 		versao: VERSAO_ARQUIVO,
 		exportado_em: quando.toISOString(),
-		suportes: suportes.map((s) => ({ ref: refDe(s.id), titulo: s.titulo, texto: s.texto, imagem_chave: s.imagem_chave })),
+		suportes: suportes.map((s) => ({ ref: refDe(s.id), titulo: s.titulo, texto: s.texto, imagens: s.imagens })),
 		questoes: questoes.map((q) => ({
 			tipo: q.tipo,
 			enunciado: q.enunciado,

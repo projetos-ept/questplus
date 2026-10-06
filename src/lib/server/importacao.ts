@@ -3,7 +3,8 @@ import { formatoDe, type Mc, type Vf } from '#lib/questao';
 import { db, midia } from './env';
 
 export const MAX_QUESTOES_POR_REQUISICAO = 100;
-export const MAX_SUPORTES_POR_REQUISICAO = 15;
+/** Cada texto de apoio pode ter até 10 imagens e cada uma custa uma consulta ao R2; 4 × 10 cabe no limite de 50 do plano gratuito. */
+export const MAX_SUPORTES_POR_REQUISICAO = 4;
 const LETRAS = ['A', 'B', 'C', 'D', 'E'];
 
 export type ItemResultado = {
@@ -101,20 +102,20 @@ export async function importarSuportes(suportes: SuporteImportado[], gravar: boo
 			reaproveitados++;
 			continue;
 		}
-		let imagem = s.imagem_chave;
-		if (imagem && !(await midia()?.head(imagem))) {
-			avisos.push(`A imagem do texto de apoio "${s.ref}" não existe neste sistema e foi ignorada.`);
-			imagem = null;
+		const imagens = [];
+		for (const img of s.imagens) {
+			if (await midia()?.head(img.chave)) imagens.push(img);
+			else avisos.push(`A imagem [img${img.n}] do texto de apoio "${s.ref}" não existe neste sistema e foi ignorada.`);
 		}
-		if (!s.texto && !imagem) {
-			avisos.push(`O texto de apoio "${s.ref}" ficou sem conteúdo (só tinha imagem) e não foi criado.`);
+		if (!s.texto && !imagens.length) {
+			avisos.push(`O texto de apoio "${s.ref}" ficou sem conteúdo (só tinha imagens) e não foi criado.`);
 			continue;
 		}
-		novos.push({ ...s, imagem_chave: imagem });
+		novos.push({ ...s, imagens });
 	}
 	if (novos.length) {
 		const resultados = await db().batch(
-			novos.map((s) => db().prepare('INSERT INTO suportes (titulo, texto, imagem_chave) VALUES (?, ?, ?) RETURNING id').bind(s.titulo, s.texto, s.imagem_chave))
+			novos.map((s) => db().prepare('INSERT INTO suportes (titulo, texto, imagem_chave, imagens) VALUES (?, ?, ?, ?) RETURNING id').bind(s.titulo, s.texto, s.imagens[0]?.chave ?? null, JSON.stringify(s.imagens)))
 		);
 		resultados.forEach((r, i) => (mapa[novos[i].ref] = (r.results[0] as { id: number }).id));
 	}

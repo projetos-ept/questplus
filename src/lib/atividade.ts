@@ -39,7 +39,8 @@ export function embaralhar<T>(lista: T[], rnd: () => number = aleatorio): T[] {
 }
 
 // ---------- cópia da questão guardada na tentativa ----------
-export type SuporteSnapshot = { titulo: string; texto: string; imagem_chave: string | null };
+/** `imagem_chave` existe só nas cópias antigas (uma imagem); as novas guardam `imagens`. */
+export type SuporteSnapshot = { titulo: string; texto: string; imagem_chave?: string | null; imagens?: import('./imagens').ImagemSuporte[] };
 
 export type QuestaoSnapshot = {
 	id: number;

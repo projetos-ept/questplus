@@ -12,3 +12,7 @@ export function segredoJwt() {
 export function midia() {
 	return env.MEDIA;
 }
+
+export function permitirUrlLocal() {
+	return env.MIDIA_URL_LOCAL === '1';
+}

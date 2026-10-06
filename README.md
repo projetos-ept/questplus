@@ -21,6 +21,8 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 - **Filtros em tempo real** na lista de questões e no seletor de questões da atividade (busca no servidor, paginada de 20 em 20, com "adicionar todas as N do filtro", limite de 100 por atividade): feito para bancos de centenas de questões.
 - **Atividades:** botões **Clonar** (cópia inativa, sem datas, com código novo) e **Excluir** (com tentativas exige confirmação reforçada, porque apaga as respostas dos alunos).
 
+- **Textos de apoio com até 10 imagens**: cada imagem tem um código fixo (`[img1]`…`[img10]`); escrever o código no texto posiciona a imagem ali, e as não citadas aparecem no final. Por imagem: legenda, tamanho (pequena 240 px, média 420 px, grande 640 px ou largura personalizada de 50 a 1600 px) e remover. Entram por arquivo ou por **link**: o servidor baixa e guarda no R2 (recusa SVG, páginas, mais de 2 MB, endereços internos e IPs; segue no máximo 3 redirecionamentos conferindo cada um; 10 s de limite). Quando não consegue, diz o motivo e o envio por arquivo continua. O texto de apoio pode ser **excluído** mesmo em uso (as questões ficam sem apoio), com confirmação reforçada. O arquivo do R2 só é apagado se nenhum outro apoio nem prova já feita o usa. Exige `migrations/0005_suportes_imagens.sql` no banco antes de publicar.
+
 As demais fases seguem a tabela da documentação.
 
 > Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.
@@ -75,6 +77,8 @@ Só podem ser feitas no painel do Cloudflare (ou com `wrangler` autenticado):
 | `src/routes/midia/[chave]` | Serve a imagem do R2 (rota aberta, chave UUID, só imagens passam pelo upload) |
 | `src/lib/questao.ts` | Validação de questões e textos de apoio (compartilhada entre painel e API) |
 | `src/lib/markdown.ts` | Markdown mínimo que escapa todo HTML antes de formatar |
+| `src/lib/imagens.ts`, `src/lib/suporte.ts` | Imagens do texto de apoio (validação, tamanhos, proteção contra SSRF) e a renderização com `[imgN]` |
+| `src/lib/importacao.ts`, `src/lib/server/importacao.ts` | Leitura tolerante do JSON, exportação, instrução para IA e importação em blocos |
 | `src/lib/midia.ts` | Detecção de imagem pelos bytes (SVG é recusado de propósito) |
 | `src/lib/server/questoes.ts`, `src/lib/server/atividades.ts` | Consultas ao D1 (vínculos em lote com `json_each`, por causa do limite de 50 consultas e 100 parâmetros) |
 | `src/lib/correcao.ts`, `src/lib/atividade.ts` | Correção de MC e VF, estado e prazo da atividade, cópia da questão para a tentativa, validações |

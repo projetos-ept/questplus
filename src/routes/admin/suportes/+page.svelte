@@ -14,12 +14,12 @@
 {:else}
 	<div class="rolagem">
 		<table>
-			<thead><tr><th>Título</th><th>Imagem</th><th>Questões</th></tr></thead>
+			<thead><tr><th>Título</th><th>Imagens</th><th>Questões</th></tr></thead>
 			<tbody>
 				{#each data.itens as s (s.id)}
 					<tr>
 						<td><a href="/admin/suportes/{s.id}">{s.titulo}</a></td>
-						<td>{#if s.imagem_chave}<img src="/midia/{s.imagem_chave}" alt="" width="48" />{:else}<span class="suave">—</span>{/if}</td>
+						<td>{#if s.imagens.length}<img src="/midia/{s.imagens[0].chave}" alt="" width="48" /> <span class="suave">{s.imagens.length} imagem(ns)</span>{:else}<span class="suave">—</span>{/if}</td>
 						<td>{s.questoes}</td>
 					</tr>
 				{/each}

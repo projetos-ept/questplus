@@ -94,10 +94,10 @@ describe('exportar e reimportar', () => {
 				{ tipo: 'mc', enunciado: 'Q1', config: { alternativas: ['a', 'b', 'c', 'd', 'e'], correta: 4 }, explicacao: 'porque', pontos: 2, suporte_id: 7, etiquetas: ['x'], ativa: false },
 				{ tipo: 'vf', enunciado: 'Q2', config: { afirmacoes: [{ texto: 'a', valor: true }] }, explicacao: null, pontos: 1, suporte_id: null, etiquetas: [], ativa: true }
 			],
-			[{ id: 7, titulo: 'Apoio', texto: 'Texto', imagem_chave: null }]
+			[{ id: 7, titulo: 'Apoio', texto: 'Texto', imagens: [] }]
 		);
 		const lido = lerArquivo(JSON.stringify(exp));
-		expect(lido.ok && lido.valor.suportes).toEqual([{ ref: 's7', titulo: 'Apoio', texto: 'Texto', imagem_chave: null }]);
+		expect(lido.ok && lido.valor.suportes).toEqual([{ ref: 's7', titulo: 'Apoio', texto: 'Texto', imagens: [] }]);
 		const q = lido.ok ? lido.valor.questoes.map(normalizarQuestao) : [];
 		expect(q[0]).toMatchObject({ ok: true, valor: { tipo: 'mc', pontos: 2, ativa: false, suporte_ref: 's7', explicacao: 'porque', config: { correta: 4 } } });
 		expect(q[1]).toMatchObject({ ok: true, valor: { tipo: 'vf', suporte_ref: null, explicacao: null } });

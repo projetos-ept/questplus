@@ -82,7 +82,7 @@
 		const r = { criadas: 0, puladas: 0, invalidas: invalidas.length, suportes: 0, avisos: [] as string[] };
 		try {
 			const mapa: Record<string, number> = {};
-			for (const bloco of blocos(analise.suportes, 15)) {
+			for (const bloco of blocos(analise.suportes, 4)) {
 				const s = (await chamar('/api/admin/importar', { suportes: bloco })) as { mapa: Record<string, number>; criados: number; avisos: string[] };
 				Object.assign(mapa, s.mapa);
 				r.suportes += s.criados;

@@ -118,6 +118,21 @@
 		vertical-align: top;
 		border-bottom: 1px solid var(--borda);
 	}
+	:global(.suporte-img) {
+		margin: 0.75rem 0;
+	}
+	:global(.suporte-img img) {
+		display: block;
+		max-width: 100%;
+		height: auto;
+		border-radius: 0.4rem;
+	}
+	:global(.suporte-img figcaption) {
+		margin-top: 0.35rem;
+		font-size: 0.85rem;
+		font-style: italic;
+		color: var(--suave);
+	}
 	:global(.etiqueta) {
 		display: inline-block;
 		margin: 0 0.25rem 0.25rem 0;

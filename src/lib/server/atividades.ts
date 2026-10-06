@@ -1,8 +1,19 @@
 import { embaralhar, estadoAtividade, expirou, feedbackDoModo, gerarCodigo, montarSnapshot, prazoDaTentativa, type AtividadeValida, type Modo, type QuestaoSnapshot, type TurmaValida } from '#lib/atividade';
+import { imagensDe, type ImagemSuporte } from '#lib/imagens';
 import { db } from './env';
 
 // Limites do D1 gratuito: 50 consultas por invocação e 100 parâmetros por consulta.
 // Por isso os vínculos entram com uma única instrução via json_each, em vez de um INSERT por linha.
+
+function imagensDoBanco(json: string | null, legado: string | null) {
+	let lista: ImagemSuporte[] = [];
+	try {
+		lista = json ? (JSON.parse(json) as ImagemSuporte[]) : [];
+	} catch {
+		lista = [];
+	}
+	return imagensDe({ imagens: lista, imagem_chave: legado });
+}
 
 // ---------- turmas ----------
 export type TurmaLinha = TurmaValida & { id: number; criado_em: string };
@@ -241,13 +252,13 @@ export async function iniciarTentativa(a: AtividadeLinha, aluno: { nome: string;
 	const linhas = await db()
 		.prepare(
 			`SELECT q.id, q.tipo, q.enunciado, q.config, q.explicacao, COALESCE(aq.pontos, q.pontos) AS pontos,
-				s.titulo AS s_titulo, s.texto AS s_texto, s.imagem_chave AS s_imagem
+				s.titulo AS s_titulo, s.texto AS s_texto, s.imagem_chave AS s_imagem, s.imagens AS s_imagens
 			 FROM atividade_questoes aq JOIN questoes q ON q.id = aq.questao_id
 			 LEFT JOIN suportes s ON s.id = q.suporte_id
 			 WHERE aq.atividade_id = ? ORDER BY aq.ordem`
 		)
 		.bind(a.id)
-		.all<{ id: number; tipo: string; enunciado: string; config: string; explicacao: string | null; pontos: number; s_titulo: string | null; s_texto: string | null; s_imagem: string | null }>();
+		.all<{ id: number; tipo: string; enunciado: string; config: string; explicacao: string | null; pontos: number; s_titulo: string | null; s_texto: string | null; s_imagem: string | null; s_imagens: string | null }>();
 
 	let questoes = linhas.results.map((l) =>
 		montarSnapshot(
@@ -258,7 +269,7 @@ export async function iniciarTentativa(a: AtividadeLinha, aluno: { nome: string;
 				config: JSON.parse(l.config),
 				explicacao: l.explicacao,
 				pontos: l.pontos,
-				suporte: l.s_titulo === null ? null : { titulo: l.s_titulo, texto: l.s_texto ?? '', imagem_chave: l.s_imagem }
+				suporte: l.s_titulo === null ? null : { titulo: l.s_titulo, texto: l.s_texto ?? '', imagens: imagensDoBanco(l.s_imagens, l.s_imagem) }
 			},
 			a.embaralhar
 		)

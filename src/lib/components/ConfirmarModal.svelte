@@ -26,10 +26,11 @@
 
 	export function abrir() {
 		erro = '';
-		dialogo.showModal();
+		dialogo?.showModal();
 	}
 	export function fechar() {
-		dialogo.close();
+		// pode ser chamado depois de a página navegar (ex.: excluir e voltar para a lista), quando o elemento já não existe
+		dialogo?.close();
 	}
 
 	async function confirmar() {

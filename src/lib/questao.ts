@@ -1,3 +1,5 @@
+import { imagensDe, validarImagens, type ImagemSuporte } from './imagens';
+
 export type Mc = { alternativas: string[]; correta: number };
 export type Vf = { afirmacoes: { texto: string; valor: boolean }[] };
 
@@ -170,21 +172,24 @@ export function entradaDe(f: Formulario) {
 	return { ...base, tipo: 'mc', config: { alternativas: f.alternativas.slice(0, n), correta: f.correta } };
 }
 
-export type Suporte = { titulo: string; texto: string; imagem_chave: string | null };
+export type Suporte = { titulo: string; texto: string; imagens: ImagemSuporte[] };
 
-export const CHAVE_IMAGEM = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\.(png|jpg|webp|gif)$/;
+export { CHAVE_IMAGEM } from './imagens';
 
+/** Aceita `imagens` (até 10) e, por compatibilidade, o campo antigo `imagem_chave` (uma imagem). */
 export function validarSuporte(entrada: unknown): Resultado<Suporte> {
 	const erros: string[] = [];
 	const e = (entrada && typeof entrada === 'object' ? entrada : {}) as Record<string, unknown>;
 	const titulo = texto(e.titulo);
 	const corpo = typeof e.texto === 'string' ? e.texto.trim() : '';
-	const imagem = e.imagem_chave === null || e.imagem_chave === undefined || e.imagem_chave === '' ? null : String(e.imagem_chave);
+	const legado = typeof e.imagem_chave === 'string' && e.imagem_chave ? e.imagem_chave : null;
+	const bruto = e.imagens === undefined || e.imagens === null ? imagensDe({ imagem_chave: legado }) : e.imagens;
+	const imgs = validarImagens(bruto);
 	if (!titulo) erros.push('Informe o título.');
 	if (titulo.length > 200) erros.push('O título passa de 200 caracteres.');
 	if (corpo.length > 20000) erros.push('O texto passa de 20000 caracteres.');
-	if (!corpo && !imagem) erros.push('Informe um texto, uma imagem ou os dois.');
-	if (imagem && !CHAVE_IMAGEM.test(imagem)) erros.push('Imagem inválida.');
+	if (!imgs.ok) erros.push(...imgs.erros);
+	if (!corpo && !(imgs.ok && imgs.valor.length)) erros.push('Informe um texto, uma imagem ou os dois.');
 	if (erros.length) return { ok: false, erros };
-	return { ok: true, valor: { titulo, texto: corpo, imagem_chave: imagem } };
+	return { ok: true, valor: { titulo, texto: corpo, imagens: imgs.ok ? imgs.valor : [] } };
 }

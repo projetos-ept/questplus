@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
-	import { renderMarkdown } from '#lib/markdown';
+	import { imagensDe, type ImagemSuporte } from '#lib/imagens';
+	import { renderSuporte } from '#lib/suporte';
 	import { formatarData } from '#lib/data';
 
 	type Fb = { pontos: number; max: number; acertou: 'sim' | 'parcial' | 'nao'; gabarito: { correta: number } | { valores: boolean[] }; explicacao: string | null };
 	type Q = {
 		id: number; tipo: 'mc' | 'vf'; enunciado: string; pontos: number;
-		suporte: { titulo: string; texto: string; imagem_chave: string | null } | null;
+		suporte: { titulo: string; texto: string; imagem_chave?: string | null; imagens?: ImagemSuporte[] } | null;
 		config: { alternativas?: string[]; afirmacoes?: { texto: string }[] };
 	};
 	type Estado = {
@@ -284,8 +285,7 @@
 			{#if q.suporte}
 				<div class="suporte cartao">
 					<strong>{q.suporte.titulo}</strong>
-					{#if q.suporte.texto}<div class="md">{@html renderMarkdown(q.suporte.texto)}</div>{/if}
-					{#if q.suporte.imagem_chave}<img src="/midia/{q.suporte.imagem_chave}" alt="Imagem do texto de apoio" />{/if}
+					<div class="md">{@html renderSuporte(q.suporte.texto, imagensDe(q.suporte)).html}</div>
 				</div>
 			{/if}
 
@@ -427,7 +427,6 @@
 	.pontos button[aria-current='true'] { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--destaque); }
 	.suporte { margin: 0.75rem 0; }
 	.md { overflow-wrap: anywhere; }
-	.suporte img { display: block; max-width: 100%; height: auto; margin-top: 0.6rem; border-radius: 0.4rem; }
 	.enunciado { margin: 0.75rem 0 0.25rem; font-size: 1.05rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 	.op { display: flex; gap: 0.6rem; align-items: flex-start; min-height: 2.75rem; padding: 0.6rem 0.75rem; margin-top: 0.5rem; font-weight: 400; background: var(--superficie); border: 1px solid var(--borda); border-radius: 0.5rem; cursor: pointer; }
 	.op input { margin-top: 0.3rem; flex: none; }

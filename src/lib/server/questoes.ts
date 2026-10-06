@@ -1,3 +1,4 @@
+import { imagensDe, type ImagemSuporte } from '#lib/imagens';
 import type { QuestaoValida, Suporte } from '#lib/questao';
 import { db, midia } from './env';
 
@@ -66,10 +67,10 @@ export async function todasQuestoes(f: Filtros) {
 export async function suportesPorIds(ids: number[]) {
 	if (!ids.length) return [];
 	const r = await db()
-		.prepare('SELECT id, titulo, texto, imagem_chave FROM suportes WHERE id IN (SELECT value FROM json_each(?)) ORDER BY id')
+		.prepare('SELECT * FROM suportes WHERE id IN (SELECT value FROM json_each(?)) ORDER BY id')
 		.bind(JSON.stringify(ids))
-		.all<{ id: number; titulo: string; texto: string; imagem_chave: string | null }>();
-	return r.results;
+		.all<SuporteBruto>();
+	return r.results.map(suporteDe);
 }
 
 export async function etiquetasExistentes() {
@@ -116,50 +117,6 @@ export async function definirAtiva(id: number, ativa: boolean) {
 	return r.meta.changes > 0;
 }
 
-// ---------- suportes ----------
-export type SuporteLinha = Suporte & { id: number; criado_em: string; atualizado_em: string; questoes?: number };
-
-export async function listarSuportes() {
-	const r = await db()
-		.prepare(
-			'SELECT s.*, (SELECT COUNT(*) FROM questoes q WHERE q.suporte_id = s.id) AS questoes FROM suportes s ORDER BY s.id DESC'
-		)
-		.all<SuporteLinha>();
-	return r.results;
-}
-
-export const obterSuporte = (id: number) => db().prepare('SELECT * FROM suportes WHERE id = ?').bind(id).first<SuporteLinha>();
-
-export async function criarSuporte(s: Suporte) {
-	const r = await db()
-		.prepare('INSERT INTO suportes (titulo, texto, imagem_chave) VALUES (?, ?, ?) RETURNING id')
-		.bind(s.titulo, s.texto, s.imagem_chave)
-		.first<{ id: number }>();
-	return r!.id;
-}
-
-export async function atualizarSuporte(id: number, s: Suporte) {
-	const antes = await obterSuporte(id);
-	if (!antes) return false;
-	await db()
-		.prepare("UPDATE suportes SET titulo = ?, texto = ?, imagem_chave = ?, atualizado_em = datetime('now') WHERE id = ?")
-		.bind(s.titulo, s.texto, s.imagem_chave, id)
-		.run();
-	if (antes.imagem_chave && antes.imagem_chave !== s.imagem_chave) await midia()?.delete(antes.imagem_chave);
-	return true;
-}
-
-/** Recusa se houver questões usando o suporte. Devolve 'ok' | 'inexistente' | 'em-uso'. */
-export async function excluirSuporte(id: number) {
-	const s = await obterSuporte(id);
-	if (!s) return 'inexistente' as const;
-	const uso = await db().prepare('SELECT COUNT(*) AS n FROM questoes WHERE suporte_id = ?').bind(id).first<{ n: number }>();
-	if (uso!.n > 0) return 'em-uso' as const;
-	await db().prepare('DELETE FROM suportes WHERE id = ?').bind(id).run();
-	if (s.imagem_chave) await midia()?.delete(s.imagem_chave);
-	return 'ok' as const;
-}
-
 /**
  * Exclui a questão. Se ela está em alguma atividade, recusa e devolve os títulos: a ligação existe no banco e tirar a
  * questão de uma atividade em uso mudaria a prova. Tentativas já feitas guardam uma cópia da questão e não são afetadas.
@@ -173,4 +130,86 @@ export async function excluirQuestao(id: number): Promise<{ status: 'ok' | 'inex
 	if (uso.results.length) return { status: 'em-uso', atividades: uso.results.slice(0, 5).map((x) => x.titulo), total: uso.results.length };
 	await db().prepare('DELETE FROM questoes WHERE id = ?').bind(id).run();
 	return { status: 'ok' };
+}
+
+// ---------- suportes ----------
+export type SuporteLinha = Suporte & { id: number; imagem_chave: string | null; criado_em: string; atualizado_em: string; questoes?: number };
+type SuporteBruto = Omit<SuporteLinha, 'imagens'> & { imagens: string };
+
+function suporteDe(r: SuporteBruto): SuporteLinha {
+	let lista: ImagemSuporte[] = [];
+	try {
+		lista = JSON.parse(r.imagens) as ImagemSuporte[];
+	} catch {
+		lista = [];
+	}
+	return { ...r, imagens: imagensDe({ imagens: lista, imagem_chave: r.imagem_chave }) };
+}
+
+export async function listarSuportes() {
+	const r = await db()
+		.prepare(
+			'SELECT s.*, (SELECT COUNT(*) FROM questoes q WHERE q.suporte_id = s.id) AS questoes FROM suportes s ORDER BY s.id DESC'
+		)
+		.all<SuporteBruto>();
+	return r.results.map(suporteDe);
+}
+
+export async function obterSuporte(id: number) {
+	const r = await db().prepare('SELECT * FROM suportes WHERE id = ?').bind(id).first<SuporteBruto>();
+	return r ? suporteDe(r) : null;
+}
+
+export async function criarSuporte(s: Suporte) {
+	const r = await db()
+		.prepare('INSERT INTO suportes (titulo, texto, imagem_chave, imagens) VALUES (?, ?, ?, ?) RETURNING id')
+		.bind(s.titulo, s.texto, s.imagens[0]?.chave ?? null, JSON.stringify(s.imagens))
+		.first<{ id: number }>();
+	return r!.id;
+}
+
+/**
+ * A imagem só sai do R2 se nenhum outro texto de apoio e nenhuma tentativa já feita (que guarda cópia do apoio) a usa:
+ * apagar o arquivo quebraria provas e relatórios antigos.
+ */
+async function apagarImagensSemUso(chaves: string[], ignorarSuporteId: number) {
+	for (const chave of chaves) {
+		const uso = await db()
+			.prepare(
+				`SELECT (SELECT COUNT(*) FROM suportes WHERE id <> ? AND instr(imagens, ?) > 0) +
+				        (SELECT COUNT(*) FROM tentativas WHERE instr(questoes, ?) > 0) AS n`
+			)
+			.bind(ignorarSuporteId, chave, chave)
+			.first<{ n: number }>();
+		if (uso!.n === 0) await midia()?.delete(chave);
+	}
+}
+
+export async function atualizarSuporte(id: number, s: Suporte) {
+	const antes = await obterSuporte(id);
+	if (!antes) return false;
+	await db()
+		.prepare("UPDATE suportes SET titulo = ?, texto = ?, imagem_chave = ?, imagens = ?, atualizado_em = datetime('now') WHERE id = ?")
+		.bind(s.titulo, s.texto, s.imagens[0]?.chave ?? null, JSON.stringify(s.imagens), id)
+		.run();
+	const novas = new Set(s.imagens.map((i) => i.chave));
+	await apagarImagensSemUso(antes.imagens.map((i) => i.chave).filter((c) => !novas.has(c)), id);
+	return true;
+}
+
+/**
+ * Com questões usando o apoio, recusa (devolve quantas) a menos que `desvincular`: aí as questões ficam sem apoio.
+ * Provas já feitas guardam a própria cópia do apoio e não mudam.
+ */
+export async function excluirSuporte(id: number, desvincular = false) {
+	const s = await obterSuporte(id);
+	if (!s) return 'inexistente' as const;
+	const uso = await db().prepare('SELECT COUNT(*) AS n FROM questoes WHERE suporte_id = ?').bind(id).first<{ n: number }>();
+	if (uso!.n > 0 && !desvincular) return { emUso: uso!.n };
+	await db().batch([
+		db().prepare('UPDATE questoes SET suporte_id = NULL WHERE suporte_id = ?').bind(id),
+		db().prepare('DELETE FROM suportes WHERE id = ?').bind(id)
+	]);
+	await apagarImagensSemUso(s.imagens.map((i) => i.chave), id);
+	return 'ok' as const;
 }
