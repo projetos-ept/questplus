@@ -5,6 +5,7 @@
 
 	let { data } = $props();
 	let filtro = $state<'todas' | 'no_prazo' | 'antes' | 'encerrada' | 'inativa'>('todas');
+	let turmaFiltro = $state(''); // id da turma ativa escolhida ('' = todas)
 	let erro = $state('');
 	let copiado = $state<number | null>(null);
 	let alvo = $state<(typeof data.atividades)[number] | null>(null);
@@ -34,7 +35,10 @@
 
 	const nomes = { no_prazo: 'No prazo', antes: 'Ainda não abriu', encerrada: 'Encerrada', inativa: 'Inativa' } as const;
 	const abas = [['todas', 'Todas'], ['no_prazo', 'No prazo'], ['antes', 'Ainda não abriu'], ['encerrada', 'Encerradas'], ['inativa', 'Inativas']] as const;
-	const lista = $derived(data.atividades.filter((a) => filtro === 'todas' || a.estado === filtro));
+	const lista = $derived(
+		data.atividades.filter((a) => (filtro === 'todas' || a.estado === filtro) && (!turmaFiltro || a.turmas.some((t) => String(t.id) === turmaFiltro)))
+	);
+	const nasTurmas = (a: (typeof data.atividades)[number]) => a.turmas.map((t) => t.nome).join(', ') || '—';
 
 	const link = (codigo: string) => `${location.origin}/${codigo}`;
 
@@ -71,6 +75,17 @@
 	{/each}
 </div>
 
+<div class="filtro-turma">
+	<label>Turma (só as ativas)
+		<select bind:value={turmaFiltro}>
+			<option value="">Todas as turmas</option>
+			{#each data.turmas as t (t.id)}<option value={String(t.id)}>{t.nome}</option>{/each}
+		</select>
+	</label>
+	{#if turmaFiltro}<button type="button" class="link" onclick={() => (turmaFiltro = '')}>Limpar</button>{/if}
+	<span class="suave">{lista.length} de {data.atividades.length} atividade(s)</span>
+</div>
+
 {#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 
 <ConfirmarModal bind:this={modal} titulo="Excluir esta atividade?" rotuloConfirmar="Excluir atividade" perigo bloqueado={!!alvo && alvo.n_tentativas > 0 && !ciente} onconfirmar={excluir}>
@@ -86,15 +101,16 @@
 </ConfirmarModal>
 
 {#if lista.length === 0}
-	<p class="suave">Nenhuma atividade {filtro === 'todas' ? 'cadastrada' : 'neste filtro'}.</p>
+	<p class="suave">Nenhuma atividade {filtro === 'todas' && !turmaFiltro ? 'cadastrada' : 'com esses filtros'}.</p>
 {:else}
 	<div class="rolagem">
 		<table>
-			<thead><tr><th>Atividade</th><th>Código</th><th>Prazo</th><th>Situação</th><th>Questões</th><th>Tentativas</th><th></th></tr></thead>
+			<thead><tr><th>Atividade</th><th>Turmas</th><th>Código</th><th>Prazo</th><th>Situação</th><th>Questões</th><th>Tentativas</th><th></th></tr></thead>
 			<tbody>
 				{#each lista as a (a.id)}
 					<tr class:inativa={a.estado === 'inativa'}>
 						<td><a href="/admin/atividades/{a.id}">{a.titulo}</a></td>
+						<td class="suave turmas">{nasTurmas(a)}</td>
 						<td class="cod"><code>{a.codigo}</code> <button class="sec mini" onclick={() => copiar(a.id, a.codigo)}>{copiado === a.id ? 'Link copiado' : 'Copiar link'}</button></td>
 						<td>{#if a.abre_em}<div>abre {formatarData(a.abre_em)}</div>{/if}<div>{a.fecha_em ? `fecha ${formatarData(a.fecha_em)}` : 'sem prazo'}</div></td>
 						<td>{nomes[a.estado]}</td>
@@ -121,6 +137,10 @@
 	.abas button { margin: 0; padding: 0.35rem 0.8rem; font-size: 0.9rem; }
 	.abas button[aria-pressed='true'] { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--destaque); }
 	.rolagem { overflow-x: auto; }
+	.filtro-turma { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: end; margin-bottom: 0.75rem; }
+	.filtro-turma label { margin: 0; min-width: 14rem; }
+	.link { margin: 0; padding: 0; font-weight: 400; color: var(--destaque); text-decoration: underline; background: none; border: 0; }
+	.turmas { max-width: 12rem; overflow-wrap: anywhere; }
 	tr.inativa td { opacity: 0.6; }
 	.cod { white-space: nowrap; }
 	.mini { margin: 0 0.25rem 0 0; padding: 0.25rem 0.55rem; font-size: 0.8rem; }

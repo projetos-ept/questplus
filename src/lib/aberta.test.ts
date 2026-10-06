@@ -162,11 +162,13 @@ describe('questão aberta: cadastro, importação e resposta', () => {
 		expect(v.config).toEqual({ max_chars: 1200, min_chars: 20 });
 	});
 	it('prompt da IA só fala de questão aberta quando marcada', () => {
-		expect(montarPromptIA(OPCOES_PROMPT_PADRAO)).not.toContain('"tipo": "aberta"');
+		const sem = montarPromptIA({ ...OPCOES_PROMPT_PADRAO, formatos: { ...OPCOES_PROMPT_PADRAO.formatos, aberta: false } });
+		expect(sem).not.toContain('"tipo": "aberta"');
+		expect(montarPromptIA(OPCOES_PROMPT_PADRAO)).toContain('"tipo": "aberta"'); // o padrão atual já inclui a aberta
 		const com = montarPromptIA({ ...OPCOES_PROMPT_PADRAO, formatos: { ...OPCOES_PROMPT_PADRAO.formatos, aberta: true } });
 		expect(com).toContain('"tipo": "aberta"');
 		expect(com).toContain('ou "aberta" (resposta escrita');
-		expect(montarPromptIA(OPCOES_PROMPT_PADRAO)).not.toContain('ou "aberta"');
+		expect(sem).not.toContain('ou "aberta"');
 	});
 });
 

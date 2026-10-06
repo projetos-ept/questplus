@@ -16,13 +16,19 @@ function imagensDoBanco(json: string | null, legado: string | null) {
 }
 
 // ---------- turmas ----------
-export type TurmaLinha = TurmaValida & { id: number; criado_em: string };
-type TurmaBruta = Omit<TurmaLinha, 'ativa'> & { ativa: number };
-const turma = (r: TurmaBruta): TurmaLinha => ({ ...r, ativa: r.ativa === 1 });
+export type TurmaLinha = TurmaValida & { id: number; criado_em: string; n_atividades?: number; n_tentativas?: number; atividades?: string[] };
+type TurmaBruta = Omit<TurmaLinha, 'ativa' | 'atividades'> & { ativa: number; atividades?: string };
+const turma = (r: TurmaBruta): TurmaLinha => ({ ...r, ativa: r.ativa === 1, atividades: r.atividades ? JSON.parse(r.atividades) : undefined });
 
 export async function listarTurmas(apenasAtivas = false) {
 	const r = await db()
-		.prepare(`SELECT * FROM turmas ${apenasAtivas ? 'WHERE ativa = 1' : ''} ORDER BY ativa DESC, nome`)
+		.prepare(
+			`SELECT turmas.*,
+				(SELECT COUNT(*) FROM atividade_turmas at WHERE at.turma_id = turmas.id) AS n_atividades,
+				(SELECT COUNT(*) FROM tentativas t WHERE t.turma_id = turmas.id) AS n_tentativas,
+				(SELECT json_group_array(titulo) FROM (SELECT a.titulo FROM atividade_turmas at JOIN atividades a ON a.id = at.atividade_id WHERE at.turma_id = turmas.id ORDER BY a.titulo LIMIT 5)) AS atividades
+			 FROM turmas ${apenasAtivas ? 'WHERE ativa = 1' : ''} ORDER BY ativa DESC, nome`
+		)
 		.all<TurmaBruta>();
 	return r.results.map(turma);
 }
@@ -41,6 +47,42 @@ export async function atualizarTurma(id: number, t: TurmaValida) {
 		.bind(t.nome, t.curso, t.periodo, t.ativa ? 1 : 0, id)
 		.run();
 	return r.meta.changes > 0;
+}
+
+export type ResultadoExclusaoTurma =
+	| { status: 'ok' }
+	| { status: 'inexistente' }
+	/** Há tentativas de alunos: excluir apagaria o histórico, então só inativar. */
+	| { status: 'com-tentativas'; tentativas: number }
+	/** Está em atividades e o professor não pediu para desvincular. */
+	| { status: 'em-atividades'; atividades: string[]; total: number }
+	/** Desvincular deixaria estas atividades sem nenhuma turma (os alunos não conseguiriam entrar). */
+	| { status: 'ficaria-sem-turma'; atividades: string[] };
+
+/**
+ * Exclui a turma só pelo caminho seguro: com tentativas de alunos nunca exclui (o histórico aponta para ela); em atividades,
+ * só com `desvincular` e se nenhuma atividade ficar sem turma. O DELETE final reconfere as tentativas, contra corrida.
+ */
+export async function excluirTurma(id: number, desvincular: boolean): Promise<ResultadoExclusaoTurma> {
+	const t = await db().prepare('SELECT id FROM turmas WHERE id = ?').bind(id).first();
+	if (!t) return { status: 'inexistente' };
+	const tent = (await db().prepare('SELECT COUNT(*) AS n FROM tentativas WHERE turma_id = ?').bind(id).first<{ n: number }>())!.n;
+	if (tent > 0) return { status: 'com-tentativas', tentativas: tent };
+	const uso = await db()
+		.prepare('SELECT a.id, a.titulo, (SELECT COUNT(*) FROM atividade_turmas o WHERE o.atividade_id = a.id) AS turmas FROM atividade_turmas at JOIN atividades a ON a.id = at.atividade_id WHERE at.turma_id = ? ORDER BY a.titulo')
+		.bind(id)
+		.all<{ id: number; titulo: string; turmas: number }>();
+	if (uso.results.length) {
+		if (!desvincular) return { status: 'em-atividades', atividades: uso.results.slice(0, 5).map((x) => x.titulo), total: uso.results.length };
+		const orfas = uso.results.filter((x) => x.turmas <= 1);
+		if (orfas.length) return { status: 'ficaria-sem-turma', atividades: orfas.slice(0, 5).map((x) => x.titulo) };
+	}
+	await db().batch([
+		db().prepare('DELETE FROM atividade_turmas WHERE turma_id = ? AND NOT EXISTS (SELECT 1 FROM tentativas WHERE turma_id = ?)').bind(id, id),
+		db().prepare('DELETE FROM turmas WHERE id = ? AND NOT EXISTS (SELECT 1 FROM tentativas WHERE turma_id = ?)').bind(id, id)
+	]);
+	const resta = await db().prepare('SELECT id FROM turmas WHERE id = ?').bind(id).first();
+	return resta ? { status: 'com-tentativas', tentativas: 1 } : { status: 'ok' };
 }
 
 export async function definirTurmaAtiva(id: number, ativa: boolean) {
@@ -76,11 +118,18 @@ export async function listarAtividades() {
 		.prepare(
 			`SELECT a.*,
 				(SELECT COUNT(*) FROM atividade_questoes q WHERE q.atividade_id = a.id) AS n_questoes,
-				(SELECT COUNT(*) FROM tentativas t WHERE t.atividade_id = a.id) AS n_tentativas
+				(SELECT COUNT(*) FROM tentativas t WHERE t.atividade_id = a.id) AS n_tentativas,
+				(SELECT json_group_array(json_object('id', tu.id, 'nome', tu.nome, 'ativa', tu.ativa)) FROM atividade_turmas at JOIN turmas tu ON tu.id = at.turma_id WHERE at.atividade_id = a.id) AS turmas
 			 FROM atividades a ORDER BY a.id DESC`
 		)
-		.all<AtividadeBruta & { n_questoes: number; n_tentativas: number }>();
-	return r.results.map((x) => ({ ...atividade(x), n_questoes: x.n_questoes, n_tentativas: x.n_tentativas, estado: estadoAtividade(atividade(x)) }));
+		.all<AtividadeBruta & { n_questoes: number; n_tentativas: number; turmas: string | null }>();
+	return r.results.map((x) => ({
+		...atividade(x),
+		n_questoes: x.n_questoes,
+		n_tentativas: x.n_tentativas,
+		turmas: (x.turmas ? (JSON.parse(x.turmas) as { id: number; nome: string; ativa: number }[]) : []).map((t) => ({ id: t.id, nome: t.nome, ativa: t.ativa === 1 })),
+		estado: estadoAtividade(atividade(x))
+	}));
 }
 
 export async function obterAtividade(id: number) {

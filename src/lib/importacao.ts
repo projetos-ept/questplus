@@ -195,7 +195,7 @@ export const OPCOES_PROMPT_PADRAO: OpcoesPrompt = {
 	tema: '[ESCREVA O TEMA OU COLE O CONTEÚDO BASE AQUI]',
 	quantidade: 10,
 	nivel: 'médio',
-	formatos: { mc4: true, mc5: false, vf: true, aberta: false },
+	formatos: { mc4: true, mc5: false, vf: true, aberta: true },
 	etiquetas: '',
 	disciplina: '',
 	comApoio: false

@@ -1,8 +1,17 @@
 <script lang="ts">
 	import { DISCIPLINAS } from '#lib/disciplinas';
-	import { OPCOES_PROMPT_PADRAO, montarPromptIA, type OpcoesPrompt } from '#lib/importacao';
+	import { montarPromptIA, type OpcoesPrompt } from '#lib/importacao';
+	import { carregarOpcoesPrompt, salvarOpcoesPrompt } from '#lib/promptOpcoes';
+	import { onMount } from 'svelte';
 
-	let opcoes = $state<OpcoesPrompt>({ ...OPCOES_PROMPT_PADRAO, formatos: { ...OPCOES_PROMPT_PADRAO.formatos } });
+	let opcoes = $state<OpcoesPrompt>(carregarOpcoesPrompt());
+	let lembrar = false;
+	// o botão "Copiar instrução para IA" da lista usa as mesmas opções; guardá-las evita copiar uma instrução diferente da que se vê aqui
+	onMount(() => (lembrar = true));
+	$effect(() => {
+		const atual = $state.snapshot(opcoes) as OpcoesPrompt;
+		if (lembrar) salvarOpcoesPrompt(atual);
+	});
 	let copiado = $state(false);
 	let campo: HTMLTextAreaElement | undefined = $state();
 	const prompt = $derived(montarPromptIA(opcoes));

@@ -6,7 +6,8 @@
 	import ItemQuestao from '#lib/components/ItemQuestao.svelte';
 	import { DISCIPLINAS } from '#lib/disciplinas';
 	import { paramsDeFiltro, type FiltroQuestoes } from '#lib/filtros';
-	import { OPCOES_PROMPT_PADRAO, montarPromptIA } from '#lib/importacao';
+	import { montarPromptIA } from '#lib/importacao';
+	import { carregarOpcoesPrompt } from '#lib/promptOpcoes';
 
 	let { data } = $props();
 	let erro = $state('');
@@ -25,7 +26,7 @@
 	let promptCopiado = $state(false);
 	async function copiarPrompt() {
 		try {
-			await navigator.clipboard.writeText(montarPromptIA(OPCOES_PROMPT_PADRAO));
+			await navigator.clipboard.writeText(montarPromptIA(carregarOpcoesPrompt()));
 			promptCopiado = true;
 			setTimeout(() => (promptCopiado = false), 2500);
 		} catch {
@@ -131,7 +132,7 @@
 <div class="topo">
 	<h1>Questões <span class="suave">({data.total})</span></h1>
 	<div class="topo-acoes">
-		<button type="button" class="sec" onclick={copiarPrompt} title="Copia a instrução que ensina uma IA a gerar o JSON de importação">{promptCopiado ? 'Instrução copiada ✔' : 'Copiar instrução para IA'}</button>
+		<button type="button" class="sec" onclick={copiarPrompt} title="Copia a instrução para a IA gerar o JSON de importação, com as últimas opções usadas em Importar (disciplina, formatos, etiquetas)">{promptCopiado ? 'Instrução copiada ✔' : 'Copiar instrução para IA'}</button>
 		<a class="botao sec-link" href="/admin/questoes/importar">Importar</a>
 		<a class="botao sec-link" href="/api/admin/questoes/exportar{data.consulta ? `?${data.consulta}` : ''}" download>Exportar JSON{data.consulta ? ' (filtro atual)' : ' (todas)'}</a>
 		<a class="botao" href="/admin/questoes/nova">Nova questão</a>
