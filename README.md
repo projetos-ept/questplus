@@ -5,15 +5,17 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 ## Estado
 
 - **Fase 1 (base)**: SvelteKit no Pages, D1, login do professor (JWT + PBKDF2). Em produção.
-- **Fase 2 (banco de questões)**: cadastro de MC4, MC5 e VF, textos de apoio em Markdown seguro, upload de imagem para o R2, filtros por formato, etiqueta, situação e busca. Código pronto e testado localmente; **depende das tabelas `suportes` e `questoes` e do bucket R2 `questplus-midia` no Cloudflare**, e do binding `MEDIA` (ver abaixo).
+- **Fase 2 (banco de questões)**: cadastro de MC4, MC5 e VF, textos de apoio em Markdown seguro, upload de imagem para o R2, filtros por formato, etiqueta, situação e busca. Tabelas `suportes` e `questoes` e bucket R2 `questplus-midia` criados no Cloudflare; binding `MEDIA` configurado em `wrangler.jsonc`.
 
-- **Fase 3 (atividades e modo Treino)**: turmas, atividades com código/link, prazo e situação, tela do aluno pelo celular, correção automática de MC e VF, gabarito e explicação logo após cada resposta, tentativa retomável ao recarregar. Código pronto e testado localmente; **depende das tabelas de `migrations/0003_atividades.sql`**.
+- **Fase 3 (atividades e modo Treino)**: turmas, atividades com código/link, prazo e situação, tela do aluno pelo celular, correção automática de MC e VF, gabarito e explicação logo após cada resposta, tentativa retomável ao recarregar. Tabelas de `migrations/0003_atividades.sql` criadas no Cloudflare.
 
 **Link da atividade (como no Google Forms):** cada atividade tem um código, sorteado por padrão (6 caracteres sem letras ambíguas) e personalizável (4 a 20 letras, números ou hífens, sem diferenciar maiúsculas; `admin` e `midia` são reservados). O link curto é `/CODIGO`, que redireciona para `/a/CODIGO`. Há botão de copiar na lista de atividades e logo após criar.
 
 **Regras que a Fase 3 já aplica (e a Fase 4 reaproveita):** o gabarito nunca vai ao aluno antes da hora; a tentativa guarda uma cópia das questões, então editar a questão depois não altera provas feitas; cada tentativa tem token próprio (cabeçalho `x-tentativa-token`); o prazo é validado no servidor (tolerância de 5 s) e a tentativa vencida é encerrada na próxima consulta. Colunas de tempo, limite de tentativas e feedback já existem em `atividades`, mas a tela só cria atividades do modo Treino.
 
 As demais fases seguem a tabela da documentação.
+
+> Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.
 
 **Tema:** a interface segue o tema claro ou escuro do sistema e tem um botão para trocar à mão (a escolha fica salva no navegador). As cores são variáveis CSS em `src/routes/+layout.svelte`; use sempre `var(--...)`, nunca cor fixa.
 
