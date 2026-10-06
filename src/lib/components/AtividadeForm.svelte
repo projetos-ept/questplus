@@ -157,7 +157,7 @@
 		[questoes[i], questoes[j]] = [questoes[j], questoes[i]];
 	}
 	const resumo = (t: string) => (t.length > 110 ? `${t.slice(0, 110)}…` : t);
-	const formato = (t: string) => (t === 'vf' ? 'VF' : 'MC');
+	const formato = (t: string) => (t === 'vf' ? 'VF' : t === 'aberta' ? 'Aberta' : 'MC');
 
 	async function salvar(e: SubmitEvent) {
 		e.preventDefault();

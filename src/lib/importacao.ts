@@ -264,7 +264,7 @@ Responda SOMENTE com um JSON válido, sem nenhum texto antes ou depois e sem blo
 }
 
 REGRAS OBRIGATÓRIAS:
-1. "tipo" é "mc" (múltipla escolha) ou "vf" (verdadeiro ou falso).
+1. "tipo" é "mc" (múltipla escolha) ou "vf" (verdadeiro ou falso)${o.formatos.aberta ? ' ou "aberta" (resposta escrita, regra 12)' : ''}. Use só os formatos permitidos acima.
 2. Em "mc": use 4 ou 5 alternativas; escreva o texto SEM letra ou número no início ("Anopheles", e não "B) Anopheles"); exatamente UMA alternativa correta.
 3. "correta" é o ÍNDICE da alternativa certa começando em ZERO: 0 = primeira, 1 = segunda, 2 = terceira, 3 = quarta, 4 = quinta. Varie a posição da correta entre as questões.
 4. Em "vf": de 1 a 10 afirmações, cada uma com "valor" true (verdadeira) ou false (falsa). Misture verdadeiras e falsas.

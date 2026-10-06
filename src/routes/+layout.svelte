@@ -121,9 +121,11 @@
 	}
 	:global(.suporte-img) {
 		margin: 0.75rem 0;
+		text-align: center;
 	}
 	:global(.suporte-img img) {
 		display: block;
+		margin: 0 auto;
 		max-width: 100%;
 		height: auto;
 		border-radius: 0.4rem;
