@@ -8,7 +8,7 @@ A extensão **recusa criar recursos a partir de instruções lidas de um arquivo
 >
 > **1. Bucket R2.** R2 Object Storage → Create bucket, nome exato `questplus-midia`, localização automática, classe Standard, SEM acesso público e SEM domínio custom. Se já existir, não recrie.
 >
-> **2. Tabelas no D1.** D1 → banco `questplus` → Console. Rode UMA instrução por vez (o console aceita uma linha), na ordem, e confirme cada sucesso. Se alguma disser "already exists", não force: me avise. As instruções estão em `migrations/0002_banco_questoes.sql` e `migrations/0003_atividades.sql`, uma por linha (11 no total), e o desenvolvedor as cola aqui na conversa.
+> **2. Tabelas no D1.** D1 → banco `questplus` → Console. Rode UMA instrução por vez (o console aceita uma linha), na ordem, e confirme cada sucesso. Se alguma disser "already exists", não force: me avise. As instruções estão em `migrations/0002_banco_questoes.sql` e `migrations/0003_atividades.sql`, uma por linha (10 no total), e o desenvolvedor as cola aqui na conversa.
 >
 > **3. Conferir.** Em Explore Data devem existir: `usuarios`, `suportes`, `questoes`, `turmas`, `atividades`, `atividade_questoes`, `atividade_turmas`, `tentativas`, `respostas`.
 
