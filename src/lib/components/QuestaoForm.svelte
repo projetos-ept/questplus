@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { DISCIPLINAS } from '#lib/disciplinas';
 	import { entradaDe, type Formulario } from '#lib/questao';
 	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
@@ -132,7 +133,13 @@
 
 	<label>Explicação (opcional) <textarea bind:value={f.explicacao} maxlength="4000"></textarea></label>
 	<label>Pontos <input type="number" step="0.5" min="0.5" max="100" bind:value={f.pontos} required /></label>
-	<label>Etiquetas (separadas por vírgula) <input bind:value={f.etiquetas} placeholder="parasitologia, ciclo de vida" /></label>
+	<label>Disciplina {#if !id}<span class="suave">(obrigatória: vira a primeira etiqueta)</span>{/if}
+		<select bind:value={f.disciplina} required={!id}>
+			<option value="" disabled={!id}>{id ? 'Sem disciplina (questão antiga)' : 'Escolha…'}</option>
+			{#each DISCIPLINAS as d}<option value={d.id}>{d.nome}</option>{/each}
+		</select>
+	</label>
+	<label>Outras etiquetas (assunto, separadas por vírgula) <input bind:value={f.etiquetas} placeholder="ciclo de vida, malária" /></label>
 	<label class="check"><input type="checkbox" bind:checked={f.ativa} /> Questão ativa (pode entrar em atividades novas)</label>
 
 	{#if erros.length}

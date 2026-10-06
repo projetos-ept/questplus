@@ -1,4 +1,5 @@
 import { chaveDuplicada, normalizarQuestao, type SuporteImportado } from '#lib/importacao';
+import { ehDisciplina } from '#lib/disciplinas';
 import { formatoDe, type Aberta, type Mc, type Vf } from '#lib/questao';
 import { db, midia } from './env';
 
@@ -11,6 +12,7 @@ export type ItemResultado = {
 	indice: number;
 	ok: boolean;
 	erros: string[];
+	avisos?: string[];
 	duplicada: boolean;
 	formato?: string;
 	enunciado?: string;
@@ -54,7 +56,8 @@ export async function processarBloco(
 				: q.tipo === 'mc'
 					? `${LETRAS[(q.config as Mc).correta]}) ${(q.config as Mc).alternativas[(q.config as Mc).correta]}`
 					: (q.config as Vf).afirmacoes.map((a) => (a.valor ? 'V' : 'F')).join(' ');
-		itens.push({ indice, ok: erros.length === 0, erros, duplicada, formato: formatoDe(q.tipo, q.config), enunciado: q.enunciado, gabarito });
+		const avisos = q.etiquetas[0] && ehDisciplina(q.etiquetas[0]) ? [] : [q.etiquetas[0] ? `A primeira etiqueta ("${q.etiquetas[0]}") não é uma disciplina da lista.` : 'Sem etiquetas: falta a disciplina (1ª etiqueta).'];
+		itens.push({ indice, ok: erros.length === 0, erros, avisos, duplicada, formato: formatoDe(q.tipo, q.config), enunciado: q.enunciado, gabarito });
 
 		if (erros.length === 0 && !(duplicada && opcoes.pularDuplicadas)) {
 			linhas.push({

@@ -1,3 +1,4 @@
+import { DISCIPLINAS } from './disciplinas';
 import { validarQuestao, validarSuporte, type QuestaoValida, type Resultado, type Suporte } from './questao';
 
 export const FORMATO_ARQUIVO = 'questplus-questoes';
@@ -185,6 +186,8 @@ export type OpcoesPrompt = {
 	nivel: string;
 	formatos: { mc4: boolean; mc5: boolean; vf: boolean; aberta: boolean };
 	etiquetas: string;
+	/** Id da disciplina que todas as questões devem ter como primeira etiqueta ('' = a IA escolhe entre as da lista). */
+	disciplina: string;
 	comApoio: boolean;
 };
 
@@ -194,6 +197,7 @@ export const OPCOES_PROMPT_PADRAO: OpcoesPrompt = {
 	nivel: 'médio',
 	formatos: { mc4: true, mc5: false, vf: true, aberta: false },
 	etiquetas: '',
+	disciplina: '',
 	comApoio: false
 };
 
@@ -210,7 +214,7 @@ const ABERTA_REGRAS = `
       "oposicoes": [["aumenta", "reduz"]],
       "min_chars": 30,
       "pontos": 4,
-      "etiquetas": ["assunto"]
+      "etiquetas": ["hematologia", "assunto"]
     }
 13. Em "aberta": de 3 a 6 conceitos-chave que uma boa resposta precisa conter, cada um com até 10 sinônimos reais que o aluno poderia usar; "oposicoes" são pares de termos contrários que revelam erro conceitual se trocados (pode ser lista vazia); "min_chars" entre 20 e 80.`;
 
@@ -246,7 +250,7 @@ Responda SOMENTE com um JSON válido, sem nenhum texto antes ou depois e sem blo
       "correta": 1,
       "explicacao": "Por que a alternativa correta está certa.",
       "pontos": 1,
-      "etiquetas": ["assunto"],
+      "etiquetas": ["hematologia", "assunto"],
       "suporte": "s1"
     },
     {
@@ -258,7 +262,7 @@ Responda SOMENTE com um JSON válido, sem nenhum texto antes ou depois e sem blo
       ],
       "explicacao": "Comentário sobre o gabarito.",
       "pontos": 2,
-      "etiquetas": ["assunto"]
+      "etiquetas": ["hematologia", "assunto"]
     }
   ]
 }
@@ -270,7 +274,7 @@ REGRAS OBRIGATÓRIAS:
 4. Em "vf": de 1 a 10 afirmações, cada uma com "valor" true (verdadeira) ou false (falsa). Misture verdadeiras e falsas.
 5. "explicacao": de 1 a 3 frases explicando o gabarito.
 6. "pontos": número positivo (1 para MC; para VF, use a quantidade de afirmações).
-7. "etiquetas": até 5, em minúsculas, curtas.
+7. "etiquetas": de 2 a 5, em minúsculas, sem acento, curtas. A PRIMEIRA etiqueta é OBRIGATORIAMENTE a disciplina do curso técnico em Análises Clínicas, escrita exatamente como em uma destas opções: ${DISCIPLINAS.map((d) => d.id).join(", ")}${o.disciplina ? `. Nesta tarefa, a primeira etiqueta de TODAS as questões deve ser exatamente "${o.disciplina}"` : ". Escolha a que melhor combina com o conteúdo de cada questão"}. As demais etiquetas são o assunto específico.
 8. "suportes" e o campo "suporte" só se houver texto de apoio; caso contrário, deixe "suportes" como lista vazia e omita "suporte". Cada "ref" é única.
 9. Português do Brasil, linguagem técnica correta, sem ambiguidade, sem "todas as anteriores" e sem "nenhuma das anteriores".
 10. Nada de HTML. Markdown simples só dentro do texto de apoio.

@@ -1,3 +1,4 @@
+import { ehDisciplina } from './disciplinas';
 import { imagensDe, validarImagens, type ImagemSuporte } from './imagens';
 
 export type Mc = { alternativas: string[]; correta: number };
@@ -170,6 +171,8 @@ export type Formulario = {
 	pontos: number;
 	suporte_id: number | null;
 	etiquetas: string;
+	/** Primeira etiqueta: disciplina do curso (ver disciplinas.ts). Vazia em questões antigas. */
+	disciplina: string;
 	ativa: boolean;
 	// questão aberta
 	referencia: string;
@@ -189,6 +192,7 @@ export const formularioVazio = (): Formulario => ({
 	pontos: 1,
 	suporte_id: null,
 	etiquetas: '',
+	disciplina: '',
 	ativa: true,
 	referencia: '',
 	conceitos: [{ nome: '', sinonimos: '' }, { nome: '', sinonimos: '' }, { nome: '', sinonimos: '' }],
@@ -212,7 +216,9 @@ export function formularioDe(q: {
 	f.explicacao = q.explicacao ?? '';
 	f.pontos = q.pontos;
 	f.suporte_id = q.suporte_id;
-	f.etiquetas = q.etiquetas.join(', ');
+	const primeira = q.etiquetas[0];
+	f.disciplina = primeira && ehDisciplina(primeira) ? primeira : '';
+	f.etiquetas = (f.disciplina ? q.etiquetas.slice(1) : q.etiquetas).join(', ');
 	f.ativa = q.ativa;
 	if (q.tipo === 'mc') {
 		const c = q.config as Mc;
@@ -240,7 +246,7 @@ export function entradaDe(f: Formulario) {
 		explicacao: f.explicacao,
 		pontos: f.pontos,
 		suporte_id: f.suporte_id,
-		etiquetas: normalizarEtiquetas(f.etiquetas),
+		etiquetas: [...new Set([...(f.disciplina ? [f.disciplina] : []), ...normalizarEtiquetas(f.etiquetas)])],
 		ativa: f.ativa
 	};
 	if (f.formato === 'aberta') {

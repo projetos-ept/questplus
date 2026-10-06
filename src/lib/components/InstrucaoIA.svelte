@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { DISCIPLINAS } from '#lib/disciplinas';
 	import { OPCOES_PROMPT_PADRAO, montarPromptIA, type OpcoesPrompt } from '#lib/importacao';
 
 	let opcoes = $state<OpcoesPrompt>({ ...OPCOES_PROMPT_PADRAO, formatos: { ...OPCOES_PROMPT_PADRAO.formatos } });
@@ -27,7 +28,13 @@
 				<option>fácil</option><option>médio</option><option>difícil</option><option>misto (fácil a difícil)</option>
 			</select>
 		</label>
-		<label>Etiquetas (vírgula) <input bind:value={opcoes.etiquetas} placeholder="parasitologia, malária" /></label>
+		<label>Disciplina (1ª etiqueta)
+			<select bind:value={opcoes.disciplina}>
+				<option value="">A IA escolhe pela lista</option>
+				{#each DISCIPLINAS as d}<option value={d.id}>{d.nome}</option>{/each}
+			</select>
+		</label>
+		<label>Outras etiquetas (vírgula) <input bind:value={opcoes.etiquetas} placeholder="ciclo de vida, malária" /></label>
 	</div>
 	<fieldset>
 		<legend>Formatos</legend>

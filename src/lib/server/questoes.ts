@@ -1,3 +1,4 @@
+import { filtroDeParams } from '#lib/filtros';
 import { imagensDe, type ImagemSuporte } from '#lib/imagens';
 import type { QuestaoValida, Suporte } from '#lib/questao';
 import { db, midia } from './env';
@@ -23,20 +24,62 @@ const mapear = (r: QuestaoBruta): QuestaoLinha => ({
 	ativa: r.ativa === 1
 });
 
-export type Filtros = { tipo?: string; etiqueta?: string; ativa?: boolean; q?: string; limite?: number; offset?: number };
+export type Filtros = {
+	tipo?: string;
+	/** Compatível com o filtro antigo de uma etiqueta. */
+	etiqueta?: string;
+	/** Primeira etiqueta da questão (a disciplina). */
+	disciplina?: string;
+	/** Todas as etiquetas listadas (E). */
+	etiquetas?: string[];
+	ativa?: boolean;
+	/** true: só com texto de apoio; false: só sem. */
+	apoio?: boolean;
+	q?: string;
+	ordem?: 'recentes' | 'antigas' | 'enunciado' | 'pontos';
+	limite?: number;
+	offset?: number;
+};
 
-function montarWhere(f: Filtros) {
+/** Lê os filtros da URL (o mesmo formato do painel) já no formato da consulta. */
+export function filtrosDeParams(p: URLSearchParams): Filtros {
+	const f = filtroDeParams(p);
+	return {
+		q: f.q || undefined,
+		tipo: f.tipo || undefined,
+		disciplina: f.disciplina || undefined,
+		etiquetas: f.etiquetas.length ? f.etiquetas : undefined,
+		ativa: f.ativa === '' ? undefined : f.ativa === '1',
+		apoio: f.apoio === '' ? undefined : f.apoio === '1',
+		ordem: f.ordem
+	};
+}
+
+const TEM_ETIQUETA = 'EXISTS (SELECT 1 FROM json_each(questoes.etiquetas) WHERE value = ?)';
+
+function montarWhere(f: Filtros, ignorar: ('tipo' | 'disciplina' | 'etiquetas' | 'apoio')[] = []) {
 	const onde: string[] = [];
 	const valores: (string | number)[] = [];
-	if (f.tipo) (onde.push('tipo = ?'), valores.push(f.tipo));
+	if (f.tipo && !ignorar.includes('tipo')) (onde.push('tipo = ?'), valores.push(f.tipo));
 	if (f.ativa !== undefined) (onde.push('ativa = ?'), valores.push(f.ativa ? 1 : 0));
-	if (f.etiqueta) (onde.push('EXISTS (SELECT 1 FROM json_each(questoes.etiquetas) WHERE value = ?)'), valores.push(f.etiqueta));
+	if (f.disciplina && !ignorar.includes('disciplina')) (onde.push("json_extract(questoes.etiquetas, '$[0]') = ?"), valores.push(f.disciplina));
+	if (f.apoio !== undefined && !ignorar.includes('apoio')) onde.push(f.apoio ? 'suporte_id IS NOT NULL' : 'suporte_id IS NULL');
+	if (!ignorar.includes('etiquetas')) {
+		for (const e of [...(f.etiqueta ? [f.etiqueta] : []), ...(f.etiquetas ?? [])]) (onde.push(TEM_ETIQUETA), valores.push(e));
+	}
 	if (f.q) {
 		onde.push("enunciado LIKE ? ESCAPE '\\'");
 		valores.push(`%${f.q.replace(/[\\%_]/g, '\\$&')}%`);
 	}
 	return { clausula: onde.length ? `WHERE ${onde.join(' AND ')}` : '', valores };
 }
+
+const ORDEM_SQL: Record<NonNullable<Filtros['ordem']>, string> = {
+	recentes: 'id DESC',
+	antigas: 'id ASC',
+	enunciado: 'enunciado COLLATE NOCASE ASC, id DESC',
+	pontos: 'pontos DESC, id DESC'
+};
 
 export async function listarQuestoes(f: Filtros) {
 	const { clausula, valores } = montarWhere(f);
@@ -45,7 +88,7 @@ export async function listarQuestoes(f: Filtros) {
 
 	const [itens, total] = await db().batch([
 		db()
-			.prepare(`SELECT *, (SELECT COUNT(*) FROM atividade_questoes aq WHERE aq.questao_id = questoes.id) AS em_atividades FROM questoes ${clausula} ORDER BY id DESC LIMIT ? OFFSET ?`)
+			.prepare(`SELECT *, (SELECT COUNT(*) FROM atividade_questoes aq WHERE aq.questao_id = questoes.id) AS em_atividades FROM questoes ${clausula} ORDER BY ${ORDEM_SQL[f.ordem ?? 'recentes']} LIMIT ? OFFSET ?`)
 			.bind(...valores, limite, offset),
 		db()
 			.prepare(`SELECT COUNT(*) AS n FROM questoes ${clausula}`)
@@ -57,6 +100,90 @@ export async function listarQuestoes(f: Filtros) {
 		limite,
 		offset
 	};
+}
+
+/**
+ * Contagens para os filtros: cada grupo ignora o próprio filtro (para mostrar o que dá para escolher em vez dele)
+ * e respeita os outros. As etiquetas respeitam também as já escolhidas, então mostram o que combina com elas.
+ */
+export async function facetasQuestoes(f: Filtros) {
+	const d = montarWhere(f, ['disciplina']);
+	const t = montarWhere(f, ['tipo']);
+	const e = montarWhere(f, []);
+	const a = montarWhere(f, ['apoio']);
+	const [disc, tipos, tags, apoio] = await db().batch([
+		db().prepare(`SELECT json_extract(questoes.etiquetas, '$[0]') AS valor, COUNT(*) AS n FROM questoes ${d.clausula} GROUP BY valor HAVING valor IS NOT NULL ORDER BY n DESC, valor`).bind(...d.valores),
+		db().prepare(`SELECT tipo AS valor, COUNT(*) AS n FROM questoes ${t.clausula} GROUP BY tipo`).bind(...t.valores),
+		db().prepare(`SELECT j.value AS valor, COUNT(*) AS n FROM questoes, json_each(questoes.etiquetas) j ${e.clausula} GROUP BY j.value ORDER BY n DESC, valor LIMIT 60`).bind(...e.valores),
+		db().prepare(`SELECT suporte_id IS NOT NULL AS valor, COUNT(*) AS n FROM questoes ${a.clausula} GROUP BY valor`).bind(...a.valores)
+	]);
+	type L = { valor: string | number; n: number };
+	const selecionadas = new Set([...(f.etiqueta ? [f.etiqueta] : []), ...(f.etiquetas ?? [])]);
+	return {
+		disciplinas: (disc.results as L[]).map((x) => ({ valor: String(x.valor), n: x.n })),
+		tipos: Object.fromEntries((tipos.results as L[]).map((x) => [String(x.valor), x.n])) as Record<string, number>,
+		etiquetas: (tags.results as L[]).filter((x) => !selecionadas.has(String(x.valor))).map((x) => ({ valor: String(x.valor), n: x.n })),
+		apoio: { com: (apoio.results as L[]).find((x) => Number(x.valor) === 1)?.n ?? 0, sem: (apoio.results as L[]).find((x) => Number(x.valor) === 0)?.n ?? 0 }
+	};
+}
+
+/** Versão enxuta de tudo o que o filtro encontra (até 500), para sortear e para "adicionar todas". */
+export async function resumoQuestoes(f: Filtros, max = 500) {
+	const { clausula, valores } = montarWhere(f);
+	const r = await db()
+		.prepare(`SELECT id, tipo, substr(enunciado, 1, 200) AS enunciado, pontos, etiquetas FROM questoes ${clausula} ORDER BY ${ORDEM_SQL[f.ordem ?? 'recentes']} LIMIT ?`)
+		.bind(...valores, max)
+		.all<{ id: number; tipo: string; enunciado: string; pontos: number; etiquetas: string }>();
+	return r.results.map((x) => ({ ...x, etiquetas: JSON.parse(x.etiquetas) as string[] }));
+}
+
+export type AcaoLote = 'ativar' | 'inativar' | 'add-etiqueta' | 'remover-etiqueta' | 'definir-disciplina' | 'excluir';
+
+/**
+ * Ação em lote sobre as questões escolhidas (por ids ou por tudo o que o filtro encontra). Uma única instrução por ação,
+ * então cabe nos limites do D1. `afetadas` conta as que mudaram; excluir ignora as que estão em atividades.
+ */
+export async function acaoEmLote(alvo: { ids: number[] } | { filtro: Filtros }, acao: AcaoLote, valor?: string) {
+	let ondeId: string;
+	let valoresId: (string | number)[];
+	if ('ids' in alvo) {
+		ondeId = 'id IN (SELECT value FROM json_each(?))';
+		valoresId = [JSON.stringify(alvo.ids)];
+	} else {
+		const w = montarWhere(alvo.filtro);
+		ondeId = `id IN (SELECT id FROM questoes ${w.clausula})`;
+		valoresId = w.valores;
+	}
+	const agora = "atualizado_em = datetime('now')";
+	let sql: string;
+	switch (acao) {
+		case 'ativar':
+		case 'inativar':
+			sql = `UPDATE questoes SET ativa = ${acao === 'ativar' ? 1 : 0}, ${agora} WHERE ${ondeId} AND ativa = ${acao === 'ativar' ? 0 : 1}`;
+			break;
+		case 'add-etiqueta':
+			sql = `UPDATE questoes SET etiquetas = json_insert(etiquetas, '$[#]', ?), ${agora} WHERE ${ondeId} AND json_array_length(etiquetas) < 10 AND NOT EXISTS (SELECT 1 FROM json_each(questoes.etiquetas) WHERE value = ?)`;
+			break;
+		case 'remover-etiqueta':
+			sql = `UPDATE questoes SET etiquetas = (SELECT json_group_array(value) FROM json_each(questoes.etiquetas) WHERE value <> ?), ${agora} WHERE ${ondeId} AND EXISTS (SELECT 1 FROM json_each(questoes.etiquetas) WHERE value = ?)`;
+			break;
+		case 'definir-disciplina':
+			// a disciplina vira a primeira etiqueta; se já existia em outra posição, sai de lá
+			sql = `UPDATE questoes SET etiquetas = (SELECT json_group_array(v) FROM (SELECT ? AS v, 0 AS o UNION ALL SELECT value, 1 + key FROM json_each(questoes.etiquetas) WHERE value <> ? ORDER BY o LIMIT 10)), ${agora} WHERE ${ondeId} AND json_extract(etiquetas, '$[0]') IS NOT ?`;
+			break;
+		case 'excluir':
+			sql = `DELETE FROM questoes WHERE ${ondeId} AND NOT EXISTS (SELECT 1 FROM atividade_questoes aq WHERE aq.questao_id = questoes.id)`;
+			break;
+	}
+	// ordem dos parâmetros: os do SET, os do WHERE (ids ou filtro) e, no fim, os do resto do WHERE
+	const params =
+		acao === 'add-etiqueta' || acao === 'remover-etiqueta'
+			? [valor!, ...valoresId, valor!]
+			: acao === 'definir-disciplina'
+				? [valor!, valor!, ...valoresId, valor!]
+				: valoresId;
+	const r = await db().prepare(sql).bind(...params).run();
+	return r.meta.changes;
 }
 
 /** Todas as questões do filtro (sem paginar), para exportar. */

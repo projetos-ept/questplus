@@ -5,6 +5,7 @@
 	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
 	import CopiarLink from './CopiarLink.svelte';
+	import SeletorQuestoes, { type Escolhida } from './SeletorQuestoes.svelte';
 
 	type QuestaoSel = { questao_id: number; enunciado: string; tipo: string; pontos: number | null; pontos_padrao: number };
 	type Inicial = {
@@ -49,107 +50,13 @@
 	let salvo = false;
 	protegerSaida(() => !salvo && estadoAtual() !== original);
 
-	// busca de questões para adicionar: filtros em tempo real, consulta no servidor, paginada (serve para bancos grandes)
-	type Achada = { id: number; enunciado: string; tipo: string; pontos: number; etiquetas: string[] };
-	const POR_PAGINA = 20;
 	const LIMITE_ATIVIDADE = 100;
-	let busca = $state('');
-	let fTipo = $state('');
-	let fEtiqueta = $state('');
-	let etiquetasBanco = $state<string[]>([]);
-	let achadas = $state<Achada[]>([]);
-	let total = $state(0);
-	let buscando = $state(false);
-	let erroBusca = $state('');
-	let temporizador: ReturnType<typeof setTimeout>;
-	let consulta: AbortController | undefined;
-
 	const selecionadas = $derived(new Set(questoes.map((q) => q.questao_id)));
 	const turmasVisiveis = $derived(turmasDisponiveis.filter((t) => t.ativa || turmasSel.includes(t.id)));
 	const totalPontos = $derived(questoes.reduce((s, q) => s + (q.pontos ?? q.pontos_padrao), 0));
-	const visiveis = $derived(achadas.filter((q) => !selecionadas.has(q.id)));
-	const filtrando = $derived(!!(busca.trim() || fTipo || fEtiqueta));
-
-	function urlBusca(offset: number, limite: number) {
-		const p = new URLSearchParams({ ativa: '1', limite: String(limite), offset: String(offset) });
-		if (busca.trim()) p.set('q', busca.trim());
-		if (fTipo) p.set('tipo', fTipo);
-		if (fEtiqueta) p.set('etiqueta', fEtiqueta);
-		return `/api/admin/questoes?${p}`;
-	}
-
-	/** Refaz a busca do zero; a consulta anterior ainda em andamento é cancelada, então só vale a mais recente. */
-	async function buscar() {
-		consulta?.abort();
-		consulta = new AbortController();
-		buscando = true;
-		erroBusca = '';
-		try {
-			const r = await fetch(urlBusca(0, POR_PAGINA), { signal: consulta.signal });
-			if (!r.ok) throw new Error();
-			const j = (await r.json()) as { itens: Achada[]; total: number };
-			achadas = j.itens;
-			total = j.total;
-			buscando = false;
-		} catch (e) {
-			if ((e as Error).name === 'AbortError') return;
-			erroBusca = 'Não foi possível buscar as questões.';
-			buscando = false;
-		}
-	}
-	async function maisResultados() {
-		buscando = true;
-		try {
-			const r = await fetch(urlBusca(achadas.length, POR_PAGINA));
-			const j = (await r.json()) as { itens: Achada[]; total: number };
-			achadas = [...achadas, ...j.itens];
-			total = j.total;
-		} catch {
-			erroBusca = 'Não foi possível carregar mais questões.';
-		}
-		buscando = false;
-	}
-	function agendar() {
-		clearTimeout(temporizador);
-		temporizador = setTimeout(buscar, 250);
-	}
-	function limparFiltros() {
-		busca = fTipo = fEtiqueta = '';
-		buscar();
-	}
-	let adicionando = $state(false);
-	/** Adiciona tudo o que o filtro atual encontra (até o limite de 100 por atividade), em páginas de 100. */
-	async function adicionarTodas() {
-		adicionando = true;
-		erroBusca = '';
-		try {
-			for (let offset = 0; questoes.length < LIMITE_ATIVIDADE; offset += 100) {
-				const r = await fetch(urlBusca(offset, 100));
-				if (!r.ok) throw new Error();
-				const j = (await r.json()) as { itens: Achada[]; total: number };
-				for (const q of j.itens) {
-					if (questoes.length >= LIMITE_ATIVIDADE) break;
-					if (!selecionadas.has(q.id)) adicionar(q);
-				}
-				if (offset + 100 >= j.total) break;
-			}
-		} catch {
-			erroBusca = 'Não foi possível adicionar todas as questões.';
-		}
-		adicionando = false;
-	}
-	$effect(() => {
-		untrack(() => {
-			buscar();
-			fetch('/api/admin/questoes/etiquetas')
-				.then((r) => r.json() as Promise<{ itens: string[] }>)
-				.then((j) => (etiquetasBanco = j.itens))
-				.catch(() => {});
-		});
-	});
-
-	function adicionar(q: (typeof achadas)[number]) {
-		questoes.push({ questao_id: q.id, enunciado: q.enunciado, tipo: q.tipo, pontos: null, pontos_padrao: q.pontos });
+	const vagas = $derived(Math.max(LIMITE_ATIVIDADE - questoes.length, 0));
+	function adicionarEscolhidas(itens: Escolhida[]) {
+		for (const q of itens) questoes.push({ questao_id: q.id, enunciado: q.enunciado, tipo: q.tipo, pontos: null, pontos_padrao: q.pontos });
 	}
 	function mover(i: number, d: -1 | 1) {
 		const j = i + d;
@@ -271,52 +178,7 @@
 			{/each}
 		</ol>
 
-		<div class="adicionar">
-			<strong>Adicionar questões</strong>
-			<div class="filtros">
-				<label>Busca <input type="search" bind:value={busca} oninput={agendar} placeholder="Trecho do enunciado" /></label>
-				<label>Formato
-					<select bind:value={fTipo} onchange={buscar}>
-						<option value="">Todos</option>
-						<option value="mc">Múltipla escolha</option>
-						<option value="vf">Verdadeiro ou falso</option>
-						<option value="aberta">Aberta</option>
-					</select>
-				</label>
-				<label>Etiqueta
-					<select bind:value={fEtiqueta} onchange={buscar}>
-						<option value="">Todas</option>
-						{#each etiquetasBanco as e}<option value={e}>{e}</option>{/each}
-					</select>
-				</label>
-			</div>
-			<p class="suave status" aria-live="polite">
-				{#if buscando}Buscando…{:else}{total} questão(ões) ativa(s) {filtrando ? 'com esses filtros' : 'no banco'}{#if visiveis.length < achadas.length} · {achadas.length - visiveis.length} já adicionada(s) nesta lista{/if}.{/if}
-				{#if filtrando}<button type="button" class="link" onclick={limparFiltros}>Limpar filtros</button>{/if}
-			</p>
-			{#if erroBusca}<p class="erro" role="alert">{erroBusca}</p>{/if}
-			{#if total > 0 && questoes.length < LIMITE_ATIVIDADE}
-				<button type="button" class="sec todas" onclick={adicionarTodas} disabled={adicionando || buscando}>
-					{adicionando ? 'Adicionando…' : `Adicionar todas as ${total} do filtro`}{total + questoes.length > LIMITE_ATIVIDADE ? ` (até o limite de ${LIMITE_ATIVIDADE})` : ''}
-				</button>
-			{/if}
-			<ul class="achadas" aria-busy={buscando}>
-				{#each visiveis as q (q.id)}
-					<li>
-						<span class="texto">
-							<span class="tag">{formato(q.tipo)}</span> {resumo(q.enunciado)}
-							{#each q.etiquetas as e}<span class="etiqueta">{e}</span>{/each}
-						</span>
-						<button type="button" class="sec" onclick={() => adicionar(q)}>Adicionar</button>
-					</li>
-				{:else}
-					{#if !buscando}<li class="suave">Nenhuma questão para adicionar com esses filtros.</li>{/if}
-				{/each}
-			</ul>
-			{#if achadas.length < total}
-				<button type="button" class="sec mais" onclick={maisResultados} disabled={buscando}>Carregar mais ({total - achadas.length} restantes)</button>
-			{/if}
-		</div>
+		<SeletorQuestoes {selecionadas} {vagas} onadicionar={adicionarEscolhidas} />
 	</fieldset>
 
 	{#if erros.length}<ul class="erro" role="alert">{#each erros as e}<li>{e}</li>{/each}</ul>{/if}
@@ -338,20 +200,15 @@
 	legend { padding: 0 0.4rem; font-weight: 600; }
 	.check { display: flex; gap: 0.5rem; align-items: center; font-weight: 400; margin-top: 0.6rem; }
 	.duas { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0 1rem; }
-	.lista, .achadas { padding: 0; margin: 0.5rem 0 0; list-style: none; }
-	.lista li, .achadas li { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--borda); }
+	.lista { padding: 0; margin: 0.5rem 0 0; list-style: none; }
+	.lista li { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; padding: 0.5rem 0; border-bottom: 1px solid var(--borda); }
 	.texto { flex: 1 1 18rem; overflow-wrap: anywhere; }
 	.tag { display: inline-block; padding: 0 0.4rem; font-size: 0.75rem; font-weight: 700; border: 1px solid var(--borda); border-radius: 0.3rem; }
 	.pts { display: flex; gap: 0.4rem; align-items: center; margin: 0; font-weight: 400; }
 	.pts input { width: 5rem; margin: 0; }
 	.mov { display: flex; gap: 0.4rem; }
-	.mov button, .achadas button { margin: 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; }
+	.mov button { margin: 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; }
 	.acoes { display: flex; gap: 1rem; align-items: center; }
-	.adicionar { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--borda); }
-	.filtros { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0 0.75rem; }
-	.status { margin: 0.5rem 0; }
-	.link { display: inline; margin: 0 0 0 0.5rem; padding: 0; color: var(--destaque); font-weight: 400; text-decoration: underline; background: none; border: 0; }
-	.todas, .mais { margin: 0.25rem 0 0.5rem; padding: 0.4rem 0.8rem; font-size: 0.9rem; }
 	.tent { margin-top: 1rem; }
 	.rotulo { display: block; font-weight: 600; }
 	.num { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }

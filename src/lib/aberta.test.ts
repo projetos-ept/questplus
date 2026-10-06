@@ -169,3 +169,32 @@ describe('questão aberta: cadastro, importação e resposta', () => {
 		expect(montarPromptIA(OPCOES_PROMPT_PADRAO)).not.toContain('ou "aberta"');
 	});
 });
+
+describe('prompt: disciplina obrigatória como primeira etiqueta', () => {
+	it('lista as disciplinas e exige a primeira etiqueta', () => {
+		const p = montarPromptIA(OPCOES_PROMPT_PADRAO);
+		expect(p).toContain('PRIMEIRA etiqueta é OBRIGATORIAMENTE a disciplina do curso técnico em Análises Clínicas');
+		for (const d of ['hematologia', 'biosseguranca', 'parasitologia', 'uroanalise']) expect(p).toContain(d);
+		expect(p).toContain('Escolha a que melhor combina');
+		expect(p).toContain('"etiquetas": ["hematologia", "assunto"]');
+	});
+	it('com disciplina escolhida, fixa a mesma em todas as questões', () => {
+		const p = montarPromptIA({ ...OPCOES_PROMPT_PADRAO, disciplina: 'microbiologia' });
+		expect(p).toContain('a primeira etiqueta de TODAS as questões deve ser exatamente "microbiologia"');
+		expect(p).not.toContain('Escolha a que melhor combina');
+	});
+});
+
+describe('formulário: disciplina vira a primeira etiqueta', () => {
+	it('entradaDe põe a disciplina na frente e formularioDe separa de volta', async () => {
+		const { entradaDe, formularioDe, formularioVazio } = await import('./questao');
+		const f = { ...formularioVazio(), enunciado: 'x', disciplina: 'hematologia', etiquetas: 'Coleta, hematologia, tubos' };
+		expect(entradaDe(f).etiquetas).toEqual(['hematologia', 'coleta', 'tubos']);
+		const volta = formularioDe({ tipo: 'mc', enunciado: 'x', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 0 }, explicacao: null, pontos: 1, suporte_id: null, etiquetas: ['hematologia', 'coleta'], ativa: true });
+		expect(volta.disciplina).toBe('hematologia');
+		expect(volta.etiquetas).toBe('coleta');
+		const antiga = formularioDe({ tipo: 'mc', enunciado: 'x', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 0 }, explicacao: null, pontos: 1, suporte_id: null, etiquetas: ['coleta', 'tubos'], ativa: true });
+		expect(antiga.disciplina).toBe('');
+		expect(antiga.etiquetas).toBe('coleta, tubos');
+	});
+});

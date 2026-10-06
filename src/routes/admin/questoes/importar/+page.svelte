@@ -2,7 +2,7 @@
 	import InstrucaoIA from '#lib/components/InstrucaoIA.svelte';
 	import { TAMANHO_BLOCO, lerArquivo, type SuporteImportado } from '#lib/importacao';
 
-	type Item = { indice: number; ok: boolean; erros: string[]; duplicada: boolean; formato?: string; enunciado?: string; gabarito?: string };
+	type Item = { indice: number; ok: boolean; erros: string[]; avisos?: string[]; duplicada: boolean; formato?: string; enunciado?: string; gabarito?: string };
 
 	let texto = $state('');
 	let nomeArquivo = $state('');
@@ -182,6 +182,7 @@
 							{#if !i.ok}<span class="erro">✘ {i.erros.join(' ')}</span>
 							{:else if i.duplicada}<span>↷ Já existe{pularDuplicadas ? ' (será pulada)' : ' (será duplicada)'}</span>
 							{:else}<span class="boa">✔ Válida</span>{/if}
+							{#if i.ok && i.avisos?.length}<div class="aviso-disc">⚠ {i.avisos.join(' ')}</div>{/if}
 						</td>
 					</tr>
 				{/each}
@@ -191,6 +192,7 @@
 {/if}
 
 <style>
+	.aviso-disc { margin-top: 0.25rem; font-size: 0.85rem; color: var(--erro); }
 	h2 { margin: 1.75rem 0 0.5rem; font-size: 1.15rem; }
 	.mono { font-family: ui-monospace, monospace; font-size: 0.85rem; }
 	.linha { display: flex; flex-wrap: wrap; gap: 0.75rem 1rem; align-items: center; }
