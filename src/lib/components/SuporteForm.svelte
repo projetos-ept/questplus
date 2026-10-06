@@ -3,6 +3,7 @@
 	import { reduzir } from '#lib/imagem';
 	import { MAX_IMAGENS, ROTULO_TAMANHO, imagensDe, proximoNumero, slugDe, type ImagemSuporte, type Tamanho } from '#lib/imagens';
 	import { renderSuporte } from '#lib/suporte';
+	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
 	import ConfirmarModal from './ConfirmarModal.svelte';
 
@@ -19,6 +20,10 @@
 	let area: HTMLTextAreaElement | undefined = $state();
 	let modal: ConfirmarModal;
 	let ciente = $state(false);
+	const estadoAtual = () => JSON.stringify([titulo, texto, $state.snapshot(imagens)]);
+	const original = untrack(estadoAtual);
+	let salvo = false;
+	protegerSaida(() => !salvo && estadoAtual() !== original);
 
 	const previa = $derived(renderSuporte(texto, imagens));
 	const cheio = $derived(imagens.length >= MAX_IMAGENS);
@@ -100,7 +105,10 @@
 			});
 			const corpo = (await r.json().catch(() => ({}))) as { erros?: string[] };
 			if (!r.ok) erros = corpo.erros ?? ['Não foi possível salvar.'];
-			else await goto('/admin/suportes');
+			else {
+				salvo = true;
+				await goto('/admin/suportes');
+			}
 		} catch {
 			erros = ['Falha de conexão. Tente de novo.'];
 		} finally {
@@ -114,7 +122,10 @@
 	}
 	async function excluir(): Promise<string | void> {
 		const r = await fetch(`/api/admin/suportes/${id}${emUso > 0 ? '?desvincular=1' : ''}`, { method: 'DELETE' });
-		if (r.ok) return void (await goto('/admin/suportes'));
+		if (r.ok) {
+			salvo = true;
+			return void (await goto('/admin/suportes'));
+		}
 		return ((await r.json().catch(() => ({}))) as { erros?: string[] }).erros?.[0] ?? 'Não foi possível excluir.';
 	}
 </script>

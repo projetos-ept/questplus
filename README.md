@@ -23,6 +23,10 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 
 - **Textos de apoio com até 10 imagens**: cada imagem tem um código fixo (`[img1]`…`[img10]`); escrever o código no texto posiciona a imagem ali, e as não citadas aparecem no final. Por imagem: legenda, tamanho (pequena 240 px, média 420 px, grande 640 px ou largura personalizada de 50 a 1600 px) e remover. Entram por arquivo ou por **link**: o servidor baixa e guarda no R2 (recusa SVG, páginas, mais de 2 MB, endereços internos e IPs; segue no máximo 3 redirecionamentos conferindo cada um; 10 s de limite). Quando não consegue, diz o motivo e o envio por arquivo continua. O texto de apoio pode ser **excluído** mesmo em uso (as questões ficam sem apoio), com confirmação reforçada. O arquivo do R2 só é apagado se nenhum outro apoio nem prova já feita o usa. Exige `migrations/0005_suportes_imagens.sql` no banco antes de publicar.
 
+- **Relatórios por atividade** (`/admin/atividades/[id]/relatorio`): resumo (alunos, média, mediana, maior e menor, distribuição por faixa), aproveitamento por questão e tabela de alunos com a **maior nota** de cada um (e os pontos por questão). Filtro por turma, **Imprimir** (folha A4 clara, mesmo com o tema escuro ligado) e exportar em **JSON** (tentativas completas, com a cópia das questões como o aluno viu, o gabarito e as respostas) e **CSV** (UTF-8 com BOM, separador `;`, vírgula decimal; textos que começam com `=`, `+`, `-` ou `@` são neutralizados contra fórmulas de planilha). Só o professor acessa.
+- **Relatório individual** (`/admin/tentativas/[id]/relatorio`): é o "retorno detalhado" da Prova: cada questão com a resposta do aluno, o gabarito e a explicação, com a opção de imprimir com ou sem gabarito e com ou sem textos de apoio. **Todos os alunos** em um documento (`/admin/atividades/[id]/relatorios`, uma folha por aluno): o navegador busca um aluno de cada vez, para o servidor não montar um documento enorme (limite de CPU do plano gratuito).
+- **Usabilidade:** painel inicial com números e passo a passo; ver o gabarito e **duplicar** questão na lista; aviso antes de sair de um formulário com alterações não salvas; na Prova, aviso ao fechar a aba e aviso de tempo ("faltam 5 minutos", "falta 1 minuto"); sessão expirada volta ao login com explicação; página de erro em português.
+
 As demais fases seguem a tabela da documentação.
 
 > Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.
@@ -48,6 +52,14 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 - `$lib` foi removido: use `#lib/...` (mapeado em `package.json` → `imports`).
 - Imports de componentes usam `#lib/components/...`; o resto de `#lib/...` aponta para arquivos `.ts`.
 - Não existe mais `event.platform`. Bindings e segredos vêm de `import { env } from 'cloudflare:workers'`, encapsulado em `src/lib/server/env.ts`.
+
+## Ordem para publicar as Fases 4 a 6
+
+O código novo grava e lê colunas que ainda não existem no banco de produção, então **o SQL vem antes do deploy**:
+
+1. No D1 `questplus` (Console, uma instrução por vez): as 2 de `migrations/0004_modo_prova.sql` e as 2 de `migrations/0005_suportes_imagens.sql` (texto pronto em `docs/roteiro-extensao-fase2-3.md`).
+2. Publicar (commit **sem** a expressão de pular CI na mensagem) e esperar o deploy ficar verde.
+3. Rodar o teste completo com a extensão (`docs/prompt-extensao-teste-completo.md`).
 
 ## Implantação (etapas de dashboard)
 

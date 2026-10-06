@@ -1,0 +1,54 @@
+/* Folha de impressão (A4). Na impressão tudo vira claro, mesmo que o tema escuro esteja ligado. */
+@page {
+	size: A4;
+	margin: 14mm;
+}
+@media print {
+	:root,
+	:root[data-tema='escuro'],
+	:root[data-tema='claro'] {
+		--fundo: #fff !important;
+		--superficie: #fff !important;
+		--texto: #000 !important;
+		--suave: #444 !important;
+		--borda: #888 !important;
+		--destaque: #000 !important;
+		--sobre-destaque: #fff !important;
+		--erro: #000 !important;
+		--ok: #000 !important;
+		color-scheme: light;
+	}
+	body {
+		background: #fff;
+		font-size: 11pt;
+	}
+	.nao-imprimir,
+	header.nao-imprimir {
+		display: none !important;
+	}
+	.conteudo {
+		max-width: none !important;
+		padding: 0 !important;
+	}
+	a {
+		color: inherit;
+		text-decoration: none;
+	}
+	.cartao,
+	figure,
+	tr,
+	.nao-quebrar {
+		break-inside: avoid;
+	}
+	.nova-pagina {
+		break-before: page;
+	}
+	thead {
+		display: table-header-group;
+	}
+	h1,
+	h2,
+	h3 {
+		break-after: avoid;
+	}
+}

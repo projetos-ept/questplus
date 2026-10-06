@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { PADROES_DO_MODO, gerarCodigo, type Modo, type Navegacao } from '#lib/atividade';
 	import { deInputLocal, paraInputLocal } from '#lib/data';
+	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
 	import CopiarLink from './CopiarLink.svelte';
 
@@ -42,6 +43,11 @@
 	let questoes = $state<QuestaoSel[]>(i0.questoes.map((q) => ({ ...q })));
 	let erros = $state<string[]>([]);
 	let salvando = $state(false);
+	const estadoAtual = () =>
+		JSON.stringify([titulo, codigo, ativa, embaralhar, modo, tempoMin, ilimitadas, tentativas, navegacao, mostraNota, abre, fecha, turmasSel, questoes.map((q) => [q.questao_id, q.pontos])]);
+	const original = untrack(estadoAtual);
+	let salvo = false;
+	protegerSaida(() => !salvo && estadoAtual() !== original);
 
 	// busca de questões para adicionar: filtros em tempo real, consulta no servidor, paginada (serve para bancos grandes)
 	type Achada = { id: number; enunciado: string; tipo: string; pontos: number; etiquetas: string[] };
@@ -171,8 +177,11 @@
 			});
 			const corpo = (await r.json().catch(() => ({}))) as { id?: number; erros?: string[] };
 			if (!r.ok) erros = corpo.erros ?? ['Não foi possível salvar.'];
-			else if (id) await goto('/admin/atividades');
-			else await goto(`/admin/atividades/${corpo.id}?criada=1`);
+			else {
+				salvo = true;
+				if (id) await goto('/admin/atividades');
+				else await goto(`/admin/atividades/${corpo.id}?criada=1`);
+			}
 		} catch {
 			erros = ['Falha de conexão. Tente de novo.'];
 		} finally {

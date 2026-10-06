@@ -214,10 +214,15 @@
 		const v = rascunho[q.id];
 		return q.tipo === 'mc' ? v !== null && v !== undefined : Array.isArray(v) && v.some((x) => x !== null);
 	});
+	/** Aviso de tempo na Prova: aparece uma vez em cada limite (5 min e 1 min), para quem não está olhando o relógio. */
+	const avisoTempo = $derived(restante === null || restante <= 0 ? '' : restante <= 60_000 ? 'Falta menos de 1 minuto.' : restante <= 300_000 ? 'Faltam menos de 5 minutos.' : '');
 	const relogioTexto = $derived(restante === null ? '' : `${String(Math.floor(restante / 60000)).padStart(2, '0')}:${String(Math.floor(restante / 1000) % 60).padStart(2, '0')}`);
 	const rotulo = (f: Fb) => (f.acertou === 'sim' ? '✔ Correta' : f.acertou === 'parcial' ? '◐ Parcialmente correta' : '✘ Incorreta');
 	const pts = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
 </script>
+
+<!-- na Prova, fechar ou recarregar a aba no meio faz o aluno perder tempo: o navegador pergunta antes -->
+<svelte:window onbeforeunload={(e) => { if (fase === 'respondendo' && estado?.atividade.modo === 'prova') e.preventDefault(); }} />
 
 {#if fase === 'carregando'}
 	<p class="suave" aria-busy="true">Carregando…</p>
@@ -265,6 +270,7 @@
 		<span>Questão {atual + 1} de {estado.questoes.length}</span>
 		{#if restante !== null}<span class="relogio" aria-label="Tempo restante" role="timer">⏱ {relogioTexto}</span>{/if}
 	</header>
+	{#if avisoTempo}<p class="aviso-tempo" role="status">⏱ {avisoTempo}</p>{/if}
 	<div class="progresso" role="progressbar" aria-label="Progresso da atividade" aria-valuemin="1" aria-valuemax={estado.questoes.length} aria-valuenow={atual + 1} aria-valuetext="Questão {atual + 1} de {estado.questoes.length}">
 		<div class="preenchido" style="width: {((atual + 1) / estado.questoes.length) * 100}%"></div>
 	</div>
@@ -419,6 +425,7 @@
 	.relogio { font-variant-numeric: tabular-nums; }
 	.progresso { height: 0.6rem; margin-top: 0.5rem; overflow: hidden; background: var(--borda); border-radius: 1rem; }
 	.preenchido { height: 100%; background: var(--destaque); border-radius: 1rem; transition: width 0.25s; }
+	.aviso-tempo { margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; font-weight: 700; border: 2px solid var(--erro); border-radius: 0.4rem; }
 	.respondidas { margin: 0.35rem 0 0; font-size: 0.85rem; }
 	.obrigado { font-size: 1.1rem; }
 	.incentivo { margin: 1rem 0; border-color: var(--destaque); }

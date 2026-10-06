@@ -1,4 +1,5 @@
 <script lang="ts">
+	import './impressao.css';
 	let { children } = $props();
 </script>
 

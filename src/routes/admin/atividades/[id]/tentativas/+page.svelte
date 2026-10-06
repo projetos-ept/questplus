@@ -47,6 +47,7 @@
 
 <p><a href="/admin/atividades/{data.atividade.id}">← {data.atividade.titulo}</a></p>
 <h1>Tentativas <span class="suave">({data.tentativas.length})</span></h1>
+<p><a href="/admin/atividades/{data.atividade.id}/relatorio">Ver relatório da atividade (notas, exportar, imprimir)</a></p>
 <p class="suave">
 	{data.atividade.modo === 'prova' ? 'Prova' : 'Treino'} ·
 	{data.atividade.tempo_total ? `${Math.round(data.atividade.tempo_total / 60)} min` : 'sem limite de tempo'} ·
@@ -69,6 +70,7 @@
 						<td>{t.status === 'finalizada' && !t.anulada ? `${t.nota ?? 0} de ${t.pontos_max ?? 0}` : '—'}{#if ehMelhor(t)} <span class="melhor">★ maior nota</span>{/if}</td>
 						<td class="botoes">
 							{#if emAndamento(t) && t.prazo_em}<button class="sec" onclick={() => acrescentar(t)}>+ tempo</button>{/if}
+							<a class="rel" href="/admin/tentativas/{t.id}/relatorio">Relatório</a>
 							{#if !t.anulada}<button class="sec" onclick={() => anular(t)}>Anular</button>{/if}
 						</td>
 					</tr>
@@ -84,5 +86,6 @@
 	tr.anulada td { opacity: 0.55; text-decoration: line-through; }
 	tr.anulada td:nth-child(5), tr.anulada td:last-child { text-decoration: none; }
 	.botoes { white-space: nowrap; }
+	.rel { display: inline-block; margin-right: 0.35rem; padding: 0.3rem 0.6rem; font-size: 0.85rem; font-weight: 600; color: var(--texto); text-decoration: none; border: 1px solid var(--borda); border-radius: 0.4rem; }
 	td button { margin: 0 0.25rem 0 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; }
 </style>

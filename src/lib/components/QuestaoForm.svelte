@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { entradaDe, type Formulario } from '#lib/questao';
+	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
 
 	let { id = null, inicial, suportes }: { id?: number | null; inicial: Formulario; suportes: { id: number; titulo: string }[] } = $props();
@@ -8,6 +9,9 @@
 	let f = $state<Formulario>(untrack(() => structuredClone($state.snapshot(inicial))));
 	let erros = $state<string[]>([]);
 	let salvando = $state(false);
+	const original = untrack(() => JSON.stringify($state.snapshot(f)));
+	let salvo = false;
+	protegerSaida(() => !salvo && JSON.stringify($state.snapshot(f)) !== original);
 
 	const nAlt = $derived(f.formato === 'mc5' ? 5 : 4);
 	const letras = ['A', 'B', 'C', 'D', 'E'];
@@ -31,6 +35,7 @@
 				erros = corpo.erros ?? ['Não foi possível salvar.'];
 				return;
 			}
+			salvo = true;
 			await goto('/admin/questoes');
 		} catch {
 			erros = ['Falha de conexão. Tente de novo.'];

@@ -3,7 +3,7 @@
 	import { untrack } from 'svelte';
 	import ConfirmarModal from '#lib/components/ConfirmarModal.svelte';
 	import { OPCOES_PROMPT_PADRAO, montarPromptIA } from '#lib/importacao';
-	import { formatoDe } from '#lib/questao';
+	import { formatoDe, type Mc, type Vf } from '#lib/questao';
 
 	let { data } = $props();
 	let erro = $state('');
@@ -31,7 +31,21 @@
 		fq = ftipo = fetiqueta = fativa = '';
 		aplicar();
 	}
+	const LETRAS = ['A', 'B', 'C', 'D', 'E'];
 	let promptCopiado = $state(false);
+
+	/** Cria uma cópia da questão (para fazer uma variação) e abre a cópia para edição. */
+	async function duplicar(q: (typeof data.itens)[number]) {
+		erro = '';
+		const r = await fetch('/api/admin/questoes', {
+			method: 'POST',
+			headers: { 'content-type': 'application/json' },
+			body: JSON.stringify({ tipo: q.tipo, enunciado: q.enunciado, config: q.config, explicacao: q.explicacao, pontos: q.pontos, suporte_id: q.suporte_id, etiquetas: q.etiquetas, ativa: q.ativa })
+		});
+		const j = (await r.json().catch(() => ({}))) as { id?: number; erros?: string[] };
+		if (r.ok) await goto(`/admin/questoes/${j.id}?duplicada=1`);
+		else erro = j.erros?.[0] ?? 'Não foi possível duplicar a questão.';
+	}
 	let alvo = $state<(typeof data.itens)[number] | null>(null);
 
 	async function copiarPrompt() {
@@ -147,12 +161,34 @@
 					<tr class:inativa={!q.ativa}>
 						<td>{formatoDe(q.tipo, q.config)}</td>
 						<td>
-							<a href="/admin/questoes/{q.id}">{resumo(q.enunciado)}</a>
+							<details>
+								<summary>{resumo(q.enunciado)}</summary>
+								<div class="detalhe">
+									<p class="enun">{q.enunciado}</p>
+									{#if q.tipo === 'mc'}
+										<ol class="alts">
+											{#each (q.config as Mc).alternativas as alt, k}
+												<li class:certa={(q.config as Mc).correta === k}>{LETRAS[k]}) {alt}{#if (q.config as Mc).correta === k}<strong class="gab">✔ gabarito</strong>{/if}</li>
+											{/each}
+										</ol>
+									{:else}
+										<ul class="alts">
+											{#each (q.config as Vf).afirmacoes as af}
+												<li>{af.texto} — <strong>{af.valor ? 'Verdadeira' : 'Falsa'}</strong></li>
+											{/each}
+										</ul>
+									{/if}
+									{#if q.explicacao}<p class="suave"><em>Explicação:</em> {q.explicacao}</p>{/if}
+									{#if q.suporte_id}<p class="suave">Tem texto de apoio.</p>{/if}
+								</div>
+							</details>
 							<div>{#each q.etiquetas as e}<span class="etiqueta">{e}</span>{/each}</div>
 						</td>
 						<td>{q.pontos}</td>
 						<td>{q.ativa ? 'Ativa' : 'Inativa'}</td>
 						<td class="botoes">
+							<a class="sec acao-link" href="/admin/questoes/{q.id}">Editar</a>
+							<button class="sec" onclick={() => duplicar(q)}>Duplicar</button>
 							<button class="sec" onclick={() => alternar(q.id, !q.ativa)}>{q.ativa ? 'Inativar' : 'Ativar'}</button>
 							<button class="sec excluir" onclick={() => pedirExclusao(q)}>Excluir</button>
 						</td>
@@ -213,6 +249,13 @@
 	.botoes {
 		white-space: nowrap;
 	}
+	summary { cursor: pointer; overflow-wrap: anywhere; }
+	.detalhe { margin-top: 0.5rem; padding: 0.6rem 0.8rem; background: var(--fundo); border: 1px solid var(--borda); border-radius: 0.4rem; }
+	.enun { margin: 0 0 0.4rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+	.alts { margin: 0.25rem 0; padding-left: 1.1rem; list-style: none; }
+	.alts li.certa { font-weight: 600; }
+	.gab { margin-left: 0.5rem; }
+	.acao-link { display: inline-block; margin: 0 0.25rem 0 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; font-weight: 600; color: var(--texto); text-decoration: none; border: 1px solid var(--borda); border-radius: 0.4rem; }
 	.excluir {
 		color: var(--erro);
 		border-color: var(--erro);

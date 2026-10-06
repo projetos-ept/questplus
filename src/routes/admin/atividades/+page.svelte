@@ -102,6 +102,7 @@
 						<td><a href="/admin/atividades/{a.id}/tentativas">{a.n_tentativas}</a></td>
 						<td class="acoes">
 							<button class="sec mini" onclick={() => alternar(a.id, !a.ativa)}>{a.ativa ? 'Inativar' : 'Ativar'}</button>
+							<a class="sec mini link-botao" href="/admin/atividades/{a.id}/relatorio">Relatório</a>
 							<button class="sec mini" onclick={() => clonar(a.id)}>Clonar</button>
 							<button class="sec mini excluir" onclick={() => pedirExclusao(a)}>Excluir</button>
 						</td>
@@ -123,6 +124,7 @@
 	.cod { white-space: nowrap; }
 	.mini { margin: 0 0.25rem 0 0; padding: 0.25rem 0.55rem; font-size: 0.8rem; }
 	.acoes { white-space: nowrap; }
+	.link-botao { display: inline-block; margin: 0 0.25rem 0 0; padding: 0.25rem 0.55rem; font-size: 0.8rem; font-weight: 600; color: var(--texto); text-decoration: none; border: 1px solid var(--borda); border-radius: 0.4rem; }
 	.excluir { color: var(--erro); border-color: var(--erro); }
 	.resumo { padding: 0.5rem 0.75rem; overflow-wrap: anywhere; background: var(--fundo); border-radius: 0.4rem; }
 	.aviso-tent { padding: 0.5rem 0.75rem; border: 1px solid var(--erro); border-radius: 0.4rem; }
