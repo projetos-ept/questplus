@@ -17,21 +17,7 @@
 		--ok: #1b7a3d;
 		color-scheme: light;
 	}
-	/* tema do sistema, quando o usuário não escolheu um */
-	@media (prefers-color-scheme: dark) {
-		:global(:root:not([data-tema='claro'])) {
-			--fundo: #14171a;
-			--superficie: #1d2126;
-			--texto: #e8eaed;
-			--suave: #9aa3ad;
-			--borda: #3a4048;
-			--destaque: #5b9bf0;
-			--sobre-destaque: #101214;
-			--erro: #f2877f;
-			--ok: #6fd391;
-			color-scheme: dark;
-		}
-	}
+	/* claro é o padrão, mesmo que o sistema use tema escuro; o escuro só vale por escolha no botão */
 	:global(:root[data-tema='escuro']) {
 		--fundo: #14171a;
 		--superficie: #1d2126;

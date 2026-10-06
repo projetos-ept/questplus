@@ -6,6 +6,6 @@
 <svelte:head><title>Nova atividade · QuestPlus</title></svelte:head>
 <h1>Nova atividade</h1>
 <AtividadeForm
-	inicial={{ titulo: '', codigo: '', ativa: true, embaralhar: false, abre_em: null, fecha_em: null, questoes: [], turmas: [] }}
+	inicial={{ titulo: '', codigo: '', ativa: true, embaralhar: false, abre_em: null, fecha_em: null, questoes: [], turmas: [], modo: 'treino', tempo_total: null, tentativas_max: null, navegacao: 'livre', mostra_nota: false }}
 	turmasDisponiveis={data.turmas}
 />

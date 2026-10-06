@@ -21,7 +21,7 @@
 		<h1>{data.titulo}</h1>
 		<p>O prazo desta atividade acabou em <strong>{formatarData(data.fecha_em)}</strong>.</p>
 	{:else}
-		<Tentativa codigo={data.codigo} titulo={data.titulo} turmas={data.turmas} fecha_em={data.fecha_em} />
+		<Tentativa codigo={data.codigo} titulo={data.titulo} turmas={data.turmas} fecha_em={data.fecha_em} regras={data.regras} />
 	{/if}
 </main>
 

@@ -1,4 +1,4 @@
-import { embaralhar, estadoAtividade, gerarCodigo, montarSnapshot, prazoDaTentativa, type AtividadeValida, type QuestaoSnapshot, type TurmaValida } from '#lib/atividade';
+import { embaralhar, estadoAtividade, expirou, feedbackDoModo, gerarCodigo, montarSnapshot, prazoDaTentativa, type AtividadeValida, type Modo, type QuestaoSnapshot, type TurmaValida } from '#lib/atividade';
 import { db } from './env';
 
 // Limites do D1 gratuito: 50 consultas por invocação e 100 parâmetros por consulta.
@@ -43,7 +43,7 @@ export type AtividadeLinha = {
 	titulo: string;
 	codigo: string;
 	ativa: boolean;
-	modo: string;
+	modo: Modo;
 	tempo_total: number | null;
 	tempo_por_questao: number | null;
 	tentativas_max: number | null;
@@ -51,13 +51,14 @@ export type AtividadeLinha = {
 	navegacao: 'livre' | 'sequencial';
 	embaralhar: boolean;
 	conta_nota: boolean;
+	mostra_nota: boolean;
 	abre_em: string | null;
 	fecha_em: string | null;
 	criado_em: string;
 	atualizado_em: string;
 };
-type AtividadeBruta = Omit<AtividadeLinha, 'ativa' | 'embaralhar' | 'conta_nota'> & { ativa: number; embaralhar: number; conta_nota: number };
-const atividade = (r: AtividadeBruta): AtividadeLinha => ({ ...r, ativa: r.ativa === 1, embaralhar: r.embaralhar === 1, conta_nota: r.conta_nota === 1 });
+type AtividadeBruta = Omit<AtividadeLinha, 'ativa' | 'embaralhar' | 'conta_nota' | 'mostra_nota'> & { ativa: number; embaralhar: number; conta_nota: number; mostra_nota: number };
+const atividade = (r: AtividadeBruta): AtividadeLinha => ({ ...r, ativa: r.ativa === 1, embaralhar: r.embaralhar === 1, conta_nota: r.conta_nota === 1, mostra_nota: r.mostra_nota === 1 });
 
 export async function listarAtividades() {
 	const r = await db()
@@ -141,9 +142,10 @@ export async function criarAtividade(v: AtividadeValida): Promise<{ id: number; 
 		try {
 			const r = await db()
 				.prepare(
-					`INSERT INTO atividades (titulo, codigo, ativa, embaralhar, abre_em, fecha_em) VALUES (?, ?, ?, ?, ?, ?) RETURNING id`
+					`INSERT INTO atividades (titulo, codigo, ativa, modo, tempo_total, tentativas_max, feedback, navegacao, embaralhar, conta_nota, mostra_nota, abre_em, fecha_em)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
 				)
-				.bind(v.titulo, codigo, v.ativa ? 1 : 0, v.embaralhar ? 1 : 0, v.abre_em, v.fecha_em)
+				.bind(v.titulo, codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em)
 				.first<{ id: number }>();
 			const id = r!.id;
 			await db().batch([db().prepare(sqlQuestoes).bind(id, vinculosQuestoes(v)), db().prepare(sqlTurmas).bind(id, JSON.stringify(v.turmas))]);
@@ -162,8 +164,11 @@ export async function atualizarAtividade(id: number, v: AtividadeValida): Promis
 	try {
 		await db().batch([
 			db()
-				.prepare("UPDATE atividades SET titulo = ?, codigo = ?, ativa = ?, embaralhar = ?, abre_em = ?, fecha_em = ?, atualizado_em = datetime('now') WHERE id = ?")
-				.bind(v.titulo, v.codigo ?? atual.codigo, v.ativa ? 1 : 0, v.embaralhar ? 1 : 0, v.abre_em, v.fecha_em, id),
+				.prepare(
+					`UPDATE atividades SET titulo = ?, codigo = ?, ativa = ?, modo = ?, tempo_total = ?, tentativas_max = ?, feedback = ?, navegacao = ?,
+					 embaralhar = ?, conta_nota = ?, mostra_nota = ?, abre_em = ?, fecha_em = ?, atualizado_em = datetime('now') WHERE id = ?`
+				)
+				.bind(v.titulo, v.codigo ?? atual.codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, id),
 			db().prepare('DELETE FROM atividade_questoes WHERE atividade_id = ?').bind(id),
 			db().prepare('DELETE FROM atividade_turmas WHERE atividade_id = ?').bind(id),
 			db().prepare(sqlQuestoes).bind(id, vinculosQuestoes(v)),
@@ -187,11 +192,11 @@ export async function definirAtividadeAtiva(id: number, ativa: boolean) {
 export async function listarTentativasDaAtividade(id: number) {
 	const r = await db()
 		.prepare(
-			`SELECT t.id, t.nome, t.email, t.status, t.nota, t.pontos_max, t.inicio_em, t.finalizada_em, tu.nome AS turma
+			`SELECT t.id, t.nome, t.email, t.status, t.nota, t.pontos_max, t.inicio_em, t.finalizada_em, t.anulada, t.prazo_em, t.acrescimo_segundos, tu.nome AS turma
 			 FROM tentativas t JOIN turmas tu ON tu.id = t.turma_id WHERE t.atividade_id = ? ORDER BY t.id DESC LIMIT 500`
 		)
 		.bind(id)
-		.all<{ id: number; nome: string; email: string; status: string; nota: number | null; pontos_max: number | null; inicio_em: string; finalizada_em: string | null; turma: string }>();
+		.all<{ id: number; nome: string; email: string; status: string; nota: number | null; pontos_max: number | null; inicio_em: string; finalizada_em: string | null; anulada: number; prazo_em: string | null; acrescimo_segundos: number; turma: string }>();
 	return r.results;
 }
 
@@ -211,6 +216,7 @@ export type TentativaLinha = {
 	finalizada_em: string | null;
 	nota: number | null;
 	pontos_max: number | null;
+	anulada: number;
 };
 
 const novoToken = () => {
@@ -219,7 +225,7 @@ const novoToken = () => {
 };
 
 export async function contarTentativasDoAluno(atividadeId: number, email: string) {
-	const r = await db().prepare('SELECT COUNT(*) AS n FROM tentativas WHERE atividade_id = ? AND email = ?').bind(atividadeId, email).first<{ n: number }>();
+	const r = await db().prepare('SELECT COUNT(*) AS n FROM tentativas WHERE atividade_id = ? AND email = ? AND anulada = 0').bind(atividadeId, email).first<{ n: number }>();
 	return r!.n;
 }
 
@@ -324,4 +330,25 @@ export async function finalizarTentativa(id: number) {
 		.bind(new Date().toISOString(), id)
 		.run();
 	return obterTentativa(id);
+}
+
+// ---------- ações do professor sobre uma tentativa ----------
+
+/** Encerra a tentativa e a tira da contagem de tentativas do aluno, para ele poder refazer (ex.: falha de conexão). */
+export async function anularTentativa(id: number) {
+	const r = await db()
+		.prepare("UPDATE tentativas SET anulada = 1, status = 'finalizada', finalizada_em = COALESCE(finalizada_em, ?) WHERE id = ?")
+		.bind(new Date().toISOString(), id)
+		.run();
+	return r.meta.changes > 0;
+}
+
+/** Soma minutos ao tempo de uma tentativa em andamento (ex.: atendimento educacional especializado). */
+export async function acrescentarTempo(id: number, minutos: number): Promise<'ok' | 'inexistente' | 'sem-limite' | 'encerrada'> {
+	const t = await obterTentativa(id);
+	if (!t) return 'inexistente';
+	if (t.prazo_em === null) return 'sem-limite';
+	if (t.status !== 'andamento' || t.anulada === 1 || expirou(t.prazo_em, t.acrescimo_segundos)) return 'encerrada';
+	await db().prepare('UPDATE tentativas SET acrescimo_segundos = acrescimo_segundos + ? WHERE id = ? AND status = ?').bind(minutos * 60, id, 'andamento').run();
+	return 'ok';
 }

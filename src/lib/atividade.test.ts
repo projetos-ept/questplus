@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { deInputLocal, paraInputLocal } from './data';
 import {
-	embaralhar, estadoAtividade, expirou, gerarCodigo, montarSnapshot, prazoDaTentativa, validarAtividade, validarInicio, validarTurma, versaoAluno
+	embaralhar, estadoAtividade, expirou, feedbackDoModo, gerarCodigo, montarSnapshot, prazoDaTentativa, validarAtividade, validarInicio, validarTurma, versaoAluno
 } from './atividade';
 
 const T = (s: string) => Date.parse(s);
@@ -75,12 +75,48 @@ describe('validarAtividade', () => {
 		expect(validarAtividade({ ...ok, codigo: 'a b' }).ok).toBe(false);
 		expect(validarAtividade({ ...ok, codigo: 'Admin' }).ok).toBe(false);
 		expect(validarAtividade({ ...ok, codigo: 'prova-parasito-2026' }).ok).toBe(true);
-		expect(validarAtividade({ ...ok, modo: 'prova' }).ok).toBe(false);
+		expect(validarAtividade({ ...ok, modo: 'ao_vivo' }).ok).toBe(false);
+		expect(validarAtividade({ ...ok, modo: 'xyz' }).ok).toBe(false);
 		expect(validarAtividade({ ...ok, abre_em: '2026-10-20T10:00:00Z', fecha_em: '2026-10-19T10:00:00Z' }).ok).toBe(false);
 		expect(validarAtividade({ ...ok, fecha_em: 'ontem' }).ok).toBe(false);
 	});
 	it('gera códigos legíveis', () => {
 		for (let i = 0; i < 100; i++) expect(gerarCodigo()).toMatch(/^[A-HJKMNP-Z2-9]{6}$/);
+	});
+});
+
+describe('modo Prova', () => {
+	const base = { titulo: 'P', questoes: [{ questao_id: 1 }], turmas: [1] };
+	it('Treino: sem limites por padrão', () => {
+		const r = validarAtividade(base);
+		expect(r.ok && r.valor).toMatchObject({ modo: 'treino', tempo_total: null, tentativas_max: null, navegacao: 'livre', mostra_nota: false });
+	});
+	it('Prova: uma tentativa por padrão, tempo em minutos vira segundos', () => {
+		const r = validarAtividade({ ...base, modo: 'prova', tempo_total_min: 45 });
+		expect(r.ok && r.valor).toMatchObject({ modo: 'prova', tempo_total: 2700, tentativas_max: 1 });
+	});
+	it('número de tentativas: informado, ilimitado (null) e inválido', () => {
+		const p = { ...base, modo: 'prova' };
+		expect(validarAtividade({ ...p, tentativas_max: 3 })).toMatchObject({ ok: true, valor: { tentativas_max: 3 } });
+		expect(validarAtividade({ ...p, tentativas_max: null })).toMatchObject({ ok: true, valor: { tentativas_max: null } });
+		expect(validarAtividade({ ...p, tentativas_max: '' })).toMatchObject({ ok: true, valor: { tentativas_max: null } });
+		expect(validarAtividade({ ...p, tentativas_max: 0 }).ok).toBe(false);
+		expect(validarAtividade({ ...p, tentativas_max: 2.5 }).ok).toBe(false);
+		expect(validarAtividade({ ...p, tentativas_max: 100 }).ok).toBe(false);
+	});
+	it('tempo inválido e navegação inválida', () => {
+		expect(validarAtividade({ ...base, tempo_total_min: 0 }).ok).toBe(false);
+		expect(validarAtividade({ ...base, tempo_total_min: 601 }).ok).toBe(false);
+		expect(validarAtividade({ ...base, tempo_total_min: 1.5 }).ok).toBe(false);
+		expect(validarAtividade({ ...base, navegacao: 'aleatoria' }).ok).toBe(false);
+	});
+	it('mostrar a nota só vale na Prova', () => {
+		expect(validarAtividade({ ...base, modo: 'prova', mostra_nota: true })).toMatchObject({ ok: true, valor: { mostra_nota: true } });
+		expect(validarAtividade({ ...base, modo: 'treino', mostra_nota: true })).toMatchObject({ ok: true, valor: { mostra_nota: false } });
+	});
+	it('o modo define o feedback: Treino mostra o gabarito, Prova nunca', () => {
+		expect(feedbackDoModo('treino')).toBe('imediato');
+		expect(feedbackDoModo('prova')).toBe('nenhum');
 	});
 });
 

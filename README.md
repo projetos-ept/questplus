@@ -13,11 +13,15 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 
 **Regras que a Fase 3 já aplica (e a Fase 4 reaproveita):** o gabarito nunca vai ao aluno antes da hora; a tentativa guarda uma cópia das questões, então editar a questão depois não altera provas feitas; cada tentativa tem token próprio (cabeçalho `x-tentativa-token`); o prazo é validado no servidor (tolerância de 5 s) e a tentativa vencida é encerrada na próxima consulta. Colunas de tempo, limite de tentativas e feedback já existem em `atividades`, mas a tela só cria atividades do modo Treino.
 
+- **Fase 4 (modo Prova)**: a atividade tem modo **Treino** ou **Prova**. Prova: tempo total (medido no servidor), número de tentativas (padrão 1, ajustável ou ilimitado), navegação livre ou sequencial, embaralhamento, **nunca mostra o gabarito** ao aluno e, opcionalmente, **mostra a nota** no final. As respostas da Prova são salvas sozinhas. O professor pode **anular** uma tentativa (o aluno pode refazer; não conta no limite) e **acrescentar tempo**; vale a **maior nota** do aluno (marcada no painel). Exige `migrations/0004_modo_prova.sql` no banco antes de publicar.
+- **Exclusão de questão** com modal de confirmação (recusa se a questão está em alguma atividade; provas já feitas guardam cópia e não são afetadas).
+- **Aluno:** barra de progresso "Questão X de N" e mensagens de encerramento por modo (Treino: incentivo a refazer até acertar tudo; Prova: tentativas restantes e "aguarde o retorno detalhado do professor").
+
 As demais fases seguem a tabela da documentação.
 
 > Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.
 
-**Tema:** a interface segue o tema claro ou escuro do sistema e tem um botão para trocar à mão (a escolha fica salva no navegador). As cores são variáveis CSS em `src/routes/+layout.svelte`; use sempre `var(--...)`, nunca cor fixa.
+**Tema:** o padrão é sempre o **claro**, para aluno e professor, independentemente do tema do sistema; o botão troca para o escuro e a escolha fica salva no navegador. As cores são variáveis CSS em `src/routes/+layout.svelte`; use sempre `var(--...)`, nunca cor fixa.
 
 ## Desenvolvimento local
 

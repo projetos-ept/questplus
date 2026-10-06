@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { validarQuestao } from '#lib/questao';
 import { corpoJson, erros, idDe } from '#lib/server/api';
-import { atualizarQuestao, definirAtiva, obterQuestao, suporteExiste } from '#lib/server/questoes';
+import { atualizarQuestao, definirAtiva, excluirQuestao, obterQuestao, suporteExiste } from '#lib/server/questoes';
 import type { RequestHandler } from './$types';
 
 const naoEncontrada = () => erros(['Questão não encontrada.'], 404);
@@ -28,4 +28,16 @@ export const PATCH: RequestHandler = async ({ params, request }) => {
 	if (!id) return naoEncontrada();
 	if (typeof corpo?.ativa !== 'boolean') return erros(['Informe "ativa" como verdadeiro ou falso.']);
 	return (await definirAtiva(id, corpo.ativa)) ? json({ id, ativa: corpo.ativa }) : naoEncontrada();
+};
+
+export const DELETE: RequestHandler = async ({ params }) => {
+	const id = idDe(params.id);
+	if (!id) return naoEncontrada();
+	const r = await excluirQuestao(id);
+	if (r.status === 'inexistente') return naoEncontrada();
+	if (r.status === 'em-uso') {
+		const lista = r.atividades.join(', ') + (r.total > r.atividades.length ? ` e mais ${r.total - r.atividades.length}` : '');
+		return erros([`Esta questão está em ${r.total} atividade(s): ${lista}. Remova-a de lá, ou apenas inative a questão.`], 409);
+	}
+	return json({ id });
 };

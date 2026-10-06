@@ -11,12 +11,14 @@
 	};
 	type Estado = {
 		id: number; status: 'andamento' | 'finalizada'; agora: string; prazo_em: string | null;
-		atividade: { titulo: string; feedback: 'imediato' | 'final' | 'nenhum'; navegacao: 'livre' | 'sequencial' };
+		atividade: { titulo: string; modo: 'treino' | 'prova'; feedback: 'imediato' | 'final' | 'nenhum'; navegacao: 'livre' | 'sequencial' };
+		tentativas: { usadas: number; max: number | null };
 		questoes: Q[]; respostas: Record<number, { resposta: { escolha?: number; valores?: (boolean | null)[] }; feedback?: Fb }>;
 		resultado: { nota: number; pontos_max: number } | null;
 	};
 
-	let { codigo, titulo, turmas, fecha_em }: { codigo: string; titulo: string; turmas: { id: number; nome: string }[]; fecha_em: string | null } = $props();
+	type Regras = { modo: 'treino' | 'prova'; tempo_total: number | null; tentativas_max: number | null; mostra_nota: boolean };
+	let { codigo, titulo, turmas, fecha_em, regras }: { codigo: string; titulo: string; turmas: { id: number; nome: string }[]; fecha_em: string | null; regras: Regras } = $props();
 
 	const CHAVE = $derived(`qp_t_${codigo.toLowerCase()}`);
 	const LETRAS = ['A', 'B', 'C', 'D', 'E'];
@@ -39,6 +41,10 @@
 	const resp = $derived(q && estado ? estado.respostas[q.id] : undefined);
 	const imediato = $derived(estado?.atividade.feedback === 'imediato');
 	const travada = $derived(!!resp && imediato);
+	/** Treino: todas as questões com pontuação máxima. */
+	const tudoCerto = $derived(!!estado?.resultado && estado.resultado.pontos_max > 0 && estado.resultado.nota >= estado.resultado.pontos_max);
+	/** Prova: tentativas que ainda restam (Infinity = ilimitadas). */
+	const restantes = $derived(estado ? (estado.tentativas.max === null ? Infinity : Math.max(estado.tentativas.max - estado.tentativas.usadas, 0)) : 0);
 	const respondidas = $derived(estado ? Object.keys(estado.respostas).length : 0);
 
 	async function api(caminho: string, metodo = 'GET', corpo?: unknown) {
@@ -63,7 +69,14 @@
 		estado = e;
 		for (const x of e.questoes) {
 			if (x.id in rascunho) continue;
-			rascunho[x.id] = x.tipo === 'mc' ? null : Array(x.config.afirmacoes!.length).fill(null);
+			// o que já está salvo no servidor volta marcado na tela (recarregar a página não pode parecer que perdeu a resposta)
+			const salvaNoServidor = e.respostas[x.id]?.resposta;
+			rascunho[x.id] =
+				x.tipo === 'mc'
+					? (salvaNoServidor?.escolha ?? null)
+					: salvaNoServidor?.valores
+						? [...salvaNoServidor.valores]
+						: Array(x.config.afirmacoes!.length).fill(null);
 		}
 		deslocamento = Date.parse(e.agora) - Date.now();
 		clearInterval(relogio);
@@ -114,24 +127,57 @@
 		fase = e.status === 'finalizada' ? 'fim' : 'respondendo';
 	}
 
-	async function responder() {
-		if (!q || !estado) return;
-		erro = '';
-		ocupado = true;
-		const valor = rascunho[q.id];
-		const r = await api(`/api/tentativas/${estado.id}/respostas/${q.id}`, 'PUT', { resposta: q.tipo === 'mc' ? { escolha: valor } : { valores: valor } }).catch(() => null);
+	async function enviarResposta(qid: number, silencioso: boolean) {
+		const quest = estado?.questoes.find((x) => x.id === qid);
+		if (!quest || !estado) return;
+		const valor = $state.snapshot(rascunho[qid]);
+		if (!silencioso) { erro = ''; ocupado = true; }
+		const r = await api(`/api/tentativas/${estado.id}/respostas/${qid}`, 'PUT', { resposta: quest.tipo === 'mc' ? { escolha: valor } : { valores: valor } }).catch(() => null);
 		ocupado = false;
 		if (!r?.ok) {
 			erro = r?.mensagem ?? 'Falha de conexão. Sua resposta não foi enviada.';
 			if (r?.status === 409) await recarregar();
 			return;
 		}
-		estado.respostas[q.id] = { resposta: q.tipo === 'mc' ? { escolha: valor as number } : { valores: valor as (boolean | null)[] }, feedback: r.j.feedback as Fb | undefined };
+		erro = '';
+		estado.respostas[qid] = { resposta: quest.tipo === 'mc' ? { escolha: valor as number } : { valores: valor as (boolean | null)[] }, feedback: r.j.feedback as Fb | undefined };
+	}
+
+	const responder = () => (q ? enviarResposta(q.id, false) : undefined);
+
+	// Na Prova não há botão "Responder": cada mudança é salva sozinha, e ninguém perde uma resposta ao trocar de questão.
+	let pendente: Promise<void> | undefined;
+	let agendado: ReturnType<typeof setTimeout> | undefined;
+	let agendadoQ = 0;
+	function valida(qid: number) {
+		const quest = estado?.questoes.find((x) => x.id === qid);
+		const v = rascunho[qid];
+		return !!quest && (quest.tipo === 'mc' ? v !== null && v !== undefined : Array.isArray(v) && v.some((x) => x !== null));
+	}
+	function aoMudar() {
+		if (imediato || !q) return;
+		const qid = q.id;
+		clearTimeout(agendado);
+		agendadoQ = qid;
+		// espera o bind:group atualizar o rascunho antes de ler o valor
+		agendado = setTimeout(() => {
+			agendado = undefined;
+			if (valida(qid)) pendente = enviarResposta(qid, true);
+		}, 300);
+	}
+	async function descarregar() {
+		if (agendado !== undefined) {
+			clearTimeout(agendado);
+			agendado = undefined;
+			if (valida(agendadoQ)) pendente = enviarResposta(agendadoQ, true);
+		}
+		await pendente;
 	}
 
 	async function recarregar() {
 		const r = await api(`/api/tentativas/${salva!.id}`);
 		if (r.ok) {
+			rascunho = {};
 			const e = r.j as unknown as Estado;
 			preparar(e);
 			if (e.status === 'finalizada') fase = 'fim';
@@ -140,6 +186,7 @@
 
 	async function finalizar(automatico = false) {
 		if (!estado) return;
+		await descarregar();
 		if (!automatico) {
 			const faltam = estado.questoes.length - respondidas;
 			if (faltam > 0 && !confirm(`Você deixou ${faltam} questão(ões) sem resposta. Finalizar mesmo assim?`)) return;
@@ -149,6 +196,7 @@
 		ocupado = false;
 		if (!r?.ok) { erro = r?.mensagem ?? 'Falha de conexão ao finalizar.'; return; }
 		clearInterval(relogio);
+		clearTimeout(agendado);
 		restante = null;
 		estado = r.j as unknown as Estado;
 		esquecer();
@@ -176,6 +224,18 @@
 {:else if fase === 'inicio'}
 	<h1>{titulo}</h1>
 	{#if fecha_em}<p class="suave">Disponível até {formatarData(fecha_em)}.</p>{/if}
+	<div class="cartao regras">
+		<strong>{regras.modo === 'prova' ? 'Prova' : 'Treino'}</strong>
+		<ul>
+			<li>{regras.tempo_total ? `Tempo: ${Math.round(regras.tempo_total / 60)} minutos, contados a partir do clique em Começar.` : 'Sem limite de tempo.'}</li>
+			<li>{regras.tentativas_max ? `Tentativas: ${regras.tentativas_max}.` : 'Tentativas ilimitadas.'}</li>
+			{#if regras.modo === 'prova'}
+				<li>O gabarito não será mostrado. {regras.mostra_nota ? 'Você verá sua nota ao final.' : 'A nota será divulgada pelo professor.'}</li>
+			{:else}
+				<li>Gabarito e explicação aparecem logo depois de cada resposta.</li>
+			{/if}
+		</ul>
+	</div>
 
 	{#if estado && salva}
 		<div class="cartao">
@@ -204,6 +264,10 @@
 		<span>Questão {atual + 1} de {estado.questoes.length}</span>
 		{#if restante !== null}<span class="relogio" aria-label="Tempo restante" role="timer">⏱ {relogioTexto}</span>{/if}
 	</header>
+	<div class="progresso" role="progressbar" aria-label="Progresso da atividade" aria-valuemin="1" aria-valuemax={estado.questoes.length} aria-valuenow={atual + 1} aria-valuetext="Questão {atual + 1} de {estado.questoes.length}">
+		<div class="preenchido" style="width: {((atual + 1) / estado.questoes.length) * 100}%"></div>
+	</div>
+	<p class="respondidas suave">{respondidas} de {estado.questoes.length} respondidas</p>
 
 	{#if estado.atividade.navegacao === 'livre'}
 		<nav class="pontos" aria-label="Questões">
@@ -233,7 +297,7 @@
 					{#each q.config.alternativas! as texto, i}
 						{@const gab = resp?.feedback && 'correta' in resp.feedback.gabarito ? resp.feedback.gabarito.correta : null}
 						<label class="op" class:certa={gab === i} class:minha={resp?.resposta.escolha === i && gab !== i && !!resp?.feedback}>
-							<input type="radio" name="q{q.id}" value={i} bind:group={rascunho[q.id] as number | null} disabled={travada || ocupado} />
+							<input type="radio" name="q{q.id}" value={i} bind:group={rascunho[q.id] as number | null} disabled={travada || ocupado} onchange={aoMudar} />
 							<span class="letra">{LETRAS[i]}</span>
 							<span class="t">{texto}</span>
 							{#if gab === i}<span class="sel">✔ Gabarito</span>{/if}
@@ -248,8 +312,8 @@
 						{@const dada = resp?.resposta.valores?.[i]}
 						<fieldset class="afirm">
 							<legend>{af.texto}</legend>
-							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={true} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} /> Verdadeiro</label>
-							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={false} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} /> Falso</label>
+							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={true} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} onchange={aoMudar} /> Verdadeiro</label>
+							<label class="vfop"><input type="radio" name="q{q.id}a{i}" value={false} bind:group={(rascunho[q.id] as (boolean | null)[])[i]} disabled={travada || ocupado} onchange={aoMudar} /> Falso</label>
 							{#if resp?.feedback && gab !== null}
 								<span class="sel">{dada === gab ? '✔ Acertou' : '✘ Errou'} — gabarito: {gab ? 'Verdadeiro' : 'Falso'}</span>
 							{/if}
@@ -264,13 +328,15 @@
 					{#if resp.feedback.explicacao}<p class="explic"><em>Explicação:</em> {resp.feedback.explicacao}</p>{/if}
 				</div>
 			{:else if resp}
-				<p class="suave" role="status">✔ Resposta salva.</p>
+				<p class="suave" role="status">✔ Resposta salva. Você pode mudá-la até finalizar.</p>
+			{:else if !imediato}
+				<p class="suave">As respostas são salvas automaticamente.</p>
 			{/if}
 
 			{#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 
 			<div class="acoes">
-				{#if !travada}<button type="button" onclick={responder} disabled={!pode || ocupado}>{ocupado ? 'Enviando…' : resp ? 'Salvar nova resposta' : 'Responder'}</button>{/if}
+				{#if imediato && !travada}<button type="button" onclick={responder} disabled={!pode || ocupado}>{ocupado ? 'Enviando…' : 'Responder'}</button>{/if}
 				{#if estado.atividade.navegacao === 'livre' && atual > 0}<button type="button" class="sec" onclick={() => (atual -= 1)}>Anterior</button>{/if}
 				{#if atual < estado.questoes.length - 1}
 					<button type="button" class="sec" onclick={() => (atual += 1)} disabled={estado.atividade.navegacao === 'sequencial' && !resp}>Próxima</button>
@@ -285,13 +351,43 @@
 
 {:else if fase === 'fim' && estado}
 	<h1>Atividade finalizada</h1>
+	<p class="obrigado">Obrigado por participar! 🙌</p>
 	{#if estado.resultado}
 		<div class="cartao resultado" role="status">
 			Você fez <strong>{pts(estado.resultado.nota)} de {pts(estado.resultado.pontos_max)} pontos</strong>.
 		</div>
+	{:else}
+		<p>Suas respostas foram enviadas.</p>
+	{/if}
+
+	{#if estado.atividade.modo === 'treino'}
+		<div class="cartao incentivo" role="status">
+			{#if tudoCerto}
+				<strong>Parabéns!</strong> Você acertou todas as questões. Se quiser, refaça para fixar ainda mais.
+			{:else}
+				<strong>Continue praticando!</strong> Refaça a atividade quantas vezes quiser, até acertar todas as questões.
+			{/if}
+		</div>
+	{:else if restantes > 0}
+		<div class="cartao incentivo" role="status">
+			{#if restantes === Infinity}
+				Você pode fazer outra tentativa. <strong>Será considerada a maior nota.</strong>
+			{:else}
+				Você ainda tem <strong>{restantes} tentativa{restantes === 1 ? '' : 's'}</strong>. <strong>Será considerada a maior nota.</strong>
+			{/if}
+		</div>
+	{:else}
+		<div class="cartao incentivo" role="status">
+			Você usou todas as tentativas. <strong>Aguarde o retorno detalhado da correção da prova pelo professor.</strong>
+		</div>
+	{/if}
+
+	{#if estado.atividade.feedback === 'nenhum'}
+		<p class="suave">O gabarito não é divulgado nesta atividade.</p>
+	{:else if estado.resultado}
 		<h2>Revisão</h2>
 		<ol class="revisao">
-			{#each estado.questoes as x, i (x.id)}
+			{#each estado.questoes as x (x.id)}
 				{@const r = estado.respostas[x.id]}
 				<li>
 					<p class="enunciado">{x.enunciado}</p>
@@ -307,17 +403,25 @@
 				</li>
 			{/each}
 		</ol>
-	{:else}
-		<p>Suas respostas foram enviadas. O professor divulgará o resultado.</p>
 	{/if}
-	<button type="button" onclick={novaTentativa}>Fazer uma nova tentativa</button>
+	{#if estado.atividade.modo === 'treino'}
+		<button type="button" onclick={novaTentativa}>Refazer a atividade</button>
+	{:else if restantes > 0}
+		<button type="button" onclick={novaTentativa}>Fazer outra tentativa</button>
+	{/if}
 {/if}
 
 <style>
 	h1 { font-size: 1.4rem; }
 	.aviso { font-size: 0.9rem; }
+	.regras ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
 	.barra { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
 	.relogio { font-variant-numeric: tabular-nums; }
+	.progresso { height: 0.6rem; margin-top: 0.5rem; overflow: hidden; background: var(--borda); border-radius: 1rem; }
+	.preenchido { height: 100%; background: var(--destaque); border-radius: 1rem; transition: width 0.25s; }
+	.respondidas { margin: 0.35rem 0 0; font-size: 0.85rem; }
+	.obrigado { font-size: 1.1rem; }
+	.incentivo { margin: 1rem 0; border-color: var(--destaque); }
 	.pontos { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0; }
 	.pontos button { margin: 0; min-width: 2.75rem; min-height: 2.75rem; padding: 0.2rem 0.5rem; }
 	.pontos button[aria-current='true'] { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--destaque); }

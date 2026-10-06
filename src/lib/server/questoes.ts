@@ -139,3 +139,18 @@ export async function excluirSuporte(id: number) {
 	if (s.imagem_chave) await midia()?.delete(s.imagem_chave);
 	return 'ok' as const;
 }
+
+/**
+ * Exclui a questão. Se ela está em alguma atividade, recusa e devolve os títulos: a ligação existe no banco e tirar a
+ * questão de uma atividade em uso mudaria a prova. Tentativas já feitas guardam uma cópia da questão e não são afetadas.
+ */
+export async function excluirQuestao(id: number): Promise<{ status: 'ok' | 'inexistente' } | { status: 'em-uso'; atividades: string[]; total: number }> {
+	if (!(await obterQuestao(id))) return { status: 'inexistente' };
+	const uso = await db()
+		.prepare('SELECT a.titulo FROM atividade_questoes aq JOIN atividades a ON a.id = aq.atividade_id WHERE aq.questao_id = ? ORDER BY a.titulo')
+		.bind(id)
+		.all<{ titulo: string }>();
+	if (uso.results.length) return { status: 'em-uso', atividades: uso.results.slice(0, 5).map((x) => x.titulo), total: uso.results.length };
+	await db().prepare('DELETE FROM questoes WHERE id = ?').bind(id).run();
+	return { status: 'ok' };
+}

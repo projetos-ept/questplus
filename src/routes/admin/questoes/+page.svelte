@@ -1,9 +1,25 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
+	import ConfirmarModal from '#lib/components/ConfirmarModal.svelte';
 	import { formatoDe } from '#lib/questao';
 
 	let { data } = $props();
 	let erro = $state('');
+	let alvo = $state<(typeof data.itens)[number] | null>(null);
+	let modal: ConfirmarModal;
+
+	function pedirExclusao(q: (typeof data.itens)[number]) {
+		alvo = q;
+		modal.abrir();
+	}
+
+	/** Devolve a mensagem de erro (fica no modal) ou nada, quando excluiu. */
+	async function excluir(): Promise<string | void> {
+		if (!alvo) return;
+		const r = await fetch(`/api/admin/questoes/${alvo.id}`, { method: 'DELETE' });
+		if (r.ok) return void (await invalidateAll());
+		return ((await r.json().catch(() => ({}))) as { erros?: string[] }).erros?.[0] ?? 'Não foi possível excluir a questão.';
+	}
 
 	const paginas = $derived(Math.max(Math.ceil(data.total / data.limite), 1));
 	const resumo = (t: string) => (t.length > 140 ? `${t.slice(0, 140)}…` : t);
@@ -61,6 +77,13 @@
 
 {#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 
+<ConfirmarModal bind:this={modal} titulo="Excluir esta questão?" rotuloConfirmar="Excluir questão" perigo onconfirmar={excluir}>
+	{#if alvo}
+		<p class="resumo">{resumo(alvo.enunciado)}</p>
+		<p>Esta ação <strong>não pode ser desfeita</strong>. Provas já respondidas guardam uma cópia da questão e não são afetadas. Para só tirá-la de circulação, use <em>Inativar</em>.</p>
+	{/if}
+</ConfirmarModal>
+
 {#if data.itens.length === 0}
 	<p class="suave">Nenhuma questão encontrada.</p>
 {:else}
@@ -77,7 +100,10 @@
 						</td>
 						<td>{q.pontos}</td>
 						<td>{q.ativa ? 'Ativa' : 'Inativa'}</td>
-						<td><button class="sec" onclick={() => alternar(q.id, !q.ativa)}>{q.ativa ? 'Inativar' : 'Ativar'}</button></td>
+						<td class="botoes">
+							<button class="sec" onclick={() => alternar(q.id, !q.ativa)}>{q.ativa ? 'Inativar' : 'Ativar'}</button>
+							<button class="sec excluir" onclick={() => pedirExclusao(q)}>Excluir</button>
+						</td>
 					</tr>
 				{/each}
 			</tbody>
@@ -125,9 +151,22 @@
 		opacity: 0.6;
 	}
 	td button {
-		margin: 0;
+		margin: 0 0.25rem 0 0;
 		padding: 0.3rem 0.6rem;
 		font-size: 0.85rem;
+	}
+	.botoes {
+		white-space: nowrap;
+	}
+	.excluir {
+		color: var(--erro);
+		border-color: var(--erro);
+	}
+	.resumo {
+		padding: 0.5rem 0.75rem;
+		overflow-wrap: anywhere;
+		background: var(--fundo);
+		border-radius: 0.4rem;
 	}
 	.paginas {
 		display: flex;

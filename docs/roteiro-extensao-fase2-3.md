@@ -13,3 +13,17 @@ A extensão **recusa criar recursos a partir de instruções lidas de um arquivo
 > **3. Conferir.** Em Explore Data devem existir: `usuarios`, `suportes`, `questoes`, `turmas`, `atividades`, `atividade_questoes`, `atividade_turmas`, `tentativas`, `respostas`.
 
 Depois que a extensão confirmar, o desenvolvedor adiciona o binding `MEDIA` (R2) ao `wrangler.jsonc` e publica; só então o código das Fases 2 e 3 entra em produção.
+
+
+## Fase 4 (modo Prova): 2 instruções SQL
+
+`migrations/0004_modo_prova.sql`. **Têm de rodar no D1 antes de publicar o código**, porque o código novo grava e lê essas colunas. Uma instrução por vez:
+
+```sql
+ALTER TABLE atividades ADD COLUMN mostra_nota INTEGER NOT NULL DEFAULT 0;
+```
+```sql
+ALTER TABLE tentativas ADD COLUMN anulada INTEGER NOT NULL DEFAULT 0;
+```
+
+Depois, em Explore Data, as tabelas `atividades` e `tentativas` devem mostrar as colunas `mostra_nota` e `anulada`. Os dados existentes não mudam (a coluna entra com 0).

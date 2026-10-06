@@ -1,7 +1,7 @@
 import { corrigir } from '#lib/correcao';
 import { expirou, versaoAluno } from '#lib/atividade';
 import { erros, iguais } from './api';
-import { finalizarTentativa, obterAtividade, obterTentativa, respostasDaTentativa, type AtividadeLinha, type TentativaLinha } from './atividades';
+import { contarTentativasDoAluno, finalizarTentativa, obterAtividade, obterTentativa, respostasDaTentativa, type AtividadeLinha, type TentativaLinha } from './atividades';
 
 export const CABECALHO_TOKEN = 'x-tentativa-token';
 
@@ -41,9 +41,12 @@ export async function montarEstado(t: TentativaLinha, a: AtividadeLinha) {
 		status: t.status,
 		agora: new Date().toISOString(),
 		prazo_em: prazoEfetivo(t),
-		atividade: { titulo: a.titulo, feedback: a.feedback, navegacao: a.navegacao },
+		atividade: { titulo: a.titulo, modo: a.modo, feedback: a.feedback, navegacao: a.navegacao },
+		// quantas tentativas o aluno já usou (sem as anuladas) e o limite, para a mensagem de encerramento
+		tentativas: { usadas: await contarTentativasDoAluno(t.atividade_id, t.email), max: a.tentativas_max },
 		questoes: t.questoes.map(versaoAluno),
 		respostas,
-		resultado: t.status === 'finalizada' && mostrar ? { nota: t.nota ?? 0, pontos_max: t.pontos_max ?? 0 } : null
+		// a nota aparece com o gabarito (Treino) ou, na Prova, quando o professor liberou; o gabarito nunca depende disto
+		resultado: t.status === 'finalizada' && t.anulada === 0 && (mostrar || a.mostra_nota) ? { nota: t.nota ?? 0, pontos_max: t.pontos_max ?? 0 } : null
 	};
 }

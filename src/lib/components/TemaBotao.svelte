@@ -4,9 +4,7 @@
 	let escuro = $state(false);
 
 	onMount(() => {
-		escuro = document.documentElement.dataset.tema
-			? document.documentElement.dataset.tema === 'escuro'
-			: matchMedia('(prefers-color-scheme: dark)').matches;
+		escuro = document.documentElement.dataset.tema === 'escuro';
 	});
 
 	function alternar() {

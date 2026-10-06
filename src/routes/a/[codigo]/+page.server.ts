@@ -14,6 +14,7 @@ export const load: PageServerLoad = async ({ params }) => {
 		titulo: a.titulo,
 		abre_em: a.abre_em,
 		fecha_em: a.fecha_em,
+		regras: { modo: a.modo, tempo_total: a.tempo_total, tentativas_max: a.tentativas_max, mostra_nota: a.mostra_nota },
 		turmas: estado === 'no_prazo' ? await turmasDaAtividade(a.id) : []
 	};
 };

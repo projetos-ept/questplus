@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
-	import { gerarCodigo } from '#lib/atividade';
+	import { PADROES_DO_MODO, gerarCodigo, type Modo, type Navegacao } from '#lib/atividade';
 	import { deInputLocal, paraInputLocal } from '#lib/data';
 	import { untrack } from 'svelte';
 	import CopiarLink from './CopiarLink.svelte';
 
 	type QuestaoSel = { questao_id: number; enunciado: string; tipo: string; pontos: number | null; pontos_padrao: number };
-	type Inicial = { titulo: string; codigo: string; ativa: boolean; embaralhar: boolean; abre_em: string | null; fecha_em: string | null; questoes: QuestaoSel[]; turmas: number[] };
+	type Inicial = {
+		titulo: string; codigo: string; ativa: boolean; embaralhar: boolean; abre_em: string | null; fecha_em: string | null; questoes: QuestaoSel[]; turmas: number[];
+		modo: Modo; tempo_total: number | null; tentativas_max: number | null; navegacao: Navegacao; mostra_nota: boolean;
+	};
 	type Turma = { id: number; nome: string; ativa: boolean };
 
 	let { id = null, inicial, turmasDisponiveis }: { id?: number | null; inicial: Inicial; turmasDisponiveis: Turma[] } = $props();
@@ -16,6 +19,23 @@
 	let codigo = $state(i0.codigo || gerarCodigo());
 	let ativa = $state(i0.ativa);
 	let embaralhar = $state(i0.embaralhar);
+	let modo = $state<Modo>(i0.modo);
+	let tempoMin = $state<number | null>(i0.tempo_total ? Math.round(i0.tempo_total / 60) : null);
+	let ilimitadas = $state(i0.tentativas_max === null);
+	let tentativas = $state<number>(i0.tentativas_max ?? 1);
+	let navegacao = $state<Navegacao>(i0.navegacao);
+	let mostraNota = $state(i0.mostra_nota);
+
+	/** Trocar de modo carrega a predefinição; depois cada opção continua ajustável. */
+	function aplicarModo() {
+		const p = PADROES_DO_MODO[modo];
+		tempoMin = p.tempo_min;
+		ilimitadas = p.tentativas_max === null;
+		tentativas = p.tentativas_max ?? 1;
+		navegacao = p.navegacao;
+		embaralhar = p.embaralhar;
+		mostraNota = p.mostra_nota;
+	}
 	let abre = $state(paraInputLocal(i0.abre_em));
 	let fecha = $state(paraInputLocal(i0.fecha_em));
 	let turmasSel = $state<number[]>([...i0.turmas]);
@@ -70,7 +90,8 @@
 				method: id ? 'PUT' : 'POST',
 				headers: { 'content-type': 'application/json' },
 				body: JSON.stringify({
-					titulo, codigo: codigo.trim(), ativa, embaralhar,
+					titulo, codigo: codigo.trim(), ativa, embaralhar, modo, navegacao, mostra_nota: mostraNota,
+					tempo_total_min: tempoMin, tentativas_max: ilimitadas ? null : tentativas,
 					abre_em: deInputLocal(abre), fecha_em: deInputLocal(fecha),
 					questoes: questoes.map((q) => ({ questao_id: q.questao_id, pontos: q.pontos })),
 					turmas: turmasSel
@@ -118,9 +139,39 @@
 	</div>
 	<p class="suave">Sem datas, a atividade fica aberta enquanto estiver ativa. Quem estiver respondendo quando o prazo acabar é encerrado nesse momento. Horário do seu navegador.</p>
 
-	<label class="check"><input type="checkbox" bind:checked={embaralhar} /> Embaralhar a ordem das questões e das alternativas a cada aluno</label>
+	<fieldset>
+		<legend>Modo</legend>
+		<label class="check"><input type="radio" name="modo" value="treino" bind:group={modo} onchange={aplicarModo} /> <span><strong>Treino</strong> — estudo e revisão: o aluno vê gabarito e explicação logo após cada resposta.</span></label>
+		<label class="check"><input type="radio" name="modo" value="prova" bind:group={modo} onchange={aplicarModo} /> <span><strong>Prova</strong> — avaliação: o aluno <strong>nunca</strong> vê o gabarito; as respostas são salvas automaticamente.</span></label>
+		<p class="suave">Ao trocar de modo, as opções abaixo voltam ao padrão dele; você pode ajustar cada uma. Alterar o modo com alunos respondendo afeta quem ainda não terminou.</p>
+
+		<div class="duas">
+			<label>Tempo total (minutos) <input type="number" min="1" max="600" step="1" bind:value={tempoMin} placeholder="Sem limite" /></label>
+			<label>Navegação
+				<select bind:value={navegacao}>
+					<option value="livre">Livre (pode voltar às questões)</option>
+					<option value="sequencial">Sequencial (uma vez, sem voltar)</option>
+				</select>
+			</label>
+		</div>
+		<p class="suave">O tempo conta a partir do clique em Começar, é medido no servidor e nunca passa do prazo final da atividade.</p>
+
+		<div class="tent">
+			<span class="rotulo">Tentativas por aluno</span>
+			<label class="check"><input type="checkbox" bind:checked={ilimitadas} /> Ilimitadas</label>
+			{#if !ilimitadas}
+				<label class="num">Máximo de tentativas <input type="number" min="1" max="99" step="1" bind:value={tentativas} required /></label>
+			{/if}
+			<p class="suave">O aluno é identificado pelo e-mail. Se a conexão cair e ele ficar sem tentativa, anule a tentativa dele em <em>Ver tentativas</em> para liberar outra.</p>
+		</div>
+
+		{#if modo === 'prova'}
+			<label class="check"><input type="checkbox" bind:checked={mostraNota} /> Mostrar a <strong>nota</strong> ao aluno no final (o gabarito nunca é mostrado)</label>
+		{/if}
+		<label class="check"><input type="checkbox" bind:checked={embaralhar} /> Embaralhar a ordem das questões e das alternativas a cada aluno</label>
+	</fieldset>
+
 	<label class="check"><input type="checkbox" bind:checked={ativa} /> Atividade ativa (interruptor manual; inativa, o código não abre)</label>
-	<p class="suave">Modo <strong>Treino</strong>: tempo livre, tentativas ilimitadas, gabarito e explicação logo após cada resposta.</p>
 
 	<fieldset>
 		<legend>Questões ({questoes.length}) · {totalPontos} pontos</legend>
@@ -180,4 +231,8 @@
 	.mov { display: flex; gap: 0.4rem; }
 	.mov button, .achadas button { margin: 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; }
 	.acoes { display: flex; gap: 1rem; align-items: center; }
+	.tent { margin-top: 1rem; }
+	.rotulo { display: block; font-weight: 600; }
+	.num { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
+	.num input { width: 6rem; margin: 0; }
 </style>

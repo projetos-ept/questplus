@@ -112,16 +112,36 @@ export function validarTurma(entrada: unknown): Resultado<TurmaValida> {
 	return { ok: true, valor: { nome, curso: t(e.curso), periodo: t(e.periodo), ativa: e.ativa !== false } };
 }
 
+export type Modo = 'treino' | 'prova';
+export type Navegacao = 'livre' | 'sequencial';
+
 export type AtividadeValida = {
 	titulo: string;
 	codigo: string | null;
 	ativa: boolean;
+	modo: Modo;
+	/** segundos; null = sem limite */
+	tempo_total: number | null;
+	/** null = ilimitadas */
+	tentativas_max: number | null;
+	navegacao: Navegacao;
 	embaralhar: boolean;
+	/** só vale na Prova: mostra a nota ao aluno no final (nunca o gabarito) */
+	mostra_nota: boolean;
 	abre_em: string | null;
 	fecha_em: string | null;
 	questoes: { questao_id: number; pontos: number | null }[];
 	turmas: number[];
 };
+
+/** Cada modo é uma predefinição das opções, ajustáveis uma a uma (a tela usa isto ao trocar de modo). */
+export const PADROES_DO_MODO: Record<Modo, { tempo_min: number | null; tentativas_max: number | null; navegacao: Navegacao; embaralhar: boolean; mostra_nota: boolean }> = {
+	treino: { tempo_min: null, tentativas_max: null, navegacao: 'livre', embaralhar: false, mostra_nota: false },
+	prova: { tempo_min: 60, tentativas_max: 1, navegacao: 'livre', embaralhar: true, mostra_nota: false }
+};
+
+/** No Treino o gabarito vem logo após cada resposta; na Prova o aluno nunca recebe o gabarito. */
+export const feedbackDoModo = (m: Modo) => (m === 'treino' ? ('imediato' as const) : ('nenhum' as const));
 
 export const CODIGO_ATIVIDADE = /^[A-Za-z0-9-]{4,20}$/;
 /** O link curto `/CODIGO` convive com estas rotas do sistema; elas não podem virar código de atividade. */
@@ -143,6 +163,8 @@ function data(v: unknown, nome: string, erros: string[]) {
 	return new Date(ms).toISOString();
 }
 
+const vazio = (v: unknown) => v === null || v === undefined || v === '';
+
 export function validarAtividade(entrada: unknown): Resultado<AtividadeValida> {
 	const e = (entrada && typeof entrada === 'object' ? entrada : {}) as Record<string, unknown>;
 	const erros: string[] = [];
@@ -154,7 +176,27 @@ export function validarAtividade(entrada: unknown): Resultado<AtividadeValida> {
 	if (codigoBruto && !CODIGO_ATIVIDADE.test(codigoBruto)) erros.push('O código deve ter de 4 a 20 letras, números ou hífens.');
 	else if (CODIGOS_RESERVADOS.includes(codigoBruto.toLowerCase())) erros.push('Este código é reservado pelo sistema. Escolha outro.');
 
-	if (e.modo !== undefined && e.modo !== 'treino') erros.push('Por enquanto só o modo Treino está disponível.');
+	const modoBruto = e.modo ?? 'treino';
+	if (modoBruto !== 'treino' && modoBruto !== 'prova') erros.push(modoBruto === 'ao_vivo' ? 'O modo Ao vivo ainda não está disponível.' : 'Modo inválido.');
+	const modo: Modo = modoBruto === 'prova' ? 'prova' : 'treino';
+
+	let tempo_total: number | null = null;
+	if (!vazio(e.tempo_total_min)) {
+		const min = Number(e.tempo_total_min);
+		if (!Number.isInteger(min) || min < 1 || min > 600) erros.push('O tempo da atividade deve ser um número inteiro de minutos, de 1 a 600.');
+		else tempo_total = min * 60;
+	}
+
+	// ausente = padrão do modo; null ou vazio = ilimitadas
+	let tentativas_max: number | null = 'tentativas_max' in e ? null : PADROES_DO_MODO[modo].tentativas_max;
+	if ('tentativas_max' in e && !vazio(e.tentativas_max)) {
+		const n = Number(e.tentativas_max);
+		if (!Number.isInteger(n) || n < 1 || n > 99) erros.push('O número de tentativas deve ser um inteiro de 1 a 99 (ou deixe ilimitado).');
+		else tentativas_max = n;
+	}
+
+	const navegacao = e.navegacao ?? 'livre';
+	if (navegacao !== 'livre' && navegacao !== 'sequencial') erros.push('Navegação inválida.');
 
 	const abre_em = data(e.abre_em, 'abertura', erros);
 	const fecha_em = data(e.fecha_em, 'prazo', erros);
@@ -180,7 +222,11 @@ export function validarAtividade(entrada: unknown): Resultado<AtividadeValida> {
 	if (erros.length) return { ok: false, erros };
 	return {
 		ok: true,
-		valor: { titulo, codigo: codigoBruto || null, ativa: e.ativa !== false, embaralhar: e.embaralhar === true, abre_em, fecha_em, questoes, turmas }
+		valor: {
+			titulo, codigo: codigoBruto || null, ativa: e.ativa !== false, modo, tempo_total, tentativas_max,
+			navegacao: navegacao as Navegacao, embaralhar: e.embaralhar === true, mostra_nota: modo === 'prova' && e.mostra_nota === true,
+			abre_em, fecha_em, questoes, turmas
+		}
 	};
 }
 
