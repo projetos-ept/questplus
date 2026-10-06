@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { percentualDe } from '#lib/relatorio';
 	import { onDestroy, onMount } from 'svelte';
 	import { imagensDe, type ImagemSuporte } from '#lib/imagens';
 	import { renderSuporte } from '#lib/suporte';
@@ -360,7 +361,7 @@
 	<p class="obrigado">Obrigado por participar! 🙌</p>
 	{#if estado.resultado}
 		<div class="cartao resultado" role="status">
-			Você fez <strong>{pts(estado.resultado.nota)} de {pts(estado.resultado.pontos_max)} pontos</strong>.
+			Você fez <strong>{pts(estado.resultado.nota)} de {pts(estado.resultado.pontos_max)} pontos</strong>. Seu percentual de rendimento foi de <strong>{String(percentualDe(estado.resultado.nota, estado.resultado.pontos_max)).replace('.', ',')}%</strong>.
 		</div>
 	{:else}
 		<p>Suas respostas foram enviadas.</p>
