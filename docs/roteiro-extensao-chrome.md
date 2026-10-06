@@ -49,7 +49,7 @@ Confirme que a tabela `usuarios` aparece na aba Tables. (Se o usuário rodar dep
 
 ## PASSO 5 — Primeiro professor
 
-O usuário vai gerar o SQL na própria máquina com `node scripts/gerar-admin.mjs EMAIL SENHA` e colar aqui a linha `INSERT INTO usuarios ... ;` (contém só o hash, nunca a senha). Execute essa linha no Console do D1 `questplus` e confirme "1 row written". Não peça nem veja a senha.
+O usuário vai gerar o SQL no console do navegador (veja `docs/gerar-sql-professor.md`) e colar aqui a linha `INSERT INTO usuarios ... ;` (contém só o hash, nunca a senha). Execute essa linha no Console do D1 `questplus` e confirme "1 row written". Não peça nem veja a senha.
 
 ## PASSO 6 — Teste real no navegador
 

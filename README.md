@@ -36,7 +36,7 @@ Só podem ser feitas no painel do Cloudflare (ou com `wrangler` autenticado):
 3. Criar o projeto Pages `questplus` (conectado a este repositório; build `npm run build`, saída `.svelte-kit/cloudflare`) e confirmar o endereço `questplus.pages.dev`.
 4. Em Settings → Variables and Secrets, criar o **secret** `JWT_SECRET` (valor longo e aleatório; quem cola é o professor, não a automação).
 5. Em Settings → Bindings, confirmar o binding D1 `DB` → `questplus`.
-6. Criar o primeiro professor: gerar o SQL com `node scripts/gerar-admin.mjs EMAIL SENHA` e executá-lo no console do D1.
+6. Criar o primeiro professor: gerar o SQL (pelo console do navegador, ver `docs/gerar-sql-professor.md`, ou com `node scripts/gerar-admin.mjs EMAIL SENHA`) e executá-lo no console do D1.
 
 ## Estrutura
 
