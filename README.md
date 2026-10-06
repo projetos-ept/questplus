@@ -27,6 +27,8 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 
 ## Implantação (etapas de dashboard)
 
+Roteiro completo e autônomo para a extensão Claude in Chrome: [`docs/roteiro-extensao-chrome.md`](docs/roteiro-extensao-chrome.md). Resumo:
+
 Só podem ser feitas no painel do Cloudflare (ou com `wrangler` autenticado):
 
 1. Criar o banco D1 `questplus` e copiar o `database_id` para `wrangler.jsonc` (hoje `SUBSTITUIR_PELO_ID_DO_D1`).
