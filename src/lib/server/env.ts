@@ -8,3 +8,7 @@ export function segredoJwt() {
 	if (!env.JWT_SECRET) throw new Error('JWT_SECRET não configurado');
 	return env.JWT_SECRET;
 }
+
+export function midia() {
+	return env.MEDIA;
+}

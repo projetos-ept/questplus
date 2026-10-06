@@ -19,8 +19,9 @@
 	}
 </script>
 
-<button type="button" class="sec tema" onclick={alternar} aria-label="Alternar tema claro e escuro">
-	{escuro ? '☀ Claro' : '☾ Escuro'}
+<button type="button" class="sec tema" onclick={alternar} title="Alternar entre tema claro e escuro">
+	<span aria-hidden="true">{escuro ? '☀' : '☾'}</span>
+	{escuro ? 'Claro' : 'Escuro'}
 </button>
 
 <style>

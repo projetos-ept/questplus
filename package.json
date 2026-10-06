@@ -26,6 +26,7 @@
     "wrangler": "^4.147.0"
   },
   "imports": {
+    "#lib/components/*": "./src/lib/components/*",
     "#lib/*": "./src/lib/*.ts"
   }
 }

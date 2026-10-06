@@ -6,6 +6,8 @@ declare global {
 		interface Env {
 			DB: D1Database;
 			JWT_SECRET: string;
+			/** Bucket R2 das imagens; ausente até o binding ser configurado. */
+			MEDIA?: R2Bucket;
 		}
 	}
 	namespace App {
