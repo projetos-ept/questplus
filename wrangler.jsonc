@@ -7,7 +7,7 @@
 		{
 			"binding": "DB",
 			"database_name": "questplus",
-			"database_id": "SUBSTITUIR_PELO_ID_DO_D1",
+			"database_id": "a56ca2c0-c7b8-4c19-8322-da76fa97cdc1",
 			"migrations_dir": "migrations"
 		}
 	]

@@ -31,7 +31,7 @@ Roteiro completo e autônomo para a extensão Claude in Chrome: [`docs/roteiro-e
 
 Só podem ser feitas no painel do Cloudflare (ou com `wrangler` autenticado):
 
-1. Criar o banco D1 `questplus` e copiar o `database_id` para `wrangler.jsonc` (hoje `SUBSTITUIR_PELO_ID_DO_D1`).
+1. Criar o banco D1 `questplus` e copiar o `database_id` para `wrangler.jsonc` (já preenchido).
 2. Aplicar as migrações no banco remoto: `npm run db:migrate:remote`.
 3. Criar o projeto Pages `questplus` (conectado a este repositório; build `npm run build`, saída `.svelte-kit/cloudflare`) e confirmar o endereço `questplus.pages.dev`.
 4. Em Settings → Variables and Secrets, criar o **secret** `JWT_SECRET` (valor longo e aleatório; quem cola é o professor, não a automação).
