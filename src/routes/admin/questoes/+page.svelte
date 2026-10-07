@@ -40,7 +40,7 @@
 		const r = await fetch('/api/admin/questoes', {
 			method: 'POST',
 			headers: { 'content-type': 'application/json' },
-			body: JSON.stringify({ tipo: q.tipo, enunciado: q.enunciado, config: q.config, explicacao: q.explicacao, pontos: q.pontos, suporte_id: q.suporte_id, etiquetas: q.etiquetas, ativa: q.ativa })
+			body: JSON.stringify({ tipo: q.tipo, enunciado: q.enunciado, config: q.config, explicacao: q.explicacao, pontos: q.pontos, etiquetas: q.etiquetas, ativa: q.ativa })
 		});
 		const j = (await r.json().catch(() => ({}))) as { id?: number; erros?: string[] };
 		if (r.ok) await goto(`/admin/questoes/${j.id}?duplicada=1`);

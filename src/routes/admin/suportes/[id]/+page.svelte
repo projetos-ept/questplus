@@ -5,4 +5,4 @@
 
 <svelte:head><title>Editar texto de apoio · QuestPlus</title></svelte:head>
 <h1>Editar texto de apoio</h1>
-<SuporteForm id={data.id} inicial={data.suporte} emUso={data.suporte.questoes ?? 0} />
+<SuporteForm id={data.id} inicial={data.suporte} emUso={data.suporte.atividades ?? 0} />

@@ -29,5 +29,8 @@
   "imports": {
     "#lib/components/*": "./src/lib/components/*",
     "#lib/*": "./src/lib/*.ts"
+  },
+  "dependencies": {
+    "mermaid": "^12.1.0"
   }
 }

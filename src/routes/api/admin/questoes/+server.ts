@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { validarQuestao } from '#lib/questao';
 import { corpoJson, erros } from '#lib/server/api';
-import { criarQuestao, filtrosDeParams, listarQuestoes, suporteExiste } from '#lib/server/questoes';
+import { criarQuestao, filtrosDeParams, listarQuestoes } from '#lib/server/questoes';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ url }) => {
@@ -18,6 +18,5 @@ export const GET: RequestHandler = async ({ url }) => {
 export const POST: RequestHandler = async ({ request }) => {
 	const r = validarQuestao(await corpoJson(request));
 	if (!r.ok) return erros(r.erros);
-	if (r.valor.suporte_id && !(await suporteExiste(r.valor.suporte_id))) return erros(['Texto de apoio não encontrado.']);
 	return json({ id: await criarQuestao(r.valor) }, { status: 201 });
 };

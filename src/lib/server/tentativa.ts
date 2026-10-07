@@ -45,6 +45,8 @@ export async function montarEstado(t: TentativaLinha, a: AtividadeLinha) {
 		atividade: { titulo: a.titulo, modo: a.modo, feedback: a.feedback, navegacao: a.navegacao },
 		// quantas tentativas o aluno já usou (sem as anuladas) e o limite, para a mensagem de encerramento
 		tentativas: { usadas: await contarTentativasDoAluno(t.atividade_id, t.email), max: a.tentativas_max },
+		// o texto de apoio da atividade (cópia guardada na tentativa), mostrado antes da questão 1
+		suporte: t.suporte,
 		questoes: t.questoes.map(versaoAluno),
 		respostas,
 		// a nota aparece com o gabarito (Treino) ou, na Prova, quando o professor liberou; o gabarito nunca depende disto

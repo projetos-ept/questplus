@@ -157,7 +157,7 @@ describe('questão aberta: cadastro, importação e resposta', () => {
 	it('o aluno nunca recebe referência, conceitos nem rubrica', () => {
 		const q = validarQuestao(base);
 		if (!q.ok) throw new Error('x');
-		const v = versaoAluno({ id: 1, tipo: 'aberta', enunciado: 'E', config: q.valor.config, explicacao: 'segredo', pontos: 4, suporte: null });
+		const v = versaoAluno({ id: 1, tipo: 'aberta', enunciado: 'E', config: q.valor.config, explicacao: 'segredo', pontos: 4 });
 		expect(JSON.stringify(v)).not.toMatch(/Resposta modelo|conceitos|sinonimos|segredo|pontos_por_nivel/);
 		expect(v.config).toEqual({ max_chars: 1200, min_chars: 20 });
 	});
@@ -192,10 +192,10 @@ describe('formulário: disciplina vira a primeira etiqueta', () => {
 		const { entradaDe, formularioDe, formularioVazio } = await import('./questao');
 		const f = { ...formularioVazio(), enunciado: 'x', disciplina: 'hematologia', etiquetas: 'Coleta, hematologia, tubos' };
 		expect(entradaDe(f).etiquetas).toEqual(['hematologia', 'coleta', 'tubos']);
-		const volta = formularioDe({ tipo: 'mc', enunciado: 'x', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 0 }, explicacao: null, pontos: 1, suporte_id: null, etiquetas: ['hematologia', 'coleta'], ativa: true });
+		const volta = formularioDe({ tipo: 'mc', enunciado: 'x', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 0 }, explicacao: null, pontos: 1, etiquetas: ['hematologia', 'coleta'], ativa: true });
 		expect(volta.disciplina).toBe('hematologia');
 		expect(volta.etiquetas).toBe('coleta');
-		const antiga = formularioDe({ tipo: 'mc', enunciado: 'x', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 0 }, explicacao: null, pontos: 1, suporte_id: null, etiquetas: ['coleta', 'tubos'], ativa: true });
+		const antiga = formularioDe({ tipo: 'mc', enunciado: 'x', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 0 }, explicacao: null, pontos: 1, etiquetas: ['coleta', 'tubos'], ativa: true });
 		expect(antiga.disciplina).toBe('');
 		expect(antiga.etiquetas).toBe('coleta, tubos');
 	});

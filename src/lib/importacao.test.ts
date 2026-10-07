@@ -21,23 +21,22 @@ describe('lerArquivo', () => {
 		expect(lerArquivo('[]').ok).toBe(false);
 		expect(lerArquivo(JSON.stringify(Array(1001).fill(mc))).ok).toBe(false);
 	});
-	it('valida os textos de apoio (ref obrigatória e única, título e texto)', () => {
-		const q = [mc];
-		expect(lerArquivo(JSON.stringify({ suportes: [{ ref: 's1', titulo: 'T', texto: 'x' }], questoes: q }))).toMatchObject({ ok: true, valor: { suportes: [{ ref: 's1', titulo: 'T' }] } });
-		expect(lerArquivo(JSON.stringify({ suportes: [{ titulo: 'T', texto: 'x' }], questoes: q })).ok).toBe(false);
-		expect(lerArquivo(JSON.stringify({ suportes: [{ ref: 's1', titulo: 'T', texto: 'x' }, { ref: 's1', titulo: 'U', texto: 'y' }], questoes: q })).ok).toBe(false);
-		expect(lerArquivo(JSON.stringify({ suportes: [{ ref: 's1', titulo: '', texto: 'x' }], questoes: q })).ok).toBe(false);
+	it('arquivo antigo com textos de apoio: lê as questões e conta os textos ignorados', () => {
+		const r = lerArquivo(JSON.stringify({ suportes: [{ ref: 's1', titulo: 'T', texto: 'x' }, { ref: 's2', titulo: 'U', texto: 'y' }], questoes: [mc] }));
+		expect(r).toMatchObject({ ok: true, valor: { suportesIgnorados: 2 } });
+		expect(r.ok && r.valor.questoes).toHaveLength(1);
+		expect(lerArquivo(JSON.stringify({ questoes: [mc] }))).toMatchObject({ ok: true, valor: { suportesIgnorados: 0 } });
 	});
 });
 
 describe('normalizarQuestao', () => {
 	it('aceita o formato do prompt (alternativas e correta no topo)', () => {
 		const r = normalizarQuestao(mc);
-		expect(r).toMatchObject({ ok: true, valor: { tipo: 'mc', config: { alternativas: ['Aedes', 'Anopheles', 'Culex', 'Lutzomyia'], correta: 1 }, suporte_ref: null } });
+		expect(r).toMatchObject({ ok: true, valor: { tipo: 'mc', config: { alternativas: ['Aedes', 'Anopheles', 'Culex', 'Lutzomyia'], correta: 1 } } });
 	});
 	it('aceita o formato exportado (config explícito)', () => {
-		const r = normalizarQuestao({ tipo: 'mc', enunciado: 'Q', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 3 }, suporte: 's2' });
-		expect(r).toMatchObject({ ok: true, valor: { config: { correta: 3 }, suporte_ref: 's2' } });
+		const r = normalizarQuestao({ tipo: 'mc', enunciado: 'Q', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 3 } });
+		expect(r).toMatchObject({ ok: true, valor: { config: { correta: 3 } } });
 	});
 	it('tira letras do começo das alternativas (só se todas tiverem)', () => {
 		const com = normalizarQuestao({ ...mc, alternativas: ['A) Aedes', 'B) Anopheles', 'C) Culex', 'D) Lutzomyia'] });
@@ -91,29 +90,30 @@ describe('exportar e reimportar', () => {
 	it('o arquivo exportado é lido de volta sem perda', () => {
 		const exp = montarExportacao(
 			[
-				{ tipo: 'mc', enunciado: 'Q1', config: { alternativas: ['a', 'b', 'c', 'd', 'e'], correta: 4 }, explicacao: 'porque', pontos: 2, suporte_id: 7, etiquetas: ['x'], ativa: false },
-				{ tipo: 'vf', enunciado: 'Q2', config: { afirmacoes: [{ texto: 'a', valor: true }] }, explicacao: null, pontos: 1, suporte_id: null, etiquetas: [], ativa: true }
-			],
-			[{ id: 7, titulo: 'Apoio', texto: 'Texto', imagens: [] }]
+				{ tipo: 'mc', enunciado: 'Q1', config: { alternativas: ['a', 'b', 'c', 'd', 'e'], correta: 4 }, explicacao: 'porque', pontos: 2, etiquetas: ['x'], ativa: false },
+				{ tipo: 'vf', enunciado: 'Q2', config: { afirmacoes: [{ texto: 'a', valor: true }] }, explicacao: null, pontos: 1, etiquetas: [], ativa: true }
+			]
 		);
 		const lido = lerArquivo(JSON.stringify(exp));
-		expect(lido.ok && lido.valor.suportes).toEqual([{ ref: 's7', titulo: 'Apoio', texto: 'Texto', imagens: [] }]);
+		expect(exp.versao).toBe(2);
+		expect(JSON.stringify(exp)).not.toMatch(/suporte/);
 		const q = lido.ok ? lido.valor.questoes.map(normalizarQuestao) : [];
-		expect(q[0]).toMatchObject({ ok: true, valor: { tipo: 'mc', pontos: 2, ativa: false, suporte_ref: 's7', explicacao: 'porque', config: { correta: 4 } } });
-		expect(q[1]).toMatchObject({ ok: true, valor: { tipo: 'vf', suporte_ref: null, explicacao: null } });
+		expect(q[0]).toMatchObject({ ok: true, valor: { tipo: 'mc', pontos: 2, ativa: false, explicacao: 'porque', config: { correta: 4 } } });
+		expect(q[1]).toMatchObject({ ok: true, valor: { tipo: 'vf', explicacao: null } });
 	});
 });
 
 describe('instrução para IA', () => {
 	it('inclui tema, quantidade, nível, formatos e etiquetas', () => {
-		const p = montarPromptIA({ ...OPCOES_PROMPT_PADRAO, tema: 'Ciclo da malária', quantidade: 7, nivel: 'difícil', formatos: { mc4: false, mc5: true, vf: true, aberta: false }, etiquetas: 'Malária, Parasitologia', comApoio: true });
+		const p = montarPromptIA({ ...OPCOES_PROMPT_PADRAO, tema: 'Ciclo da malária', quantidade: 7, nivel: 'difícil', formatos: { mc4: false, mc5: true, vf: true, aberta: false }, etiquetas: 'Malária, Parasitologia' });
 		expect(p).toContain('7 questões');
 		expect(p).toContain('Ciclo da malária');
 		expect(p).toContain('NÍVEL DE DIFICULDADE: difícil');
 		expect(p).toContain('múltipla escolha com 5 alternativas, verdadeiro ou falso');
 		expect(p).not.toContain('com 4 alternativas');
 		expect(p).toContain('malária, parasitologia');
-		expect(p).toContain('TEXTO DE APOIO');
+		expect(p).not.toContain('TEXTO DE APOIO');
+		expect(p).toContain('Não crie texto de apoio');
 		expect(p).toContain('questplus-questoes');
 	});
 	it('o exemplo do próprio prompt é um JSON que a importação aceita', () => {

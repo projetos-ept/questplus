@@ -5,9 +5,10 @@
 	import { rotuloDoNivel } from '#lib/aberta';
 	import { imagemDe } from '#lib/imagens';
 	import FiguraQuestao from './FiguraQuestao.svelte';
+	import { diagramas } from '#lib/diagramas';
 	import { renderSuporte } from '#lib/suporte';
 	import type { Aberta, Mc, Vf } from '#lib/questao';
-	import type { QuestaoSnapshot } from '#lib/atividade';
+	import type { QuestaoSnapshot, SuporteSnapshot } from '#lib/atividade';
 
 	export type DadosRelatorio = {
 		id: number;
@@ -24,6 +25,8 @@
 		tentativaNumero: number;
 		tentativasTotal: number;
 		melhor: boolean;
+		/** Texto de apoio da atividade, impresso uma vez antes das questões. */
+		suporte?: SuporteSnapshot | null;
 		questoes: QuestaoSnapshot[];
 		respostas: Record<number, { resposta: { escolha?: number; valores?: (boolean | null)[]; texto?: string }; pontos_final: number | null; pendente?: boolean; nivel_final?: number | null; justificativa?: string | null; aproximacao?: number | null }>;
 	};
@@ -32,16 +35,6 @@
 
 	const LETRAS = ['A', 'B', 'C', 'D', 'E'];
 	const pts = (n: number) => String(Math.round(n * 100) / 100).replace('.', ',');
-	/** Mesmo apoio em várias questões: só a primeira o mostra por inteiro; as outras apontam para ela (na ordem em que o aluno viu). */
-	const primeiraComApoio = $derived.by(() => {
-		const vistos = new Map<string, number>();
-		return dados.questoes.map((q, i) => {
-			if (!q.suporte) return null;
-			const chave = JSON.stringify([q.suporte.titulo, q.suporte.texto, q.suporte.imagens ?? q.suporte.imagem_chave ?? null]);
-			if (!vistos.has(chave)) vistos.set(chave, i);
-			return vistos.get(chave)!;
-		});
-	});
 	const textoVF = (v: boolean | null | undefined) => (v === true ? 'Verdadeiro' : v === false ? 'Falso' : 'Em branco');
 </script>
 
@@ -64,6 +57,13 @@
 		</p>
 	</header>
 
+	{#if apoio && dados.suporte}
+		<section class="apoio apoio-topo nao-quebrar">
+			<strong>Texto de apoio: {dados.suporte.titulo}</strong>
+			<div class="md" use:diagramas={dados.suporte.texto}>{@html renderSuporte(dados.suporte.texto, imagensDe(dados.suporte)).html}</div>
+		</section>
+	{/if}
+
 	{#each dados.questoes as q, i (q.id)}
 		{@const r = dados.respostas[q.id]}
 		{@const ganhos = r?.pontos_final ?? 0}
@@ -72,14 +72,6 @@
 				Questão {i + 1}
 				<span class="pontos">{r?.pendente ? `Aguardando correção do professor · 0 de ${pts(q.pontos)} por enquanto` : r ? `${pts(ganhos)} de ${pts(q.pontos)} ponto(s)` : `Sem resposta · 0 de ${pts(q.pontos)}`}</span>
 			</h3>
-			{#if apoio && q.suporte && primeiraComApoio[i] !== i}
-				<p class="suave apoio-ref">Mesmo texto de apoio da questão {(primeiraComApoio[i] ?? 0) + 1}: <em>{q.suporte.titulo}</em></p>
-			{:else if apoio && q.suporte}
-				<div class="apoio">
-					<strong>{q.suporte.titulo}</strong>
-					<div class="md">{@html renderSuporte(q.suporte.texto, imagensDe(q.suporte)).html}</div>
-				</div>
-			{/if}
 			<p class="enunciado">{q.enunciado}</p>
 			<FiguraQuestao imagem={imagemDe(q.config)} />
 
@@ -133,7 +125,7 @@
 
 <style>
 	.relatorio { max-width: 52rem; margin: 0 auto; }
-	.apoio-ref { margin: 0.25rem 0 0.5rem; }
+	.apoio-topo { margin: 1rem 0; }
 	.texto-aberta { margin: 0.25rem 0 0.75rem; padding: 0.5rem 0.75rem; white-space: pre-wrap; overflow-wrap: anywhere; border-left: 3px solid var(--borda); }
 	.marca { margin: 0; font-size: 0.85rem; }
 	h2 { margin: 0.1rem 0 0.5rem; font-size: 1.4rem; }

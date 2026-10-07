@@ -1,68 +1,59 @@
 import { DISCIPLINAS } from './disciplinas';
 import { imagemDe } from './imagens';
-import { validarQuestao, validarSuporte, type QuestaoValida, type Resultado, type Suporte } from './questao';
+import { validarQuestao, type QuestaoValida, type Resultado } from './questao';
 
 export const FORMATO_ARQUIVO = 'questplus-questoes';
-export const VERSAO_ARQUIVO = 1;
+/** v2: a questão não tem mais texto de apoio (ele agora pertence à atividade e tem arquivo próprio, ver importacao-suportes.ts). */
+export const VERSAO_ARQUIVO = 2;
 export const MAX_QUESTOES_POR_ARQUIVO = 1000;
 /** Tamanho do bloco enviado por requisição (limites do plano gratuito: CPU e consultas por invocação). */
 export const TAMANHO_BLOCO = 40;
 
-export type SuporteImportado = Suporte & { ref: string };
 /** `tinha_imagem`: o arquivo trazia a observação "[img]" (a imagem não viaja no arquivo exportado). */
-export type QuestaoNormalizada = QuestaoValida & { suporte_ref: string | null; tinha_imagem: boolean };
+export type QuestaoNormalizada = QuestaoValida & { tinha_imagem: boolean };
 
 // ---------- ler o arquivo (ou o texto colado) ----------
 
-/** Aceita o arquivo completo, uma lista de questões, uma questão solta, e texto com cerca de código markdown ou frase antes/depois. */
-export function lerArquivo(texto: string): Resultado<{ suportes: SuporteImportado[]; questoes: unknown[] }> {
+/** Lê JSON de um arquivo ou texto colado: aceita cerca de código markdown e frase antes/depois. */
+export function lerJson(texto: string): Resultado<unknown> {
 	let t = texto.replace(/^﻿/, '').trim();
 	if (!t) return { ok: false, erros: ['Cole o JSON ou escolha um arquivo.'] };
 	const cerca = /^```[a-z]*\s*([\s\S]*?)\s*```$/i.exec(t);
 	if (cerca) t = cerca[1];
-
-	let dados: unknown;
 	try {
-		dados = JSON.parse(t);
+		return { ok: true, valor: JSON.parse(t) };
 	} catch {
 		const ini = t.search(/[[{]/);
 		const fim = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
 		try {
-			dados = ini >= 0 && fim > ini ? JSON.parse(t.slice(ini, fim + 1)) : undefined;
+			if (ini >= 0 && fim > ini) return { ok: true, valor: JSON.parse(t.slice(ini, fim + 1)) };
 		} catch {
-			dados = undefined;
+			// cai na mensagem abaixo
 		}
-		if (dados === undefined) return { ok: false, erros: ['Não consegui ler como JSON. Confira se o texto está completo e sem comentários.'] };
+		return { ok: false, erros: ['Não consegui ler como JSON. Confira se o texto está completo e sem comentários.'] };
 	}
+}
+
+/** Aceita o arquivo completo, uma lista de questões, uma questão solta, e texto com cerca de código markdown ou frase antes/depois. */
+export function lerArquivo(texto: string): Resultado<{ suportesIgnorados: number; questoes: unknown[] }> {
+	const lido = lerJson(texto);
+	if (!lido.ok) return lido;
+	const dados = lido.valor;
 
 	let bruto: unknown[];
-	let suportesBrutos: unknown[] = [];
+	let suportesIgnorados = 0;
 	if (Array.isArray(dados)) bruto = dados;
 	else if (dados && typeof dados === 'object' && Array.isArray((dados as { questoes?: unknown }).questoes)) {
 		bruto = (dados as { questoes: unknown[] }).questoes;
+		// arquivos antigos traziam textos de apoio junto: agora eles entram por Textos de apoio > Importar
 		const s = (dados as { suportes?: unknown }).suportes;
-		if (Array.isArray(s)) suportesBrutos = s;
+		if (Array.isArray(s)) suportesIgnorados = s.length;
 	} else if (dados && typeof dados === 'object' && 'enunciado' in dados) bruto = [dados];
 	else return { ok: false, erros: ['O JSON precisa ter uma lista "questoes" (ou ser uma lista de questões).'] };
 
 	if (bruto.length === 0) return { ok: false, erros: ['Não há nenhuma questão no arquivo.'] };
 	if (bruto.length > MAX_QUESTOES_POR_ARQUIVO) return { ok: false, erros: [`O arquivo tem ${bruto.length} questões; o limite é ${MAX_QUESTOES_POR_ARQUIVO} por importação.`] };
-
-	const erros: string[] = [];
-	const suportes: SuporteImportado[] = [];
-	const refs = new Set<string>();
-	suportesBrutos.forEach((s, i) => {
-		const o = (s && typeof s === 'object' ? s : {}) as Record<string, unknown>;
-		const ref = typeof o.ref === 'string' || typeof o.ref === 'number' ? String(o.ref).trim() : '';
-		if (!ref) return void erros.push(`Texto de apoio ${i + 1}: falta o campo "ref" (um nome curto, como "s1").`);
-		if (refs.has(ref)) return void erros.push(`Texto de apoio ${i + 1}: a ref "${ref}" está repetida.`);
-		refs.add(ref);
-		const v = validarSuporte({ titulo: o.titulo, texto: o.texto, imagens: o.imagens, imagem_chave: o.imagem_chave });
-		if (!v.ok) return void erros.push(`Texto de apoio "${ref}": ${v.erros.join(' ')}`);
-		suportes.push({ ref, ...v.valor });
-	});
-	if (erros.length) return { ok: false, erros };
-	return { ok: true, valor: { suportes, questoes: bruto } };
+	return { ok: true, valor: { suportesIgnorados, questoes: bruto } };
 }
 
 // ---------- normalizar uma questão (tolerante a variações comuns de IA) ----------
@@ -144,12 +135,11 @@ export function normalizarQuestao(bruta: unknown): Resultado<QuestaoNormalizada>
 		};
 	}
 
-	const suporteRef = o.suporte === null || o.suporte === undefined || o.suporte === '' ? null : String(o.suporte).trim();
 	const r = validarQuestao({
-		tipo, enunciado: o.enunciado, config, explicacao: o.explicacao, pontos: o.pontos, etiquetas: o.etiquetas, ativa: o.ativa, suporte_id: null, imagem: o.imagem ?? c.imagem
+		tipo, enunciado: o.enunciado, config, explicacao: o.explicacao, pontos: o.pontos, etiquetas: o.etiquetas, ativa: o.ativa, imagem: o.imagem ?? c.imagem
 	});
 	const tinhaImagem = typeof o.observacao === 'string' && /\[img\]/i.test(o.observacao);
-	return r.ok ? { ok: true, valor: { ...r.valor, suporte_ref: suporteRef, tinha_imagem: tinhaImagem } } : r;
+	return r.ok ? { ok: true, valor: { ...r.valor, tinha_imagem: tinhaImagem } } : r;
 }
 
 /** Chave para achar questões repetidas: mesmo formato e enunciado, ignorando caixa, acentos e espaços. */
@@ -158,30 +148,26 @@ export const chaveDuplicada = (tipo: string, enunciado: string) =>
 
 // ---------- exportar ----------
 
-type QuestaoExportavel = Omit<QuestaoValida, 'suporte_id'> & { suporte_id: number | null };
-type SuporteExportavel = { id: number; titulo: string; texto: string; imagens: Suporte['imagens'] };
+type QuestaoExportavel = Omit<QuestaoValida, 'imagem'>;
 
-export function montarExportacao(questoes: QuestaoExportavel[], suportes: SuporteExportavel[], quando = new Date()) {
-	const refDe = (id: number) => `s${id}`;
+export function montarExportacao(questoes: QuestaoExportavel[], quando = new Date()) {
 	return {
 		formato: FORMATO_ARQUIVO,
 		versao: VERSAO_ARQUIVO,
 		exportado_em: quando.toISOString(),
-		suportes: suportes.map((s) => ({ ref: refDe(s.id), titulo: s.titulo, texto: s.texto, imagens: s.imagens })),
 		questoes: questoes.map((q) => {
 			// a imagem não viaja no arquivo (o arquivo dela fica no R2 deste sistema): sai sem ela e com a observação "[img]"
 			const imagem = imagemDe(q.config);
 			const { imagem: _fora, ...config } = (q.config ?? {}) as Record<string, unknown>;
 			return {
-			tipo: q.tipo,
-			enunciado: q.enunciado,
-			config: imagem ? config : q.config,
-			...(imagem && { observacao: `[img] Esta questão tem uma imagem${imagem.legenda ? ` (legenda: ${imagem.legenda})` : ''} que não vai neste arquivo. Anexe-a de novo depois de importar.` }),
-			explicacao: q.explicacao,
-			pontos: q.pontos,
-			etiquetas: q.etiquetas,
-			ativa: q.ativa,
-			suporte: q.suporte_id === null ? null : refDe(q.suporte_id)
+				tipo: q.tipo,
+				enunciado: q.enunciado,
+				config: imagem ? config : q.config,
+				...(imagem && { observacao: `[img] Esta questão tem uma imagem${imagem.legenda ? ` (legenda: ${imagem.legenda})` : ''} que não vai neste arquivo. Anexe-a de novo depois de importar.` }),
+				explicacao: q.explicacao,
+				pontos: q.pontos,
+				etiquetas: q.etiquetas,
+				ativa: q.ativa
 			};
 		})
 	};
@@ -197,7 +183,6 @@ export type OpcoesPrompt = {
 	etiquetas: string;
 	/** Id da disciplina que todas as questões devem ter como primeira etiqueta ('' = a IA escolhe entre as da lista). */
 	disciplina: string;
-	comApoio: boolean;
 };
 
 export const OPCOES_PROMPT_PADRAO: OpcoesPrompt = {
@@ -206,8 +191,7 @@ export const OPCOES_PROMPT_PADRAO: OpcoesPrompt = {
 	nivel: 'médio',
 	formatos: { mc4: true, mc5: false, vf: true, aberta: true },
 	etiquetas: '',
-	disciplina: '',
-	comApoio: false
+	disciplina: ''
 };
 
 const ABERTA_REGRAS = `
@@ -241,16 +225,13 @@ TEMA / CONTEÚDO BASE:
 ${o.tema.trim() || OPCOES_PROMPT_PADRAO.tema}
 
 NÍVEL DE DIFICULDADE: ${o.nivel}
-FORMATOS PERMITIDOS: ${formatos || 'múltipla escolha com 4 alternativas'}${etiquetas.length ? `\nETIQUETAS A USAR EM TODAS AS QUESTÕES: ${etiquetas.join(', ')}` : ''}${o.comApoio ? '\nTEXTO DE APOIO: quando fizer sentido, crie um texto de apoio curto e use-o em mais de uma questão.' : ''}
+FORMATOS PERMITIDOS: ${formatos || 'múltipla escolha com 4 alternativas'}${etiquetas.length ? `\nETIQUETAS A USAR EM TODAS AS QUESTÕES: ${etiquetas.join(', ')}` : ''}
 
 Responda SOMENTE com um JSON válido, sem nenhum texto antes ou depois e sem bloco de código markdown, exatamente neste formato:
 
 {
   "formato": "${FORMATO_ARQUIVO}",
   "versao": ${VERSAO_ARQUIVO},
-  "suportes": [
-    { "ref": "s1", "titulo": "Título do texto de apoio", "texto": "Texto de apoio em Markdown simples" }
-  ],
   "questoes": [
     {
       "tipo": "mc",
@@ -259,8 +240,7 @@ Responda SOMENTE com um JSON válido, sem nenhum texto antes ou depois e sem blo
       "correta": 1,
       "explicacao": "Por que a alternativa correta está certa.",
       "pontos": 1,
-      "etiquetas": ["hematologia", "assunto"],
-      "suporte": "s1"
+      "etiquetas": ["hematologia", "assunto"]
     },
     {
       "tipo": "vf",
@@ -284,8 +264,8 @@ REGRAS OBRIGATÓRIAS:
 5. "explicacao": de 1 a 3 frases explicando o gabarito.
 6. "pontos": número positivo (1 para MC; para VF, use a quantidade de afirmações).
 7. "etiquetas": de 2 a 5, em minúsculas, sem acento, curtas. A PRIMEIRA etiqueta é OBRIGATORIAMENTE a disciplina do curso técnico em Análises Clínicas, escrita exatamente como em uma destas opções: ${DISCIPLINAS.map((d) => d.id).join(", ")}${o.disciplina ? `. Nesta tarefa, a primeira etiqueta de TODAS as questões deve ser exatamente "${o.disciplina}"` : ". Escolha a que melhor combina com o conteúdo de cada questão"}. As demais etiquetas são o assunto específico.
-8. "suportes" e o campo "suporte" só se houver texto de apoio; caso contrário, deixe "suportes" como lista vazia e omita "suporte". Cada "ref" é única.
+8. Não crie texto de apoio nem o campo "suporte": o texto de apoio é cadastrado à parte e escolhido na atividade. Cada questão deve fazer sentido sozinha.
 9. Português do Brasil, linguagem técnica correta, sem ambiguidade, sem "todas as anteriores" e sem "nenhuma das anteriores".
-10. Nada de HTML. Markdown simples só dentro do texto de apoio.
+10. Nada de HTML nem Markdown no enunciado e nas alternativas: só texto simples.
 11. Confira o gabarito de cada questão antes de responder: a alternativa no índice "correta" tem de ser mesmo a certa.${o.formatos.aberta ? ABERTA_REGRAS : ''}`;
 }

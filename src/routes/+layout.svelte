@@ -119,6 +119,33 @@
 		vertical-align: top;
 		border-bottom: 1px solid var(--borda);
 	}
+	:global(.mermaid-bloco) {
+		margin: 0.75rem 0;
+		padding: 0.75rem;
+		overflow-x: auto;
+		text-align: center;
+		color: #1a1d21;
+		background: #fff;
+		border: 1px solid var(--borda);
+		border-radius: 0.4rem;
+	}
+	:global(.mermaid-bloco svg) {
+		max-width: 100%;
+		height: auto;
+	}
+	:global(.mermaid-fonte) {
+		margin: 0;
+		text-align: left;
+		white-space: pre-wrap;
+		overflow-wrap: anywhere;
+		font-size: 0.85rem;
+	}
+	:global(.mermaid-aviso) {
+		margin: 0 0 0.5rem;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--erro);
+	}
 	:global(.suporte-img) {
 		margin: 0.75rem 0;
 		text-align: center;

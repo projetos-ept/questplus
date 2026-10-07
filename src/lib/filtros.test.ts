@@ -3,8 +3,8 @@ import { filtroDeParams, filtroVazio, filtrosAtivos, paramsDeFiltro } from './fi
 
 describe('filtros combináveis na URL', () => {
 	it('lê, normaliza e descarta valores inválidos', () => {
-		const f = filtroDeParams(new URLSearchParams('q= ab &tipo=xx&disciplina=Hematologia&etiquetas=Coleta,coleta,tubos&ativa=9&apoio=1&ordem=foo'));
-		expect(f).toEqual({ q: 'ab', tipo: '', disciplina: 'hematologia', etiquetas: ['coleta', 'tubos'], ativa: '', apoio: '1', ordem: 'recentes' });
+		const f = filtroDeParams(new URLSearchParams('q= ab &tipo=xx&disciplina=Hematologia&etiquetas=Coleta,coleta,tubos&ativa=9&ordem=foo'));
+		expect(f).toEqual({ q: 'ab', tipo: '', disciplina: 'hematologia', etiquetas: ['coleta', 'tubos'], ativa: '', ordem: 'recentes' });
 	});
 	it('aceita o parâmetro antigo etiqueta', () => {
 		expect(filtroDeParams(new URLSearchParams('etiqueta=Coleta')).etiquetas).toEqual(['coleta']);

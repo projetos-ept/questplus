@@ -26,6 +26,7 @@
 	id={data.id}
 	inicial={{ ...data.atividade, questoes: data.questoes, turmas: data.turmasSel }}
 	turmasDisponiveis={data.turmas}
+	suporteTitulo={data.suporteTitulo}
 />
 
 <style>

@@ -41,6 +41,7 @@ export function embaralhar<T>(lista: T[], rnd: () => number = aleatorio): T[] {
 
 // ---------- cópia da questão guardada na tentativa ----------
 /** `imagem_chave` existe só nas cópias antigas (uma imagem); as novas guardam `imagens`. */
+/** Cópia do texto de apoio que a tentativa guarda (o da atividade, mostrado antes da questão 1). */
 export type SuporteSnapshot = { titulo: string; texto: string; imagem_chave?: string | null; imagens?: import('./imagens').ImagemSuporte[] };
 
 export type QuestaoSnapshot = {
@@ -50,7 +51,6 @@ export type QuestaoSnapshot = {
 	config: Mc | Vf | Aberta; // MC já na ordem em que o aluno vê, com `correta` remapeada
 	explicacao: string | null;
 	pontos: number;
-	suporte: SuporteSnapshot | null;
 };
 
 export type QuestaoAluno = Omit<QuestaoSnapshot, 'config' | 'explicacao'> & {
@@ -67,7 +67,6 @@ export function montarSnapshot(
 		config: unknown;
 		explicacao: string | null;
 		pontos: number;
-		suporte: SuporteSnapshot | null;
 	},
 	embaralharAlternativas: boolean,
 	rnd?: () => number
@@ -87,8 +86,7 @@ export function montarSnapshot(
 		enunciado: q.enunciado,
 		config,
 		explicacao: q.explicacao,
-		pontos: q.pontos,
-		suporte: q.suporte
+		pontos: q.pontos
 	};
 }
 
@@ -101,7 +99,7 @@ export function versaoAluno(s: QuestaoSnapshot): QuestaoAluno {
 			: s.tipo === 'aberta'
 				? { max_chars: MAX_RESPOSTA_ABERTA, min_chars: (s.config as Aberta).min_chars }
 				: { afirmacoes: (s.config as Vf).afirmacoes.map((a) => ({ texto: a.texto })) };
-	return { id: s.id, tipo: s.tipo, enunciado: s.enunciado, pontos: s.pontos, suporte: s.suporte, imagem: imagemDe(s.config), config };
+	return { id: s.id, tipo: s.tipo, enunciado: s.enunciado, pontos: s.pontos, imagem: imagemDe(s.config), config };
 }
 
 // ---------- validação de turmas e atividades ----------
@@ -137,6 +135,8 @@ export type AtividadeValida = {
 	mostra_nota: boolean;
 	abre_em: string | null;
 	fecha_em: string | null;
+	/** Texto de apoio da atividade (aparece antes da questão 1); null = sem apoio. */
+	suporte_id: number | null;
 	questoes: { questao_id: number; pontos: number | null }[];
 	turmas: number[];
 };
@@ -226,13 +226,22 @@ export function validarAtividade(entrada: unknown): Resultado<AtividadeValida> {
 	if (turmas.length < 1 || turmas.length > 50) erros.push('Escolha ao menos uma turma.');
 	if (turmas.some((t) => !Number.isInteger(t) || t < 1) || new Set(turmas).size !== turmas.length) erros.push('Turma inválida na lista.');
 
+	let suporte_id: number | null = null;
+	if (!vazio(e.suporte_id)) {
+		suporte_id = Number(e.suporte_id);
+		if (!Number.isInteger(suporte_id) || suporte_id < 1) {
+			erros.push('Texto de apoio inválido.');
+			suporte_id = null;
+		}
+	}
+
 	if (erros.length) return { ok: false, erros };
 	return {
 		ok: true,
 		valor: {
 			titulo, codigo: codigoBruto || null, ativa: e.ativa !== false, modo, tempo_total, tentativas_max,
 			navegacao: navegacao as Navegacao, embaralhar: e.embaralhar === true, mostra_nota: modo === 'prova' && e.mostra_nota === true,
-			abre_em, fecha_em, questoes, turmas
+			abre_em, fecha_em, suporte_id, questoes, turmas
 		}
 	};
 }

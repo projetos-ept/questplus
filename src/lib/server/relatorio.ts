@@ -125,6 +125,7 @@ export async function relatorioDaTentativa(id: number) {
 		tentativaNumero: numero,
 		tentativasTotal: irmas.length,
 		melhor: !!consolidado && consolidado.melhor.id === t.id && valida({ ...t, turma: '' } as TentativaResumo),
+		suporte: t.suporte,
 		questoes: t.questoes as QuestaoSnapshot[],
 		respostas
 	};
@@ -154,9 +155,9 @@ export async function exportarResultadosJson(atividadeId: number, turmaId?: numb
 	const args = turmaId ? [atividadeId, turmaId] : [atividadeId];
 	const [linhas, resp, turma] = await Promise.all([
 		db()
-			.prepare(`SELECT t.id, t.nome, t.email, t.status, t.anulada, t.inicio_em, t.finalizada_em, t.nota, t.pontos_max, t.questoes, tu.nome AS turma FROM tentativas t JOIN turmas tu ON tu.id = t.turma_id WHERE ${where} ORDER BY t.id LIMIT 2000`)
+			.prepare(`SELECT t.id, t.nome, t.email, t.status, t.anulada, t.inicio_em, t.finalizada_em, t.nota, t.pontos_max, t.questoes, t.suporte, tu.nome AS turma FROM tentativas t JOIN turmas tu ON tu.id = t.turma_id WHERE ${where} ORDER BY t.id LIMIT 2000`)
 			.bind(...args)
-			.all<LinhaTentativa & { questoes: string }>(),
+			.all<LinhaTentativa & { questoes: string; suporte: string | null }>(),
 		db()
 			.prepare(`SELECT r.tentativa_id, r.questao_id, r.resposta, r.pontos_auto, r.pontos_final FROM respostas r JOIN tentativas t ON t.id = r.tentativa_id WHERE ${where}`)
 			.bind(...args)
@@ -181,7 +182,7 @@ export async function exportarResultadosJson(atividadeId: number, turmaId?: numb
 	};
 	const tentativas = linhas.results.map((t) => {
 		const meta = { id: t.id, nome: t.nome, email: t.email, turma: t.turma, status: t.status, anulada: t.anulada === 1, considerada: considerada.has(t.id), inicio_em: t.inicio_em, finalizada_em: t.finalizada_em, tempo_segundos: tempoGasto(t), nota: t.nota, pontos_max: t.pontos_max, percentual: percentualDe(t.nota, t.pontos_max) };
-		return `${JSON.stringify(meta).slice(0, -1)},"questoes":${t.questoes},"respostas":[${(porTentativa.get(t.id) ?? []).join(',')}]}`;
+		return `${JSON.stringify(meta).slice(0, -1)},"suporte":${t.suporte ?? 'null'},"questoes":${t.questoes},"respostas":[${(porTentativa.get(t.id) ?? []).join(',')}]}`;
 	});
 	return `${JSON.stringify(cabecalho, null, 2).slice(0, -2)},\n  "tentativas": [\n${tentativas.join(',\n')}\n  ]\n}\n`;
 }

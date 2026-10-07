@@ -1,4 +1,4 @@
-import { embaralhar, estadoAtividade, expirou, feedbackDoModo, gerarCodigo, montarSnapshot, prazoDaTentativa, type AtividadeValida, type Modo, type QuestaoSnapshot, type TurmaValida } from '#lib/atividade';
+import { embaralhar, estadoAtividade, expirou, feedbackDoModo, gerarCodigo, montarSnapshot, prazoDaTentativa, type AtividadeValida, type Modo, type QuestaoSnapshot, type SuporteSnapshot, type TurmaValida } from '#lib/atividade';
 import { imagensDe, type ImagemSuporte } from '#lib/imagens';
 import { db } from './env';
 
@@ -107,6 +107,7 @@ export type AtividadeLinha = {
 	mostra_nota: boolean;
 	abre_em: string | null;
 	fecha_em: string | null;
+	suporte_id: number | null;
 	criado_em: string;
 	atualizado_em: string;
 };
@@ -170,10 +171,11 @@ export async function turmasDaAtividade(id: number) {
 /** Confere se as questões existem e se as novas (não vinculadas antes) estão ativas; e se as turmas existem. */
 export async function conferirVinculos(v: AtividadeValida, atividadeId: number | null) {
 	const ids = JSON.stringify(v.questoes.map((q) => q.questao_id));
-	const [q, t, antes] = await db().batch([
+	const [q, t, antes, sup] = await db().batch([
 		db().prepare('SELECT id, ativa FROM questoes WHERE id IN (SELECT value FROM json_each(?))').bind(ids),
 		db().prepare('SELECT id FROM turmas WHERE id IN (SELECT value FROM json_each(?))').bind(JSON.stringify(v.turmas)),
-		db().prepare('SELECT questao_id FROM atividade_questoes WHERE atividade_id = ?').bind(atividadeId ?? -1)
+		db().prepare('SELECT questao_id FROM atividade_questoes WHERE atividade_id = ?').bind(atividadeId ?? -1),
+		db().prepare('SELECT id FROM suportes WHERE id = ?').bind(v.suporte_id ?? -1)
 	]);
 	const erros: string[] = [];
 	const existentes = new Map((q.results as { id: number; ativa: number }[]).map((x) => [x.id, x.ativa === 1]));
@@ -183,6 +185,7 @@ export async function conferirVinculos(v: AtividadeValida, atividadeId: number |
 		else if (!existentes.get(questao_id) && !jaVinculadas.has(questao_id)) erros.push(`A questão #${questao_id} está inativa e não pode entrar em atividades novas.`);
 	}
 	if (t.results.length !== v.turmas.length) erros.push('Alguma turma escolhida não existe.');
+	if (v.suporte_id !== null && sup.results.length === 0) erros.push('O texto de apoio escolhido não existe.');
 	return erros;
 }
 
@@ -202,10 +205,10 @@ export async function criarAtividade(v: AtividadeValida): Promise<{ id: number; 
 		try {
 			const r = await db()
 				.prepare(
-					`INSERT INTO atividades (titulo, codigo, ativa, modo, tempo_total, tentativas_max, feedback, navegacao, embaralhar, conta_nota, mostra_nota, abre_em, fecha_em)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+					`INSERT INTO atividades (titulo, codigo, ativa, modo, tempo_total, tentativas_max, feedback, navegacao, embaralhar, conta_nota, mostra_nota, abre_em, fecha_em, suporte_id)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
 				)
-				.bind(v.titulo, codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em)
+				.bind(v.titulo, codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, v.suporte_id)
 				.first<{ id: number }>();
 			const id = r!.id;
 			await db().batch([db().prepare(sqlQuestoes).bind(id, vinculosQuestoes(v)), db().prepare(sqlTurmas).bind(id, JSON.stringify(v.turmas))]);
@@ -226,9 +229,9 @@ export async function atualizarAtividade(id: number, v: AtividadeValida): Promis
 			db()
 				.prepare(
 					`UPDATE atividades SET titulo = ?, codigo = ?, ativa = ?, modo = ?, tempo_total = ?, tentativas_max = ?, feedback = ?, navegacao = ?,
-					 embaralhar = ?, conta_nota = ?, mostra_nota = ?, abre_em = ?, fecha_em = ?, atualizado_em = datetime('now') WHERE id = ?`
+					 embaralhar = ?, conta_nota = ?, mostra_nota = ?, abre_em = ?, fecha_em = ?, suporte_id = ?, atualizado_em = datetime('now') WHERE id = ?`
 				)
-				.bind(v.titulo, v.codigo ?? atual.codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, id),
+				.bind(v.titulo, v.codigo ?? atual.codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, v.suporte_id, id),
 			db().prepare('DELETE FROM atividade_questoes WHERE atividade_id = ?').bind(id),
 			db().prepare('DELETE FROM atividade_turmas WHERE atividade_id = ?').bind(id),
 			db().prepare(sqlQuestoes).bind(id, vinculosQuestoes(v)),
@@ -272,6 +275,8 @@ export type TentativaLinha = {
 	prazo_em: string | null;
 	acrescimo_segundos: number;
 	questoes: QuestaoSnapshot[];
+	/** Cópia do texto de apoio da atividade (antes da questão 1); null = atividade sem apoio. */
+	suporte: SuporteSnapshot | null;
 	status: 'andamento' | 'finalizada';
 	finalizada_em: string | null;
 	nota: number | null;
@@ -300,36 +305,28 @@ export async function turmaPermitida(atividadeId: number, turmaId: number) {
 export async function iniciarTentativa(a: AtividadeLinha, aluno: { nome: string; turma_id: number; email: string }) {
 	const linhas = await db()
 		.prepare(
-			`SELECT q.id, q.tipo, q.enunciado, q.config, q.explicacao, COALESCE(aq.pontos, q.pontos) AS pontos,
-				s.titulo AS s_titulo, s.texto AS s_texto, s.imagem_chave AS s_imagem, s.imagens AS s_imagens
+			`SELECT q.id, q.tipo, q.enunciado, q.config, q.explicacao, COALESCE(aq.pontos, q.pontos) AS pontos
 			 FROM atividade_questoes aq JOIN questoes q ON q.id = aq.questao_id
-			 LEFT JOIN suportes s ON s.id = q.suporte_id
 			 WHERE aq.atividade_id = ? ORDER BY aq.ordem`
 		)
 		.bind(a.id)
-		.all<{ id: number; tipo: string; enunciado: string; config: string; explicacao: string | null; pontos: number; s_titulo: string | null; s_texto: string | null; s_imagem: string | null; s_imagens: string | null }>();
+		.all<{ id: number; tipo: string; enunciado: string; config: string; explicacao: string | null; pontos: number }>();
 
 	let questoes = linhas.results.map((l) =>
-		montarSnapshot(
-			{
-				id: l.id,
-				tipo: l.tipo,
-				enunciado: l.enunciado,
-				config: JSON.parse(l.config),
-				explicacao: l.explicacao,
-				pontos: l.pontos,
-				suporte: l.s_titulo === null ? null : { titulo: l.s_titulo, texto: l.s_texto ?? '', imagens: imagensDoBanco(l.s_imagens, l.s_imagem) }
-			},
-			a.embaralhar
-		)
+		montarSnapshot({ id: l.id, tipo: l.tipo, enunciado: l.enunciado, config: JSON.parse(l.config), explicacao: l.explicacao, pontos: l.pontos }, a.embaralhar)
 	);
+	// o texto de apoio é da atividade: a tentativa guarda uma cópia (as edições do texto depois não mudam provas já feitas)
+	const sup = a.suporte_id
+		? await db().prepare('SELECT titulo, texto, imagem_chave, imagens FROM suportes WHERE id = ?').bind(a.suporte_id).first<{ titulo: string; texto: string; imagem_chave: string | null; imagens: string | null }>()
+		: null;
+	const suporte = sup ? { titulo: sup.titulo, texto: sup.texto, imagens: imagensDoBanco(sup.imagens, sup.imagem_chave) } : null;
 	if (a.embaralhar) questoes = embaralhar(questoes);
 
 	const agora = Date.now();
 	const token = novoToken();
 	const r = await db()
 		.prepare(
-			'INSERT INTO tentativas (atividade_id, token, nome, turma_id, email, inicio_em, prazo_em, questoes, pontos_max) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id'
+			'INSERT INTO tentativas (atividade_id, token, nome, turma_id, email, inicio_em, prazo_em, questoes, pontos_max, suporte) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id'
 		)
 		.bind(
 			a.id,
@@ -340,15 +337,16 @@ export async function iniciarTentativa(a: AtividadeLinha, aluno: { nome: string;
 			new Date(agora).toISOString(),
 			prazoDaTentativa(agora, a.tempo_total, a.fecha_em),
 			JSON.stringify(questoes),
-			questoes.reduce((s, q) => s + q.pontos, 0)
+			questoes.reduce((s, q) => s + q.pontos, 0),
+			suporte ? JSON.stringify(suporte) : null
 		)
 		.first<{ id: number }>();
 	return { id: r!.id, token };
 }
 
 export async function obterTentativa(id: number): Promise<TentativaLinha | null> {
-	const r = await db().prepare('SELECT * FROM tentativas WHERE id = ?').bind(id).first<Omit<TentativaLinha, 'questoes'> & { questoes: string }>();
-	return r ? { ...r, questoes: JSON.parse(r.questoes) } : null;
+	const r = await db().prepare('SELECT * FROM tentativas WHERE id = ?').bind(id).first<Omit<TentativaLinha, 'questoes' | 'suporte'> & { questoes: string; suporte: string | null }>();
+	return r ? { ...r, questoes: JSON.parse(r.questoes), suporte: r.suporte ? (JSON.parse(r.suporte) as SuporteSnapshot) : null } : null;
 }
 
 export type RespostaLinha = { questao_id: number; resposta: unknown; pontos_auto: number | null; pontos_final: number | null; status: string };
@@ -434,6 +432,7 @@ export async function clonarAtividade(id: number): Promise<{ id: number; codigo:
 		mostra_nota: a.mostra_nota,
 		abre_em: null,
 		fecha_em: null,
+		suporte_id: a.suporte_id,
 		questoes: det.questoes.map((q) => ({ questao_id: q.questao_id, pontos: q.pontos })),
 		turmas: det.turmas
 	});

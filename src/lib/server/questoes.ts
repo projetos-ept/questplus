@@ -1,8 +1,8 @@
 import { imagemDe } from '#lib/imagens';
 import { filtroDeParams } from '#lib/filtros';
-import { imagensDe, type ImagemSuporte } from '#lib/imagens';
-import type { QuestaoValida, Suporte } from '#lib/questao';
-import { db, midia } from './env';
+import type { QuestaoValida } from '#lib/questao';
+import { db } from './env';
+import { apagarImagensSemUso } from './midia-uso';
 
 export type QuestaoLinha = Omit<QuestaoValida, 'config'> & {
 	id: number;
@@ -34,8 +34,6 @@ export type Filtros = {
 	/** Todas as etiquetas listadas (E). */
 	etiquetas?: string[];
 	ativa?: boolean;
-	/** true: só com texto de apoio; false: só sem. */
-	apoio?: boolean;
 	q?: string;
 	ordem?: 'recentes' | 'antigas' | 'enunciado' | 'pontos';
 	limite?: number;
@@ -51,20 +49,18 @@ export function filtrosDeParams(p: URLSearchParams): Filtros {
 		disciplina: f.disciplina || undefined,
 		etiquetas: f.etiquetas.length ? f.etiquetas : undefined,
 		ativa: f.ativa === '' ? undefined : f.ativa === '1',
-		apoio: f.apoio === '' ? undefined : f.apoio === '1',
 		ordem: f.ordem
 	};
 }
 
 const TEM_ETIQUETA = 'EXISTS (SELECT 1 FROM json_each(questoes.etiquetas) WHERE value = ?)';
 
-function montarWhere(f: Filtros, ignorar: ('tipo' | 'disciplina' | 'etiquetas' | 'apoio')[] = []) {
+function montarWhere(f: Filtros, ignorar: ('tipo' | 'disciplina' | 'etiquetas')[] = []) {
 	const onde: string[] = [];
 	const valores: (string | number)[] = [];
 	if (f.tipo && !ignorar.includes('tipo')) (onde.push('tipo = ?'), valores.push(f.tipo));
 	if (f.ativa !== undefined) (onde.push('ativa = ?'), valores.push(f.ativa ? 1 : 0));
 	if (f.disciplina && !ignorar.includes('disciplina')) (onde.push("json_extract(questoes.etiquetas, '$[0]') = ?"), valores.push(f.disciplina));
-	if (f.apoio !== undefined && !ignorar.includes('apoio')) onde.push(f.apoio ? 'suporte_id IS NOT NULL' : 'suporte_id IS NULL');
 	if (!ignorar.includes('etiquetas')) {
 		for (const e of [...(f.etiqueta ? [f.etiqueta] : []), ...(f.etiquetas ?? [])]) (onde.push(TEM_ETIQUETA), valores.push(e));
 	}
@@ -111,20 +107,17 @@ export async function facetasQuestoes(f: Filtros) {
 	const d = montarWhere(f, ['disciplina']);
 	const t = montarWhere(f, ['tipo']);
 	const e = montarWhere(f, []);
-	const a = montarWhere(f, ['apoio']);
-	const [disc, tipos, tags, apoio] = await db().batch([
+	const [disc, tipos, tags] = await db().batch([
 		db().prepare(`SELECT json_extract(questoes.etiquetas, '$[0]') AS valor, COUNT(*) AS n FROM questoes ${d.clausula} GROUP BY valor HAVING valor IS NOT NULL ORDER BY n DESC, valor`).bind(...d.valores),
 		db().prepare(`SELECT tipo AS valor, COUNT(*) AS n FROM questoes ${t.clausula} GROUP BY tipo`).bind(...t.valores),
-		db().prepare(`SELECT j.value AS valor, COUNT(*) AS n FROM questoes, json_each(questoes.etiquetas) j ${e.clausula} GROUP BY j.value ORDER BY n DESC, valor LIMIT 60`).bind(...e.valores),
-		db().prepare(`SELECT suporte_id IS NOT NULL AS valor, COUNT(*) AS n FROM questoes ${a.clausula} GROUP BY valor`).bind(...a.valores)
+		db().prepare(`SELECT j.value AS valor, COUNT(*) AS n FROM questoes, json_each(questoes.etiquetas) j ${e.clausula} GROUP BY j.value ORDER BY n DESC, valor LIMIT 60`).bind(...e.valores)
 	]);
 	type L = { valor: string | number; n: number };
 	const selecionadas = new Set([...(f.etiqueta ? [f.etiqueta] : []), ...(f.etiquetas ?? [])]);
 	return {
 		disciplinas: (disc.results as L[]).map((x) => ({ valor: String(x.valor), n: x.n })),
 		tipos: Object.fromEntries((tipos.results as L[]).map((x) => [String(x.valor), x.n])) as Record<string, number>,
-		etiquetas: (tags.results as L[]).filter((x) => !selecionadas.has(String(x.valor))).map((x) => ({ valor: String(x.valor), n: x.n })),
-		apoio: { com: (apoio.results as L[]).find((x) => Number(x.valor) === 1)?.n ?? 0, sem: (apoio.results as L[]).find((x) => Number(x.valor) === 0)?.n ?? 0 }
+		etiquetas: (tags.results as L[]).filter((x) => !selecionadas.has(String(x.valor))).map((x) => ({ valor: String(x.valor), n: x.n }))
 	};
 }
 
@@ -202,15 +195,6 @@ export async function todasQuestoes(f: Filtros) {
 	return r.results.map(mapear);
 }
 
-export async function suportesPorIds(ids: number[]) {
-	if (!ids.length) return [];
-	const r = await db()
-		.prepare('SELECT * FROM suportes WHERE id IN (SELECT value FROM json_each(?)) ORDER BY id')
-		.bind(JSON.stringify(ids))
-		.all<SuporteBruto>();
-	return r.results.map(suporteDe);
-}
-
 export async function etiquetasExistentes() {
 	const r = await db()
 		.prepare('SELECT DISTINCT value FROM questoes, json_each(questoes.etiquetas) ORDER BY value')
@@ -223,16 +207,12 @@ export async function obterQuestao(id: number) {
 	return r ? mapear(r) : null;
 }
 
-export async function suporteExiste(id: number) {
-	return (await db().prepare('SELECT 1 AS x FROM suportes WHERE id = ?').bind(id).first()) !== null;
-}
-
 export async function criarQuestao(q: QuestaoValida) {
 	const r = await db()
 		.prepare(
-			'INSERT INTO questoes (tipo, enunciado, config, explicacao, pontos, suporte_id, etiquetas, ativa) VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING id'
+			'INSERT INTO questoes (tipo, enunciado, config, explicacao, pontos, etiquetas, ativa) VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING id'
 		)
-		.bind(q.tipo, q.enunciado, JSON.stringify(q.config), q.explicacao, q.pontos, q.suporte_id, JSON.stringify(q.etiquetas), q.ativa ? 1 : 0)
+		.bind(q.tipo, q.enunciado, JSON.stringify(q.config), q.explicacao, q.pontos, JSON.stringify(q.etiquetas), q.ativa ? 1 : 0)
 		.first<{ id: number }>();
 	return r!.id;
 }
@@ -241,9 +221,9 @@ export async function atualizarQuestao(id: number, q: QuestaoValida) {
 	const antes = (await obterQuestao(id))?.config;
 	const r = await db()
 		.prepare(
-			"UPDATE questoes SET tipo = ?, enunciado = ?, config = ?, explicacao = ?, pontos = ?, suporte_id = ?, etiquetas = ?, ativa = ?, atualizado_em = datetime('now') WHERE id = ?"
+			"UPDATE questoes SET tipo = ?, enunciado = ?, config = ?, explicacao = ?, pontos = ?, etiquetas = ?, ativa = ?, atualizado_em = datetime('now') WHERE id = ?"
 		)
-		.bind(q.tipo, q.enunciado, JSON.stringify(q.config), q.explicacao, q.pontos, q.suporte_id, JSON.stringify(q.etiquetas), q.ativa ? 1 : 0, id)
+		.bind(q.tipo, q.enunciado, JSON.stringify(q.config), q.explicacao, q.pontos, JSON.stringify(q.etiquetas), q.ativa ? 1 : 0, id)
 		.run();
 	// trocou ou tirou a imagem: o arquivo antigo só sai do R2 se ninguém mais o usa (apoios, provas já feitas, outras questões)
 	const velha = imagemDe(antes)?.chave;
@@ -274,88 +254,4 @@ export async function excluirQuestao(id: number): Promise<{ status: 'ok' | 'inex
 	await db().prepare('DELETE FROM questoes WHERE id = ?').bind(id).run();
 	if (chave) await apagarImagensSemUso([chave], 0);
 	return { status: 'ok' };
-}
-
-// ---------- suportes ----------
-export type SuporteLinha = Suporte & { id: number; imagem_chave: string | null; criado_em: string; atualizado_em: string; questoes?: number };
-type SuporteBruto = Omit<SuporteLinha, 'imagens'> & { imagens: string };
-
-function suporteDe(r: SuporteBruto): SuporteLinha {
-	let lista: ImagemSuporte[] = [];
-	try {
-		lista = JSON.parse(r.imagens) as ImagemSuporte[];
-	} catch {
-		lista = [];
-	}
-	return { ...r, imagens: imagensDe({ imagens: lista, imagem_chave: r.imagem_chave }) };
-}
-
-export async function listarSuportes() {
-	const r = await db()
-		.prepare(
-			'SELECT s.*, (SELECT COUNT(*) FROM questoes q WHERE q.suporte_id = s.id) AS questoes FROM suportes s ORDER BY s.id DESC'
-		)
-		.all<SuporteBruto>();
-	return r.results.map(suporteDe);
-}
-
-export async function obterSuporte(id: number) {
-	const r = await db().prepare('SELECT * FROM suportes WHERE id = ?').bind(id).first<SuporteBruto>();
-	return r ? suporteDe(r) : null;
-}
-
-export async function criarSuporte(s: Suporte) {
-	const r = await db()
-		.prepare('INSERT INTO suportes (titulo, texto, imagem_chave, imagens) VALUES (?, ?, ?, ?) RETURNING id')
-		.bind(s.titulo, s.texto, s.imagens[0]?.chave ?? null, JSON.stringify(s.imagens))
-		.first<{ id: number }>();
-	return r!.id;
-}
-
-/**
- * A imagem só sai do R2 se nenhum outro texto de apoio e nenhuma tentativa já feita (que guarda cópia do apoio) a usa:
- * apagar o arquivo quebraria provas e relatórios antigos.
- */
-async function apagarImagensSemUso(chaves: string[], ignorarSuporteId: number) {
-	// (a imagem de uma questão também conta como uso: ver o terceiro termo)
-	for (const chave of chaves) {
-		const uso = await db()
-			.prepare(
-				`SELECT (SELECT COUNT(*) FROM suportes WHERE id <> ? AND instr(imagens, ?) > 0) +
-				        (SELECT COUNT(*) FROM tentativas WHERE instr(questoes, ?) > 0) +
-				        (SELECT COUNT(*) FROM questoes WHERE instr(config, ?) > 0) AS n`
-			)
-			.bind(ignorarSuporteId, chave, chave, chave)
-			.first<{ n: number }>();
-		if (uso!.n === 0) await midia()?.delete(chave);
-	}
-}
-
-export async function atualizarSuporte(id: number, s: Suporte) {
-	const antes = await obterSuporte(id);
-	if (!antes) return false;
-	await db()
-		.prepare("UPDATE suportes SET titulo = ?, texto = ?, imagem_chave = ?, imagens = ?, atualizado_em = datetime('now') WHERE id = ?")
-		.bind(s.titulo, s.texto, s.imagens[0]?.chave ?? null, JSON.stringify(s.imagens), id)
-		.run();
-	const novas = new Set(s.imagens.map((i) => i.chave));
-	await apagarImagensSemUso(antes.imagens.map((i) => i.chave).filter((c) => !novas.has(c)), id);
-	return true;
-}
-
-/**
- * Com questões usando o apoio, recusa (devolve quantas) a menos que `desvincular`: aí as questões ficam sem apoio.
- * Provas já feitas guardam a própria cópia do apoio e não mudam.
- */
-export async function excluirSuporte(id: number, desvincular = false) {
-	const s = await obterSuporte(id);
-	if (!s) return 'inexistente' as const;
-	const uso = await db().prepare('SELECT COUNT(*) AS n FROM questoes WHERE suporte_id = ?').bind(id).first<{ n: number }>();
-	if (uso!.n > 0 && !desvincular) return { emUso: uso!.n };
-	await db().batch([
-		db().prepare('UPDATE questoes SET suporte_id = NULL WHERE suporte_id = ?').bind(id),
-		db().prepare('DELETE FROM suportes WHERE id = ?').bind(id)
-	]);
-	await apagarImagensSemUso(s.imagens.map((i) => i.chave), id);
-	return 'ok' as const;
 }

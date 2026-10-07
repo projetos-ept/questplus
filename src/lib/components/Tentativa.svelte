@@ -2,6 +2,7 @@
 	import { percentualDe } from '#lib/relatorio';
 	import { onDestroy, onMount } from 'svelte';
 	import { imagensDe, type ImagemSuporte } from '#lib/imagens';
+	import { diagramas } from '#lib/diagramas';
 	import { renderSuporte } from '#lib/suporte';
 	import { formatarData } from '#lib/data';
 	import FiguraQuestao from './FiguraQuestao.svelte';
@@ -9,13 +10,14 @@
 	type Fb = { pontos: number; max: number; acertou: 'sim' | 'parcial' | 'nao'; gabarito: { correta: number } | { valores: boolean[] }; explicacao: string | null };
 	type Q = {
 		id: number; tipo: 'mc' | 'vf' | 'aberta'; enunciado: string; pontos: number; imagem?: ImagemSuporte | null;
-		suporte: { titulo: string; texto: string; imagem_chave?: string | null; imagens?: ImagemSuporte[] } | null;
 		config: { alternativas?: string[]; afirmacoes?: { texto: string }[]; max_chars?: number; min_chars?: number };
 	};
 	type Estado = {
 		id: number; status: 'andamento' | 'finalizada'; agora: string; prazo_em: string | null;
 		atividade: { titulo: string; modo: 'treino' | 'prova'; feedback: 'imediato' | 'final' | 'nenhum'; navegacao: 'livre' | 'sequencial' };
 		tentativas: { usadas: number; max: number | null };
+		/** Texto de apoio da atividade (antes da questão 1); null = sem apoio. */
+		suporte: { titulo: string; texto: string; imagem_chave?: string | null; imagens?: ImagemSuporte[] } | null;
 		questoes: Q[]; respostas: Record<number, { resposta: { escolha?: number; valores?: (boolean | null)[]; texto?: string }; pendente?: boolean; feedback?: Fb }>;
 		resultado: { nota: number; pontos_max: number; abertas_pendentes: number } | null;
 	};
@@ -304,11 +306,19 @@
 
 	{#key q.id}
 		<section class="questao">
-			{#if q.suporte}
-				<div class="suporte cartao">
-					<strong>{q.suporte.titulo}</strong>
-					<div class="md">{@html renderSuporte(q.suporte.texto, imagensDe(q.suporte)).html}</div>
-				</div>
+			<!-- o texto de apoio é da atividade: aberto antes da questão 1 e recolhido (para reler) nas outras -->
+			{#if estado.suporte}
+				{#if atual === 0}
+					<div class="suporte cartao">
+						<strong>Texto de apoio: {estado.suporte.titulo}</strong>
+						<div class="md" use:diagramas={estado.suporte.texto}>{@html renderSuporte(estado.suporte.texto, imagensDe(estado.suporte)).html}</div>
+					</div>
+				{:else}
+					<details class="suporte cartao reler">
+						<summary>📄 Reler o texto de apoio: {estado.suporte.titulo}</summary>
+						<div class="md" use:diagramas={estado.suporte.texto}>{@html renderSuporte(estado.suporte.texto, imagensDe(estado.suporte)).html}</div>
+					</details>
+				{/if}
 			{/if}
 
 			<p class="enunciado">{q.enunciado}</p>
@@ -468,6 +478,7 @@
 	.pontos button { margin: 0; min-width: 2.75rem; min-height: 2.75rem; padding: 0.2rem 0.5rem; }
 	.pontos button[aria-current='true'] { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--destaque); }
 	.suporte { margin: 0.75rem 0; }
+	.reler summary { cursor: pointer; font-weight: 600; }
 	.md { overflow-wrap: anywhere; }
 	.enunciado { margin: 0.75rem 0 0.25rem; font-size: 1.05rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 	.op { display: flex; gap: 0.6rem; align-items: flex-start; min-height: 2.75rem; padding: 0.6rem 0.75rem; margin-top: 0.5rem; font-weight: 400; background: var(--superficie); border: 1px solid var(--borda); border-radius: 0.5rem; cursor: pointer; }

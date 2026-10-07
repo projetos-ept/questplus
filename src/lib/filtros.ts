@@ -5,11 +5,10 @@ export type FiltroQuestoes = {
 	disciplina: string;
 	etiquetas: string[];
 	ativa: '' | '1' | '0';
-	apoio: '' | '1' | '0';
 	ordem: 'recentes' | 'antigas' | 'enunciado' | 'pontos';
 };
 
-export const filtroVazio = (): FiltroQuestoes => ({ q: '', tipo: '', disciplina: '', etiquetas: [], ativa: '', apoio: '', ordem: 'recentes' });
+export const filtroVazio = (): FiltroQuestoes => ({ q: '', tipo: '', disciplina: '', etiquetas: [], ativa: '', ordem: 'recentes' });
 
 export const ORDENS: [FiltroQuestoes['ordem'], string][] = [
 	['recentes', 'Mais recentes'],
@@ -31,7 +30,6 @@ export function filtroDeParams(p: URLSearchParams): FiltroQuestoes {
 		disciplina: (p.get('disciplina') ?? '').trim().toLowerCase(),
 		etiquetas: [...new Set(etiquetas)].slice(0, 6),
 		ativa: um(p.get('ativa'), ['1', '0']) as FiltroQuestoes['ativa'],
-		apoio: um(p.get('apoio'), ['1', '0']) as FiltroQuestoes['apoio'],
 		ordem: (um(p.get('ordem'), ORDENS.map((o) => o[0])) || 'recentes') as FiltroQuestoes['ordem']
 	};
 }
@@ -44,11 +42,10 @@ export function paramsDeFiltro(f: FiltroQuestoes, extra: Record<string, string |
 	if (f.disciplina) p.set('disciplina', f.disciplina);
 	if (f.etiquetas.length) p.set('etiquetas', f.etiquetas.join(','));
 	if (f.ativa) p.set('ativa', f.ativa);
-	if (f.apoio) p.set('apoio', f.apoio);
 	if (f.ordem !== 'recentes') p.set('ordem', f.ordem);
 	for (const [k, v] of Object.entries(extra)) p.set(k, String(v));
 	return p;
 }
 
 /** Quantos filtros estão ligados (a ordem não conta). */
-export const filtrosAtivos = (f: FiltroQuestoes, contarSituacao = true) => [f.q.trim(), f.tipo, f.disciplina, f.etiquetas.length ? 'x' : '', contarSituacao ? f.ativa : '', f.apoio].filter(Boolean).length;
+export const filtrosAtivos = (f: FiltroQuestoes, contarSituacao = true) => [f.q.trim(), f.tipo, f.disciplina, f.etiquetas.length ? 'x' : '', contarSituacao ? f.ativa : ''].filter(Boolean).length;

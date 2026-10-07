@@ -40,14 +40,14 @@ describe('imagem única da questão', () => {
 	it('o embaralhamento da prova não perde a imagem', () => {
 		const q = validarQuestao(mc({ imagem: img }));
 		if (!q.ok) throw new Error('x');
-		const s = montarSnapshot({ id: 1, tipo: 'mc', enunciado: 'x', config: q.valor.config, explicacao: null, pontos: 1, suporte: null }, true, () => 0.3);
+		const s = montarSnapshot({ id: 1, tipo: 'mc', enunciado: 'x', config: q.valor.config, explicacao: null, pontos: 1 }, true, () => 0.3);
 		expect(imagemDe(s.config)?.chave).toBe(chave);
 		expect(versaoAluno(s).imagem?.chave).toBe(chave);
 	});
 	it('o aluno recebe a imagem, mas nunca o gabarito', () => {
 		const q = validarQuestao(mc({ imagem: img }));
 		if (!q.ok) throw new Error('x');
-		const v = versaoAluno({ id: 1, tipo: 'mc', enunciado: 'x', config: q.valor.config, explicacao: 'segredo', pontos: 1, suporte: null });
+		const v = versaoAluno({ id: 1, tipo: 'mc', enunciado: 'x', config: q.valor.config, explicacao: 'segredo', pontos: 1 });
 		expect(JSON.stringify(v)).not.toMatch(/correta|segredo/);
 		expect(v.imagem?.legenda).toBe('ECG');
 	});
@@ -57,7 +57,7 @@ describe('exportar e importar questão com imagem', () => {
 	it('sai sem a imagem e com a observação [img]', () => {
 		const q = validarQuestao(mc({ imagem: img }));
 		if (!q.ok) throw new Error('x');
-		const arq = montarExportacao([{ ...q.valor, suporte_id: null }] as never, []);
+		const arq = montarExportacao([q.valor] as never);
 		const item = arq.questoes[0] as { config: Record<string, unknown>; observacao?: string };
 		expect(item.config.imagem).toBeUndefined();
 		expect(item.observacao).toMatch(/^\[img\]/);
@@ -66,7 +66,7 @@ describe('exportar e importar questão com imagem', () => {
 	it('questão sem imagem não ganha observação', () => {
 		const q = validarQuestao(mc());
 		if (!q.ok) throw new Error('x');
-		expect((montarExportacao([{ ...q.valor, suporte_id: null }] as never, []).questoes[0] as { observacao?: string }).observacao).toBeUndefined();
+		expect((montarExportacao([q.valor] as never).questoes[0] as { observacao?: string }).observacao).toBeUndefined();
 	});
 	it('ao importar, a observação [img] vira aviso (tinha_imagem)', () => {
 		const r = normalizarQuestao({ ...mc(), alternativas: ['a', 'b', 'c', 'd'], correta: 1, observacao: '[img] Esta questão tem uma imagem' });

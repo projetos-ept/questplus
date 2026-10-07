@@ -12,7 +12,6 @@
 		config?: unknown;
 		explicacao?: string | null;
 		pontos: number;
-		suporte_id?: number | null;
 		etiquetas: string[];
 		ativa?: boolean;
 		em_atividades?: number;
@@ -34,7 +33,6 @@
 			<span class="formato">{formatoDe(q.tipo, q.config ?? { alternativas: [] })}</span>
 			<span class="suave">{q.pontos} ponto{q.pontos === 1 ? '' : 's'}</span>
 			{#if disciplina}<span class="disc">{nomeDaDisciplina(disciplina)}</span>{/if}
-			{#if q.suporte_id}<span class="suave" title="Tem texto de apoio">📎 apoio</span>{/if}
 			{#if imagem}<span class="suave" title="Tem imagem">🖼 imagem</span>{/if}
 			{#if (q.em_atividades ?? 0) > 0}<span class="suave" title="Está em atividades">em {q.em_atividades} atividade{q.em_atividades === 1 ? '' : 's'}</span>{/if}
 			{#if q.ativa === false}<span class="selo">Inativa</span>{/if}

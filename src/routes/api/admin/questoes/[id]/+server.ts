@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { validarQuestao } from '#lib/questao';
 import { corpoJson, erros, idDe } from '#lib/server/api';
-import { atualizarQuestao, definirAtiva, excluirQuestao, obterQuestao, suporteExiste } from '#lib/server/questoes';
+import { atualizarQuestao, definirAtiva, excluirQuestao, obterQuestao } from '#lib/server/questoes';
 import type { RequestHandler } from './$types';
 
 const naoEncontrada = () => erros(['Questão não encontrada.'], 404);
@@ -17,7 +17,6 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 	if (!id) return naoEncontrada();
 	const r = validarQuestao(await corpoJson(request));
 	if (!r.ok) return erros(r.erros);
-	if (r.valor.suporte_id && !(await suporteExiste(r.valor.suporte_id))) return erros(['Texto de apoio não encontrado.']);
 	return (await atualizarQuestao(id, r.valor)) ? json({ id }) : naoEncontrada();
 };
 

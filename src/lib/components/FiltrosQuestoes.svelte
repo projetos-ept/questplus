@@ -3,7 +3,6 @@
 		disciplinas: { valor: string; n: number }[];
 		tipos: Record<string, number>;
 		etiquetas: { valor: string; n: number }[];
-		apoio: { com: number; sem: number };
 	};
 </script>
 
@@ -15,8 +14,10 @@
 		filtro = $bindable(),
 		facetas,
 		mostrarSituacao = false,
+		modo = 'questoes',
 		onmudou
-	}: { filtro: FiltroQuestoes; facetas: Facetas | null; mostrarSituacao?: boolean; onmudou: (digitando?: boolean) => void } = $props();
+	}: { filtro: FiltroQuestoes; facetas: Facetas | null; mostrarSituacao?: boolean; /** 'suportes' esconde formato, situação e ordem por pontos */ modo?: 'questoes' | 'suportes'; onmudou: (digitando?: boolean) => void } = $props();
+	const ordens = $derived(modo === 'suportes' ? ORDENS.filter(([v]) => v !== 'pontos') : ORDENS);
 
 	const ativos = $derived(filtrosAtivos(filtro, mostrarSituacao));
 	const n = (k: string) => (facetas ? ` (${facetas.tipos[k] ?? 0})` : '');
@@ -42,7 +43,6 @@
 			filtro.q.trim() && { rotulo: `Busca: "${filtro.q.trim()}"`, tirar: () => (filtro.q = '') },
 			filtro.disciplina && { rotulo: `Disciplina: ${nomeDaDisciplina(filtro.disciplina)}`, tirar: () => (filtro.disciplina = '') },
 			filtro.tipo && { rotulo: `Formato: ${{ mc: 'Múltipla escolha', vf: 'Verdadeiro ou falso', aberta: 'Aberta' }[filtro.tipo]}`, tirar: () => (filtro.tipo = '') },
-			filtro.apoio && { rotulo: filtro.apoio === '1' ? 'Com texto de apoio' : 'Sem texto de apoio', tirar: () => (filtro.apoio = '') },
 			mostrarSituacao && filtro.ativa && { rotulo: filtro.ativa === '1' ? 'Só ativas' : 'Só inativas', tirar: () => (filtro.ativa = '') }
 		].filter(Boolean) as { rotulo: string; tirar: () => void }[]
 	);
@@ -53,7 +53,7 @@
 		<label class="busca">Busca <input type="search" bind:value={filtro.q} oninput={() => onmudou(true)} placeholder="Trecho do enunciado" /></label>
 		<label>Ordenar
 			<select bind:value={filtro.ordem} onchange={() => onmudou()}>
-				{#each ORDENS as [v, r]}<option value={v}>{r}</option>{/each}
+				{#each ordens as [v, r]}<option value={v}>{r}</option>{/each}
 			</select>
 		</label>
 	</div>
@@ -65,6 +65,7 @@
 				{#if filtro.disciplina && !facetas?.disciplinas.some((d) => d.valor === filtro.disciplina)}<option value={filtro.disciplina}>{nomeDaDisciplina(filtro.disciplina)} (0)</option>{/if}
 			</select>
 		</label>
+		{#if modo === 'questoes'}
 		<label>Formato
 			<select bind:value={filtro.tipo} onchange={() => onmudou()}>
 				<option value="">Todos</option>
@@ -73,13 +74,7 @@
 				<option value="aberta">Aberta{n('aberta')}</option>
 			</select>
 		</label>
-		<label>Texto de apoio
-			<select bind:value={filtro.apoio} onchange={() => onmudou()}>
-				<option value="">Tanto faz</option>
-				<option value="1">Com apoio{facetas ? ` (${facetas.apoio.com})` : ''}</option>
-				<option value="0">Sem apoio{facetas ? ` (${facetas.apoio.sem})` : ''}</option>
-			</select>
-		</label>
+		{/if}
 		{#if mostrarSituacao}
 			<label>Situação
 				<select bind:value={filtro.ativa} onchange={() => onmudou()}>
@@ -100,7 +95,7 @@
 		<div class="ativos" aria-label="Filtros ligados">
 			{#each chips as c}<button type="button" class="chip" onclick={() => { c.tirar(); onmudou(); }} aria-label="Tirar filtro {c.rotulo}">{c.rotulo} ✕</button>{/each}
 			{#each filtro.etiquetas as e}<button type="button" class="chip etq" onclick={() => tirarEtiqueta(e)} aria-label="Tirar etiqueta {e}">#{e} ✕</button>{/each}
-			{#if filtro.etiquetas.length > 1}<span class="suave">a questão precisa ter <strong>todas</strong> as etiquetas</span>{/if}
+			{#if filtro.etiquetas.length > 1}<span class="suave">{modo === 'suportes' ? 'o texto' : 'a questão'} precisa ter <strong>todas</strong> as etiquetas</span>{/if}
 		</div>
 	{/if}
 	{#if ativos > 0}<button type="button" class="link" onclick={limpar}>Limpar {ativos === 1 ? 'o filtro' : `os ${ativos} filtros`}</button>{/if}

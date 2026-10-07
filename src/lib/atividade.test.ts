@@ -35,7 +35,7 @@ describe('prazo da tentativa', () => {
 });
 
 describe('snapshot', () => {
-	const q = { id: 7, tipo: 'mc', enunciado: 'Q', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 1 }, explicacao: 'porque', pontos: 2, suporte: null };
+	const q = { id: 7, tipo: 'mc', enunciado: 'Q', config: { alternativas: ['a', 'b', 'c', 'd'], correta: 1 }, explicacao: 'porque', pontos: 2 };
 	it('embaralhar mantém todos os itens e remapeia a correta', () => {
 		for (let n = 0; n < 50; n++) {
 			const s = montarSnapshot(q, true);

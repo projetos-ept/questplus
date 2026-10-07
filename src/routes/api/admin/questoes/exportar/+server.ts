@@ -1,12 +1,11 @@
 import { montarExportacao } from '#lib/importacao';
-import { filtrosDeParams, suportesPorIds, todasQuestoes } from '#lib/server/questoes';
+import { filtrosDeParams, todasQuestoes } from '#lib/server/questoes';
 import type { RequestHandler } from './$types';
 
 /** Exporta o banco (ou o resultado de um filtro) no formato JSON próprio, que a importação lê de volta. */
 export const GET: RequestHandler = async ({ url }) => {
 	const questoes = await todasQuestoes(filtrosDeParams(url.searchParams));
-	const ids = [...new Set(questoes.flatMap((q) => (q.suporte_id === null ? [] : [q.suporte_id])))];
-	const arquivo = montarExportacao(questoes as never, await suportesPorIds(ids));
+	const arquivo = montarExportacao(questoes as never);
 	const dia = new Date().toISOString().slice(0, 10);
 	return new Response(JSON.stringify(arquivo, null, 2), {
 		headers: {

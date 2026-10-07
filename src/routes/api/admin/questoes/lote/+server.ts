@@ -26,7 +26,7 @@ export const POST: RequestHandler = async ({ request }) => {
 	} else if (typeof c.filtro === 'string') {
 		const f = filtroDeParams(new URLSearchParams(c.filtro));
 		const filtro = filtrosDeParams(new URLSearchParams(c.filtro));
-		if (!f.q && !f.tipo && !f.disciplina && !f.etiquetas.length && !f.ativa && !f.apoio && acao === 'excluir') return erros(['Para excluir tudo, escolha as questões; excluir "todas" sem filtro não é permitido.']);
+		if (!f.q && !f.tipo && !f.disciplina && !f.etiquetas.length && !f.ativa  && acao === 'excluir') return erros(['Para excluir tudo, escolha as questões; excluir "todas" sem filtro não é permitido.']);
 		alvo = { filtro };
 	} else return erros(['Informe "ids" ou "filtro".']);
 	if (acao === 'definir-disciplina' && valor && !ehDisciplina(valor)) return erros(['Escolha uma disciplina da lista.']);

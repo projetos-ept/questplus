@@ -1,4 +1,5 @@
-import { chaveDuplicada, normalizarQuestao, type SuporteImportado } from '#lib/importacao';
+import { chaveDuplicada, normalizarQuestao } from '#lib/importacao';
+import { chaveSuporte, normalizarSuporte } from '#lib/importacao-suportes';
 import { ehDisciplina } from '#lib/disciplinas';
 import { imagemDe } from '#lib/imagens';
 import { formatoDe, type Aberta, type Mc, type Vf } from '#lib/questao';
@@ -20,7 +21,7 @@ export type ItemResultado = {
 	gabarito?: string;
 };
 
-type Linha = { tipo: string; enunciado: string; config: string; explicacao: string | null; pontos: number; suporte_id: number | null; etiquetas: string; ativa: number };
+type Linha = { tipo: string; enunciado: string; config: string; explicacao: string | null; pontos: number; etiquetas: string; ativa: number };
 
 /**
  * Valida (e, com `gravar`, grava) um bloco de questões. Questões inválidas nunca são gravadas; duplicadas (mesmo formato e
@@ -29,7 +30,7 @@ type Linha = { tipo: string; enunciado: string; config: string; explicacao: stri
  */
 export async function processarBloco(
 	brutas: unknown[],
-	opcoes: { inicio: number; gravar: boolean; pularDuplicadas: boolean; mapa?: Record<string, number>; refs?: string[] }
+	opcoes: { inicio: number; gravar: boolean; pularDuplicadas: boolean }
 ) {
 	const existentes = new Set(
 		(await db().prepare('SELECT tipo, enunciado FROM questoes').all<{ tipo: string; enunciado: string }>()).results.map((q) => chaveDuplicada(q.tipo, q.enunciado))
@@ -46,10 +47,6 @@ export async function processarBloco(
 		}
 		const q = n.valor;
 		const erros: string[] = [];
-		if (q.suporte_ref) {
-			if (opcoes.mapa && !(q.suporte_ref in opcoes.mapa)) erros.push(`O texto de apoio "${q.suporte_ref}" não foi importado.`);
-			else if (!opcoes.mapa && opcoes.refs && !opcoes.refs.includes(q.suporte_ref)) erros.push(`O texto de apoio "${q.suporte_ref}" não existe no arquivo.`);
-		}
 		const chave = chaveDuplicada(q.tipo, q.enunciado);
 		const duplicada = existentes.has(chave);
 		existentes.add(chave);
@@ -77,7 +74,6 @@ export async function processarBloco(
 				config: JSON.stringify(q.config),
 				explicacao: q.explicacao,
 				pontos: q.pontos,
-				suporte_id: q.suporte_ref && opcoes.mapa ? opcoes.mapa[q.suporte_ref] : null,
 				etiquetas: JSON.stringify(q.etiquetas),
 				ativa: q.ativa ? 1 : 0
 			});
@@ -88,9 +84,9 @@ export async function processarBloco(
 	if (opcoes.gravar && linhas.length) {
 		const r = await db()
 			.prepare(
-				`INSERT INTO questoes (tipo, enunciado, config, explicacao, pontos, suporte_id, etiquetas, ativa)
+				`INSERT INTO questoes (tipo, enunciado, config, explicacao, pontos, etiquetas, ativa)
 				 SELECT json_extract(j.value, '$.tipo'), json_extract(j.value, '$.enunciado'), json_extract(j.value, '$.config'),
-				        json_extract(j.value, '$.explicacao'), json_extract(j.value, '$.pontos'), json_extract(j.value, '$.suporte_id'),
+				        json_extract(j.value, '$.explicacao'), json_extract(j.value, '$.pontos'),
 				        json_extract(j.value, '$.etiquetas'), json_extract(j.value, '$.ativa')
 				 FROM json_each(?) j`
 			)
@@ -102,38 +98,60 @@ export async function processarBloco(
 	return { itens, criadas, a_gravar: aGravar, puladas: itens.filter((x) => x.ok && x.duplicada && opcoes.pularDuplicadas).length };
 }
 
-/** Cria os textos de apoio do arquivo (reaproveita um idêntico que já exista) e devolve ref → id. */
-export async function importarSuportes(suportes: SuporteImportado[], gravar: boolean) {
-	const mapa: Record<string, number> = {};
-	if (!suportes.length || !gravar) return { mapa, criados: 0, reaproveitados: 0, avisos: [] as string[] };
-	const existentes = (await db().prepare('SELECT id, titulo, texto FROM suportes').all<{ id: number; titulo: string; texto: string }>()).results;
-	const avisos: string[] = [];
-	const novos: SuporteImportado[] = [];
-	let reaproveitados = 0;
+// ---------- textos de apoio ----------
 
-	for (const s of suportes) {
-		const igual = existentes.find((e) => e.titulo === s.titulo && e.texto === s.texto);
-		if (igual) {
-			mapa[s.ref] = igual.id;
-			reaproveitados++;
+export type ItemSuporte = {
+	indice: number;
+	ok: boolean;
+	erros: string[];
+	avisos: string[];
+	duplicada: boolean;
+	titulo?: string;
+	resumo?: string;
+};
+
+/**
+ * Valida (e, com `gravar`, grava) um bloco de textos de apoio. Repetidos (mesmo título e texto, já no banco ou antes no
+ * mesmo bloco) são pulados quando `pularDuplicadas`. Imagens que não existem neste sistema são ignoradas com aviso.
+ */
+export async function processarBlocoSuportes(brutos: unknown[], opcoes: { inicio: number; gravar: boolean; pularDuplicadas: boolean }) {
+	const existentes = new Set(
+		(await db().prepare('SELECT titulo, texto FROM suportes').all<{ titulo: string; texto: string }>()).results.map((e) => chaveSuporte(e.titulo, e.texto))
+	);
+	const itens: ItemSuporte[] = [];
+	const novos: { titulo: string; texto: string; imagens: unknown[]; etiquetas: string[] }[] = [];
+	for (const [i, bruto] of brutos.entries()) {
+		const indice = opcoes.inicio + i;
+		const n = normalizarSuporte(bruto);
+		if (!n.ok) {
+			itens.push({ indice, ok: false, erros: n.erros, avisos: [], duplicada: false });
 			continue;
 		}
+		const s = n.valor;
+		const avisos: string[] = [];
 		const imagens = [];
 		for (const img of s.imagens) {
 			if (await midia()?.head(img.chave)) imagens.push(img);
-			else avisos.push(`A imagem [img${img.n}] do texto de apoio "${s.ref}" não existe neste sistema e foi ignorada.`);
+			else avisos.push(`A imagem [img${img.n}] não existe neste sistema e foi ignorada; anexe-a depois.`);
 		}
-		if (!s.texto && !imagens.length) {
-			avisos.push(`O texto de apoio "${s.ref}" ficou sem conteúdo (só tinha imagens) e não foi criado.`);
-			continue;
-		}
-		novos.push({ ...s, imagens });
+		if (!imagens.length && s.tinha_imagem && !s.imagens.length) avisos.push('O texto original tinha imagem ([img]); anexe-a depois, editando o texto.');
+		if (!s.etiquetas[0] || !ehDisciplina(s.etiquetas[0])) avisos.push(s.etiquetas[0] ? `A primeira etiqueta ("${s.etiquetas[0]}") não é uma disciplina da lista.` : 'Sem etiquetas: falta a disciplina (1ª etiqueta).');
+		const chave = chaveSuporte(s.titulo, s.texto);
+		const duplicada = existentes.has(chave);
+		existentes.add(chave);
+		itens.push({ indice, ok: true, erros: [], avisos, duplicada, titulo: s.titulo, resumo: `${s.texto.length} caracteres${imagens.length ? ` · ${imagens.length} imagem(ns)` : ''}` });
+		if (!(duplicada && opcoes.pularDuplicadas)) novos.push({ titulo: s.titulo, texto: s.texto, imagens, etiquetas: s.etiquetas });
 	}
-	if (novos.length) {
-		const resultados = await db().batch(
-			novos.map((s) => db().prepare('INSERT INTO suportes (titulo, texto, imagem_chave, imagens) VALUES (?, ?, ?, ?) RETURNING id').bind(s.titulo, s.texto, s.imagens[0]?.chave ?? null, JSON.stringify(s.imagens)))
+	let criados = 0;
+	if (opcoes.gravar && novos.length) {
+		const r = await db().batch(
+			novos.map((s) =>
+				db()
+					.prepare('INSERT INTO suportes (titulo, texto, imagem_chave, imagens, etiquetas) VALUES (?, ?, ?, ?, ?)')
+					.bind(s.titulo, s.texto, (s.imagens[0] as { chave?: string } | undefined)?.chave ?? null, JSON.stringify(s.imagens), JSON.stringify(s.etiquetas))
+			)
 		);
-		resultados.forEach((r, i) => (mapa[novos[i].ref] = (r.results[0] as { id: number }).id));
+		criados = r.reduce((t, x) => t + x.meta.changes, 0);
 	}
-	return { mapa, criados: novos.length, reaproveitados, avisos };
+	return { itens, criados, a_gravar: novos.length, puladas: itens.filter((x) => x.ok && x.duplicada && opcoes.pularDuplicadas).length };
 }

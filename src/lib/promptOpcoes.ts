@@ -21,3 +21,25 @@ export function salvarOpcoesPrompt(o: OpcoesPrompt) {
 		// sem armazenamento (janela privada): só deixa de lembrar
 	}
 }
+
+// ---------- textos de apoio ----------
+import { OPCOES_PROMPT_SUPORTE_PADRAO, type OpcoesPromptSuporte } from './importacao-suportes';
+
+const CHAVE_SUPORTE = 'qp_prompt_suporte_opcoes_v1';
+
+export function carregarOpcoesPromptSuporte(): OpcoesPromptSuporte {
+	try {
+		const bruto = JSON.parse(localStorage.getItem(CHAVE_SUPORTE) ?? 'null') as Partial<OpcoesPromptSuporte> | null;
+		return bruto && typeof bruto === 'object' ? { ...OPCOES_PROMPT_SUPORTE_PADRAO, ...bruto } : { ...OPCOES_PROMPT_SUPORTE_PADRAO };
+	} catch {
+		return { ...OPCOES_PROMPT_SUPORTE_PADRAO };
+	}
+}
+
+export function salvarOpcoesPromptSuporte(o: OpcoesPromptSuporte) {
+	try {
+		localStorage.setItem(CHAVE_SUPORTE, JSON.stringify(o));
+	} catch {
+		// sem armazenamento: só deixa de lembrar
+	}
+}

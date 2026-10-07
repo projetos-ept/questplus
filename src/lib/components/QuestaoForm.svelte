@@ -9,7 +9,7 @@
 	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
 
-	let { id = null, inicial, suportes }: { id?: number | null; inicial: Formulario; suportes: { id: number; titulo: string }[] } = $props();
+	let { id = null, inicial }: { id?: number | null; inicial: Formulario } = $props();
 
 	let f = $state<Formulario>(untrack(() => structuredClone($state.snapshot(inicial))));
 	let erros = $state<string[]>([]);
@@ -57,13 +57,6 @@
 			<option value="mc5">Múltipla escolha com 5 alternativas (MC5)</option>
 			<option value="vf">Verdadeiro ou falso</option>
 			<option value="aberta">Aberta (corrigida por rubrica, com apoio de IA)</option>
-		</select>
-	</label>
-
-	<label>Texto de apoio (opcional)
-		<select bind:value={f.suporte_id}>
-			<option value={null}>Nenhum</option>
-			{#each suportes as s}<option value={s.id}>{s.titulo}</option>{/each}
 		</select>
 	</label>
 

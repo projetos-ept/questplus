@@ -1,7 +1,7 @@
 import { json } from '@sveltejs/kit';
 import { validarSuporte } from '#lib/questao';
 import { corpoJson, erros, idDe } from '#lib/server/api';
-import { atualizarSuporte, excluirSuporte, obterSuporte } from '#lib/server/questoes';
+import { atualizarSuporte, excluirSuporte, obterSuporte } from '#lib/server/suportes';
 import type { RequestHandler } from './$types';
 
 const naoEncontrado = () => erros(['Texto de apoio não encontrado.'], 404);
@@ -20,7 +20,7 @@ export const PUT: RequestHandler = async ({ params, request }) => {
 	return (await atualizarSuporte(id, r.valor)) ? json({ id }) : naoEncontrado();
 };
 
-/** Sem `?desvincular=1`, recusa se houver questões usando o texto de apoio. */
+/** Sem `?desvincular=1`, recusa se houver atividades usando o texto de apoio. */
 export const DELETE: RequestHandler = async ({ params, url }) => {
 	const id = idDe(params.id);
 	if (!id) return naoEncontrado();
@@ -28,7 +28,7 @@ export const DELETE: RequestHandler = async ({ params, url }) => {
 	if (r === 'inexistente') return naoEncontrado();
 	if (r === 'ok') return json({ id });
 	return json(
-		{ erros: [`Há ${r.emUso} questão(ões) usando este texto de apoio. Confirme para excluir e desvincular, ou mantenha o texto.`], emUso: r.emUso },
+		{ erros: [`Este texto de apoio está em ${r.emUso} atividade(s): ${r.atividades.join(', ')}. Confirme para excluir e retirá-lo delas, ou mantenha o texto.`], emUso: r.emUso },
 		{ status: 409 }
 	);
 };

@@ -1,17 +1,24 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
+	import { DISCIPLINAS, ehDisciplina } from '#lib/disciplinas';
 	import { reduzir } from '#lib/imagem';
 	import { MAX_IMAGENS, ROTULO_TAMANHO, imagensDe, proximoNumero, slugDe, type ImagemSuporte, type Tamanho } from '#lib/imagens';
+	import { diagramas } from '#lib/diagramas';
 	import { renderSuporte } from '#lib/suporte';
 	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
 	import ConfirmarModal from './ConfirmarModal.svelte';
 
-	type Valor = { titulo: string; texto: string; imagens?: ImagemSuporte[]; imagem_chave?: string | null };
+	import { normalizarEtiquetas } from '#lib/questao';
+	type Valor = { titulo: string; texto: string; imagens?: ImagemSuporte[]; imagem_chave?: string | null; etiquetas?: string[] };
 	let { id = null, inicial, emUso = 0 }: { id?: number | null; inicial: Valor; emUso?: number } = $props();
 
 	let titulo = $state(untrack(() => inicial.titulo));
 	let texto = $state(untrack(() => inicial.texto));
+	// a primeira etiqueta é a disciplina (lista do curso); as outras são o assunto
+	const primeira = untrack(() => inicial.etiquetas?.[0]);
+	let disciplina = $state(primeira && ehDisciplina(primeira) ? primeira : '');
+	let etiquetas = $state(untrack(() => (disciplina ? (inicial.etiquetas ?? []).slice(1) : (inicial.etiquetas ?? [])).join(', ')));
 	let imagens = $state<ImagemSuporte[]>(untrack(() => structuredClone($state.snapshot(imagensDe(inicial)))));
 	let erros = $state<string[]>([]);
 	let salvando = $state(false);
@@ -20,7 +27,7 @@
 	let area: HTMLTextAreaElement | undefined = $state();
 	let modal: ConfirmarModal;
 	let ciente = $state(false);
-	const estadoAtual = () => JSON.stringify([titulo, texto, $state.snapshot(imagens)]);
+	const estadoAtual = () => JSON.stringify([titulo, texto, disciplina, etiquetas, $state.snapshot(imagens)]);
 	const original = untrack(estadoAtual);
 	let salvo = false;
 	protegerSaida(() => !salvo && estadoAtual() !== original);
@@ -101,7 +108,7 @@
 			const r = await fetch(id ? `/api/admin/suportes/${id}` : '/api/admin/suportes', {
 				method: id ? 'PUT' : 'POST',
 				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({ titulo, texto, imagens: $state.snapshot(imagens) })
+				body: JSON.stringify({ titulo, texto, imagens: $state.snapshot(imagens), etiquetas: [...new Set([...(disciplina ? [disciplina] : []), ...normalizarEtiquetas(etiquetas)])] })
 			});
 			const corpo = (await r.json().catch(() => ({}))) as { erros?: string[] };
 			if (!r.ok) erros = corpo.erros ?? ['Não foi possível salvar.'];
@@ -132,6 +139,15 @@
 
 <form onsubmit={salvar} class="cartao">
 	<label>Título <input bind:value={titulo} required maxlength="200" /></label>
+	<div class="duas-etq">
+		<label>Disciplina {#if !id}<span class="suave">(obrigatória: vira a primeira etiqueta)</span>{/if}
+			<select bind:value={disciplina} required={!id}>
+				<option value="" disabled={!id}>{id ? 'Sem disciplina (texto antigo)' : 'Escolha…'}</option>
+				{#each DISCIPLINAS as d}<option value={d.id}>{d.nome}</option>{/each}
+			</select>
+		</label>
+		<label>Outras etiquetas (assunto, separadas por vírgula) <input bind:value={etiquetas} placeholder="coleta, pré-analítica" /></label>
+	</div>
 
 	<div class="duas">
 		<label>Texto (Markdown simples: **negrito**, *itálico*, listas, [link](https://…))
@@ -139,7 +155,7 @@
 		</label>
 		<div>
 			<span class="rotulo">Prévia</span>
-			<div class="previa" aria-live="polite">{@html previa.html || '<p class="suave">A prévia aparece aqui.</p>'}</div>
+			<div class="previa" aria-live="polite" use:diagramas={previa.html}>{@html previa.html || '<p class="suave">A prévia aparece aqui.</p>'}</div>
 		</div>
 	</div>
 	{#if previa.semImagem.length}
@@ -220,13 +236,14 @@
 	<p class="resumo"><strong>{titulo}</strong>{imagens.length ? ` · ${imagens.length} imagem(ns)` : ''}</p>
 	<p>Esta ação <strong>não pode ser desfeita</strong>. As imagens também são apagadas.</p>
 	{#if emUso > 0}
-		<p class="aviso-uso">Há <strong>{emUso} questão(ões)</strong> usando este texto. Elas continuam existindo, mas ficam sem texto de apoio.</p>
-		<label class="ciente"><input type="checkbox" bind:checked={ciente} /> Entendo que as {emUso} questão(ões) ficarão sem texto de apoio.</label>
+		<p class="aviso-uso">Há <strong>{emUso} atividade(s)</strong> usando este texto. Elas continuam existindo, mas ficam sem texto de apoio (provas já feitas guardam a própria cópia).</p>
+		<label class="ciente"><input type="checkbox" bind:checked={ciente} /> Entendo que as {emUso} atividade(s) ficarão sem texto de apoio.</label>
 	{/if}
 	<p class="suave">Provas já feitas guardam uma cópia do texto e das imagens e não são afetadas.</p>
 </ConfirmarModal>
 
 <style>
+	.duas-etq { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 0 1rem; }
 	.duas { display: grid; grid-template-columns: repeat(auto-fit, minmax(18rem, 1fr)); gap: 0 1rem; }
 	.rotulo { display: block; margin-top: 1rem; font-weight: 600; }
 	.previa { min-height: 6rem; margin-top: 0.25rem; padding: 0.6rem; overflow-wrap: anywhere; background: var(--fundo); border: 1px dashed var(--borda); border-radius: 0.4rem; }

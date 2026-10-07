@@ -1,4 +1,5 @@
 import { ehDisciplina } from './disciplinas';
+import { MAX_CHARS_DIAGRAMA, MAX_DIAGRAMAS, contarDiagramas } from './suporte';
 import { imagemDe, imagensDe, validarImagemUnica, validarImagens, type ImagemSuporte } from './imagens';
 
 /** `imagem`: uma imagem opcional, mostrada logo abaixo do enunciado e sempre centralizada. */
@@ -20,7 +21,6 @@ export type QuestaoValida = {
 	config: Mc | Vf | Aberta;
 	explicacao: string | null;
 	pontos: number;
-	suporte_id: number | null;
 	etiquetas: string[];
 	ativa: boolean;
 };
@@ -105,15 +105,6 @@ export function validarQuestao(entrada: unknown): Resultado<QuestaoValida> {
 	const pontos = e.pontos === undefined || e.pontos === '' ? 1 : Number(e.pontos);
 	if (!Number.isFinite(pontos) || pontos <= 0 || pontos > 100) erros.push('Os pontos devem ser maiores que 0 e no máximo 100.');
 
-	let suporte_id: number | null = null;
-	if (e.suporte_id !== null && e.suporte_id !== undefined && e.suporte_id !== '') {
-		suporte_id = Number(e.suporte_id);
-		if (!Number.isInteger(suporte_id) || suporte_id < 1) {
-			erros.push('Texto de apoio inválido.');
-			suporte_id = null;
-		}
-	}
-
 	const etiquetas = normalizarEtiquetas(e.etiquetas);
 	if (etiquetas.length > 10) erros.push('Use no máximo 10 etiquetas.');
 	if (etiquetas.some((t) => t.length > 40)) erros.push('Cada etiqueta pode ter até 40 caracteres.');
@@ -155,7 +146,7 @@ export function validarQuestao(entrada: unknown): Resultado<QuestaoValida> {
 	if (erros.length) return { ok: false, erros };
 	return {
 		ok: true,
-		valor: { tipo, enunciado, config, explicacao, pontos, suporte_id, etiquetas, ativa: e.ativa !== false }
+		valor: { tipo, enunciado, config, explicacao, pontos, etiquetas, ativa: e.ativa !== false }
 	};
 }
 
@@ -175,7 +166,6 @@ export type Formulario = {
 	afirmacoes: { texto: string; valor: boolean }[];
 	explicacao: string;
 	pontos: number;
-	suporte_id: number | null;
 	etiquetas: string;
 	/** Primeira etiqueta: disciplina do curso (ver disciplinas.ts). Vazia em questões antigas. */
 	disciplina: string;
@@ -198,7 +188,6 @@ export const formularioVazio = (): Formulario => ({
 	afirmacoes: [{ texto: '', valor: true }],
 	explicacao: '',
 	pontos: 1,
-	suporte_id: null,
 	etiquetas: '',
 	disciplina: '',
 	imagem: null,
@@ -216,7 +205,6 @@ export function formularioDe(q: {
 	config: unknown;
 	explicacao: string | null;
 	pontos: number;
-	suporte_id: number | null;
 	etiquetas: string[];
 	ativa: boolean;
 }): Formulario {
@@ -224,7 +212,6 @@ export function formularioDe(q: {
 	f.enunciado = q.enunciado;
 	f.explicacao = q.explicacao ?? '';
 	f.pontos = q.pontos;
-	f.suporte_id = q.suporte_id;
 	const primeira = q.etiquetas[0];
 	f.disciplina = primeira && ehDisciplina(primeira) ? primeira : '';
 	f.etiquetas = (f.disciplina ? q.etiquetas.slice(1) : q.etiquetas).join(', ');
@@ -255,7 +242,6 @@ export function entradaDe(f: Formulario) {
 		enunciado: f.enunciado,
 		explicacao: f.explicacao,
 		pontos: f.pontos,
-		suporte_id: f.suporte_id,
 		etiquetas: [...new Set([...(f.disciplina ? [f.disciplina] : []), ...normalizarEtiquetas(f.etiquetas)])],
 		imagem: f.imagem,
 		ativa: f.ativa
@@ -278,7 +264,8 @@ export function entradaDe(f: Formulario) {
 	return { ...base, tipo: 'mc', config: { alternativas: f.alternativas.slice(0, n), correta: f.correta } };
 }
 
-export type Suporte = { titulo: string; texto: string; imagens: ImagemSuporte[] };
+/** `etiquetas`: a primeira é a disciplina (ver disciplinas.ts), como nas questões. */
+export type Suporte = { titulo: string; texto: string; imagens: ImagemSuporte[]; etiquetas: string[] };
 
 export { CHAVE_IMAGEM } from './imagens';
 
@@ -294,8 +281,14 @@ export function validarSuporte(entrada: unknown): Resultado<Suporte> {
 	if (!titulo) erros.push('Informe o título.');
 	if (titulo.length > 200) erros.push('O título passa de 200 caracteres.');
 	if (corpo.length > 20000) erros.push('O texto passa de 20000 caracteres.');
+	const dg = contarDiagramas(corpo);
+	if (dg.total > MAX_DIAGRAMAS) erros.push(`Use no máximo ${MAX_DIAGRAMAS} diagramas Mermaid por texto de apoio.`);
+	if (dg.grandes > 0) erros.push(`Cada diagrama Mermaid pode ter até ${MAX_CHARS_DIAGRAMA} caracteres.`);
+	const etiquetas = normalizarEtiquetas(e.etiquetas);
+	if (etiquetas.length > 10) erros.push('Use no máximo 10 etiquetas.');
+	if (etiquetas.some((t) => t.length > 40)) erros.push('Cada etiqueta pode ter até 40 caracteres.');
 	if (!imgs.ok) erros.push(...imgs.erros);
 	if (!corpo && !(imgs.ok && imgs.valor.length)) erros.push('Informe um texto, uma imagem ou os dois.');
 	if (erros.length) return { ok: false, erros };
-	return { ok: true, valor: { titulo, texto: corpo, imagens: imgs.ok ? imgs.valor : [] } };
+	return { ok: true, valor: { titulo, texto: corpo, imagens: imgs.ok ? imgs.valor : [], etiquetas } };
 }

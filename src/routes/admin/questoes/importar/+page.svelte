@@ -1,20 +1,20 @@
 <script lang="ts">
 	import InstrucaoIA from '#lib/components/InstrucaoIA.svelte';
-	import { TAMANHO_BLOCO, lerArquivo, type SuporteImportado } from '#lib/importacao';
+	import { TAMANHO_BLOCO, lerArquivo } from '#lib/importacao';
 
 	type Item = { indice: number; ok: boolean; erros: string[]; avisos?: string[]; duplicada: boolean; formato?: string; enunciado?: string; gabarito?: string };
 
 	let texto = $state('');
 	let nomeArquivo = $state('');
 	let errosLeitura = $state<string[]>([]);
-	let analise = $state<{ suportes: SuporteImportado[]; questoes: unknown[] } | null>(null);
+	let analise = $state<{ suportesIgnorados: number; questoes: unknown[] } | null>(null);
 	let itens = $state<Item[]>([]);
 	let fase = $state<'inicial' | 'verificando' | 'verificado' | 'importando' | 'concluido'>('inicial');
 	let progresso = $state(0);
 	let pularDuplicadas = $state(true);
 	let soProblemas = $state(false);
 	let erro = $state('');
-	let resumo = $state<{ criadas: number; puladas: number; invalidas: number; suportes: number; avisos: string[] } | null>(null);
+	let resumo = $state<{ criadas: number; puladas: number; invalidas: number } | null>(null);
 
 	const validas = $derived(itens.filter((i) => i.ok));
 	const invalidas = $derived(itens.filter((i) => !i.ok));
@@ -60,9 +60,8 @@
 		fase = 'verificando';
 		progresso = 0;
 		try {
-			const refs = lido.valor.suportes.map((s) => s.ref);
 			for (const [i, bloco] of blocos(lido.valor.questoes, TAMANHO_BLOCO).entries()) {
-				const r = (await chamar('/api/admin/importar?validar=1', { questoes: bloco, inicio: i * TAMANHO_BLOCO, refs })) as { itens: Item[] };
+				const r = (await chamar('/api/admin/importar?validar=1', { questoes: bloco, inicio: i * TAMANHO_BLOCO })) as { itens: Item[] };
 				itens.push(...r.itens);
 				progresso = itens.length;
 			}
@@ -79,17 +78,10 @@
 		erro = '';
 		fase = 'importando';
 		progresso = 0;
-		const r = { criadas: 0, puladas: 0, invalidas: invalidas.length, suportes: 0, avisos: [] as string[] };
+		const r = { criadas: 0, puladas: 0, invalidas: invalidas.length };
 		try {
-			const mapa: Record<string, number> = {};
-			for (const bloco of blocos(analise.suportes, 4)) {
-				const s = (await chamar('/api/admin/importar', { suportes: bloco })) as { mapa: Record<string, number>; criados: number; avisos: string[] };
-				Object.assign(mapa, s.mapa);
-				r.suportes += s.criados;
-				r.avisos.push(...s.avisos);
-			}
 			for (const [i, bloco] of blocos(analise.questoes, TAMANHO_BLOCO).entries()) {
-				const x = (await chamar('/api/admin/importar', { questoes: bloco, inicio: i * TAMANHO_BLOCO, mapa, pularDuplicadas })) as { criadas: number; puladas: number };
+				const x = (await chamar('/api/admin/importar', { questoes: bloco, inicio: i * TAMANHO_BLOCO, pularDuplicadas })) as { criadas: number; puladas: number };
 				r.criadas += x.criadas;
 				r.puladas += x.puladas;
 				progresso = Math.min((i + 1) * TAMANHO_BLOCO, analise.questoes.length);
@@ -133,6 +125,7 @@
 	</div>
 	<p class="suave">Nada é gravado nesta etapa. O sistema confere o formato e mostra o gabarito de cada questão para você revisar.</p>
 	{#if errosLeitura.length}<ul class="erro" role="alert">{#each errosLeitura as e}<li>{e}</li>{/each}</ul>{/if}
+	{#if analise?.suportesIgnorados}<p class="aviso-disc" role="status">O arquivo trazia {analise.suportesIgnorados} texto(s) de apoio, que não fazem mais parte das questões e foram ignorados. Para importá-los, use <a href="/admin/suportes/importar">Textos de apoio › Importar</a>; depois escolha o texto ao criar a atividade.</p>{/if}
 	{#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 </div>
 
@@ -140,10 +133,9 @@
 	<div class="cartao ok" role="status">
 		<h2>Importação concluída</h2>
 		<ul>
-			<li><strong>{resumo.criadas}</strong> questão(ões) criada(s){resumo.suportes ? `, ${resumo.suportes} texto(s) de apoio` : ''}.</li>
+			<li><strong>{resumo.criadas}</strong> questão(ões) criada(s).</li>
 			{#if resumo.puladas}<li>{resumo.puladas} já existia(m) e foi(foram) pulada(s).</li>{/if}
 			{#if resumo.invalidas}<li>{resumo.invalidas} com erro não foi(foram) importada(s).</li>{/if}
-			{#each resumo.avisos as a}<li class="suave">{a}</li>{/each}
 		</ul>
 		<a href="/admin/questoes">Ver as questões</a> · <button type="button" class="sec" onclick={recomecar}>Importar outro arquivo</button>
 	</div>
