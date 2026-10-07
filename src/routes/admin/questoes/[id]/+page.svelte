@@ -13,5 +13,5 @@
 <QuestaoForm id={data.id} inicial={formularioDe(data.questao)} />
 
 <style>
-	.aviso { margin-bottom: 1rem; border-color: var(--ok); }
+	.aviso { margin-bottom: 1rem; border-color: var(--sucesso); }
 </style>

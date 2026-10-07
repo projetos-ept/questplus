@@ -132,14 +132,14 @@
 
 <style>
 	.topo { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; justify-content: space-between; }
-	.botao { padding: 0.55rem 1rem; font-weight: 600; color: var(--sobre-destaque); text-decoration: none; background: var(--destaque); border-radius: 0.4rem; }
+	.botao { padding: 0.55rem 1rem; font-weight: 600; color: var(--sobre-primaria); text-decoration: none; background: var(--primaria); border-radius: 0.4rem; }
 	.abas { display: flex; flex-wrap: wrap; gap: 0.5rem; margin: 0.5rem 0 1rem; }
 	.abas button { margin: 0; padding: 0.35rem 0.8rem; font-size: 0.9rem; }
-	.abas button[aria-pressed='true'] { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--destaque); }
+	.abas button[aria-pressed='true'] { color: var(--sobre-primaria); background: var(--primaria); border-color: var(--primaria); }
 	.rolagem { overflow-x: auto; }
 	.filtro-turma { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: end; margin-bottom: 0.75rem; }
 	.filtro-turma label { margin: 0; min-width: 14rem; }
-	.link { margin: 0; padding: 0; font-weight: 400; color: var(--destaque); text-decoration: underline; background: none; border: 0; }
+	.link { margin: 0; padding: 0; font-weight: 400; color: var(--primaria); text-decoration: underline; background: none; border: 0; }
 	.turmas { max-width: 12rem; overflow-wrap: anywhere; }
 	tr.inativa td { opacity: 0.6; }
 	.cod { white-space: nowrap; }

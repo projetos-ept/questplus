@@ -141,6 +141,6 @@
 	.resumo { padding: 0.5rem 0.75rem; overflow-wrap: anywhere; background: var(--fundo); border-radius: 0.4rem; }
 	.aviso-uso { padding: 0.5rem 0.75rem; border: 1px solid var(--erro); border-radius: 0.4rem; }
 	.ciente { display: flex; gap: 0.5rem; align-items: flex-start; font-weight: 400; }
-	.link { display: inline; margin: 0; padding: 0; font-weight: 400; color: var(--destaque); text-decoration: underline; background: none; border: 0; }
+	.link { display: inline; margin: 0; padding: 0; font-weight: 400; color: var(--primaria); text-decoration: underline; background: none; border: 0; }
 	td button { margin: 0 0.25rem 0 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; }
 </style>

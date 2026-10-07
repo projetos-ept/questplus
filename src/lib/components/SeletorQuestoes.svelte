@@ -134,11 +134,12 @@
 			<button type="button" class="sec" disabled={!novas.length} onclick={() => (marcadas = new Set(novas.map((q) => q.id)))}>Marcar as {novas.length} visíveis</button>
 			<button type="button" class="sec" disabled={ocupado || buscando || total === 0 || vagas === 0} onclick={adicionarTodas}>Adicionar todas as {total} do filtro</button>
 		</div>
-		<form class="grupo sorteio" onsubmit={(e) => { e.preventDefault(); sortearN(); }}>
-			<label>Sortear <input type="number" min="1" max={vagas || 1} bind:value={quantos} /> do filtro</label>
+		<!-- não pode ser <form>: este seletor fica dentro do formulário da atividade (form dentro de form quebra a hidratação) -->
+		<div class="grupo sorteio" role="group" aria-label="Sortear questões do filtro">
+			<label>Sortear <input type="number" min="1" max={vagas || 1} bind:value={quantos} onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); sortearN(); } }} /> do filtro</label>
 			<label class="check"><input type="checkbox" bind:checked={equilibrar} /> igual entre disciplinas</label>
-			<button type="submit" class="sec" disabled={ocupado || buscando || total === 0 || vagas === 0}>🎲 Sortear</button>
-		</form>
+			<button type="button" class="sec" onclick={sortearN} disabled={ocupado || buscando || total === 0 || vagas === 0}>🎲 Sortear</button>
+		</div>
 		{#if vagas === 0}<span class="erro">A atividade já tem 100 questões (o máximo).</span>{:else}<span class="suave">Cabem mais {vagas}.</span>{/if}
 	</div>
 
@@ -164,7 +165,7 @@
 <style>
 	.seletor { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--borda); }
 	.status { margin: 0.5rem 0; }
-	.aviso { padding: 0.5rem 0.75rem; border: 1px solid var(--ok, var(--destaque)); border-radius: 0.4rem; }
+	.aviso { padding: 0.5rem 0.75rem; border: 1px solid var(--sucesso, var(--primaria)); border-radius: 0.4rem; }
 	.barra { display: flex; flex-wrap: wrap; gap: 0.6rem 1.25rem; align-items: center; padding: 0.6rem 0.9rem; }
 	.grupo { display: flex; flex-wrap: wrap; gap: 0.4rem 0.6rem; align-items: center; }
 	.grupo button { margin: 0; padding: 0.35rem 0.8rem; font-size: 0.9rem; }

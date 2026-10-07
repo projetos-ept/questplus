@@ -108,6 +108,6 @@
 	@media (max-width: 40rem) { .linha1 { grid-template-columns: 1fr; } }
 	.ativos { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin-top: 0.75rem; }
 	.chip { margin: 0; padding: 0.2rem 0.6rem; font-size: 0.8rem; font-weight: 600; color: var(--texto); background: var(--fundo); border: 1px solid var(--borda); border-radius: 1rem; }
-	.chip.etq { border-color: var(--destaque); }
-	.link { display: inline; margin: 0.6rem 0 0; padding: 0; color: var(--destaque); font-weight: 400; text-decoration: underline; background: none; border: 0; }
+	.chip.etq { border-color: var(--primaria); }
+	.link { display: inline; margin: 0.6rem 0 0; padding: 0; color: var(--primaria); font-weight: 400; text-decoration: underline; background: none; border: 0; }
 </style>

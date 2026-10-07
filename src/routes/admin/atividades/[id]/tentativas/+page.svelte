@@ -82,7 +82,7 @@
 
 <style>
 	.rolagem { overflow-x: auto; }
-	.melhor { font-size: 0.8rem; font-weight: 700; color: var(--ok); white-space: nowrap; }
+	.melhor { font-size: 0.8rem; font-weight: 700; color: var(--sucesso); white-space: nowrap; }
 	tr.anulada td { opacity: 0.55; text-decoration: line-through; }
 	tr.anulada td:nth-child(5), tr.anulada td:last-child { text-decoration: none; }
 	.botoes { white-space: nowrap; }

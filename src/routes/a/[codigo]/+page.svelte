@@ -1,13 +1,12 @@
 <script lang="ts">
 	import Tentativa from '#lib/components/Tentativa.svelte';
-	import TemaBotao from '#lib/components/TemaBotao.svelte';
 	import { formatarData } from '#lib/data';
 	let { data } = $props();
 </script>
 
 <svelte:head><title>{data.encontrada ? data.titulo : 'Atividade'} · QuestPlus</title></svelte:head>
 
-<div class="topo"><a href="/">QuestPlus</a><TemaBotao /></div>
+<div class="topo"><a href="/">QuestPlus</a></div>
 
 <main>
 	{#if !data.encontrada}

@@ -179,8 +179,8 @@
 	.arquivo input { margin: 0; width: auto; }
 	.check { display: flex; gap: 0.5rem; align-items: center; font-weight: 400; margin-top: 0.5rem; }
 	.rolagem { margin-top: 1rem; overflow-x: auto; }
-	.boa { color: var(--ok); font-weight: 600; }
-	.ok { border-color: var(--ok); margin-top: 1.5rem; }
+	.boa { color: var(--sucesso); font-weight: 600; }
+	.ok { border-color: var(--sucesso); margin-top: 1.5rem; }
 	.ok h2 { margin-top: 0; }
 	tr.erro-linha td { background: color-mix(in srgb, var(--erro) 8%, transparent); }
 	td { overflow-wrap: anywhere; }

@@ -4,19 +4,22 @@
 	margin: 14mm;
 }
 @media print {
-	:root,
-	:root[data-tema='escuro'],
-	:root[data-tema='claro'] {
+	:root {
 		--fundo: #fff !important;
 		--superficie: #fff !important;
 		--texto: #000 !important;
-		--suave: #444 !important;
+		--texto-secundario: #444 !important;
 		--borda: #888 !important;
-		--destaque: #000 !important;
-		--sobre-destaque: #fff !important;
+		--primaria: #000 !important;
+		--sobre-primaria: #fff !important;
 		--erro: #000 !important;
-		--ok: #000 !important;
+		--sucesso: #000 !important;
 		color-scheme: light;
+	}
+	*, *::before, *::after {
+		box-shadow: none !important;
+		text-shadow: none !important;
+		transform: none !important;
 	}
 	body {
 		background: #fff;

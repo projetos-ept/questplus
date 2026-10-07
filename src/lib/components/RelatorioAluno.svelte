@@ -132,7 +132,7 @@
 	h2 { margin: 0.1rem 0 0.5rem; font-size: 1.4rem; }
 	dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 0.35rem 1rem; margin: 0.5rem 0; }
 	dl div { display: flex; flex-direction: column; }
-	dt { font-size: 0.78rem; color: var(--suave); }
+	dt { font-size: 0.78rem; color: var(--texto-secundario); }
 	dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
 	.nota { margin: 0.75rem 0 1rem; padding: 0.6rem 0.8rem; font-size: 1.1rem; border: 2px solid var(--borda); border-radius: 0.5rem; }
 	.aviso { margin-left: 0.75rem; font-size: 0.85rem; font-weight: 700; }

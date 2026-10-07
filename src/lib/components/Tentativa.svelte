@@ -490,7 +490,7 @@
 	.alerta-curta { margin: 0.35rem 0 0; padding: 0.5rem 0.75rem; font-weight: 600; color: var(--erro); border: 1px solid var(--erro); border-radius: 0.4rem; }
 	.contador { margin: 0.25rem 0 0; text-align: right; font-size: 0.85rem; }
 	.obrigado { font-size: 1.1rem; }
-	.incentivo { margin: 1rem 0; border-color: var(--destaque); }
+	.incentivo { margin: 1rem 0; border-color: var(--primaria); }
 	.suporte { margin: 0.75rem 0; }
 	.reler summary { cursor: pointer; font-weight: 600; }
 	.md { overflow-wrap: anywhere; }
@@ -507,10 +507,10 @@
 
 	/* ---------- caderno de prova ---------- */
 	.caderno {
-		--tinta: #1f3a5f;
-		--sobre-tinta: #eef3fa;
-		--marca: #a4402b;
-		--marca-suave: #f6e3dc;
+		--tinta: var(--secundaria);
+		--sobre-tinta: var(--sobre-secundaria);
+		--marca: var(--destaque);
+		--marca-suave: color-mix(in srgb, var(--destaque) 12%, var(--superficie));
 		--papel: var(--superficie);
 		display: grid;
 		grid-template-columns: 15.5rem minmax(0, 1fr);
@@ -520,44 +520,39 @@
 		width: min(62rem, calc(100vw - 2rem));
 		margin-left: calc(50% - min(31rem, 50vw - 1rem));
 	}
-	:global(:root[data-tema='escuro']) .caderno {
-		--tinta: #16253b;
-		--marca: #f0917a;
-		--marca-suave: #3a2420;
-	}
-	.lateral { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1rem; padding: 1.1rem 1rem; color: var(--sobre-tinta); background: var(--tinta); border-radius: 0.7rem; }
+	.lateral { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1rem; padding: 1.1rem 1rem; color: var(--sobre-tinta); background: var(--tinta); border-radius: var(--raio); box-shadow: var(--sombra); }
 	.atv { display: block; line-height: 1.25; overflow-wrap: anywhere; }
 	.comp { display: block; margin-top: 0.15rem; font-size: 0.85rem; opacity: 0.8; }
-	.tempo { padding: 0.6rem 0.8rem; text-align: center; background: rgb(255 255 255 / 0.1); border-radius: 0.7rem; }
+	.tempo { padding: 0.6rem 0.8rem; text-align: center; background: color-mix(in srgb, var(--sobre-tinta) 12%, transparent); border-radius: 0.7rem; }
 	.tempo small { display: block; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; }
 	.relogio { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 	.barra { margin: 0 0 0.5rem; font-size: 0.85rem; font-weight: 600; opacity: 0.85; }
 	.pontos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin: 0; }
-	.pontos button { min-width: 0; min-height: 2.6rem; margin: 0; padding: 0.1rem 0; font-weight: 700; color: var(--sobre-tinta); background: transparent; border: 1.5px solid rgb(255 255 255 / 0.35); border-radius: 0.6rem; }
-	.pontos button.feita { color: #7ee2a8; border-color: #7ee2a8; }
-	.pontos button[aria-current='true'] { color: var(--tinta); background: #fff; border-color: #fff; }
+	.pontos button { min-width: 0; min-height: 2.6rem; margin: 0; padding: 0.1rem 0; font-weight: 700; color: var(--sobre-tinta); background: transparent; border: 1.5px solid color-mix(in srgb, var(--sobre-tinta) 40%, transparent); border-radius: 0.6rem; }
+	.pontos button.feita { border-color: var(--sobre-tinta); border-width: 2.5px; }
+	.pontos button[aria-current='true'] { color: var(--tinta); background: var(--sobre-tinta); border-color: var(--sobre-tinta); }
 	.respondidas { margin: 0.6rem 0 0; font-size: 0.82rem; opacity: 0.8; }
-	.progresso { height: 0.35rem; margin-top: 0.5rem; overflow: hidden; background: rgb(255 255 255 / 0.2); border-radius: 1rem; }
-	.preenchido { height: 100%; background: #fff; border-radius: 1rem; transition: width 0.25s; }
-	.aviso-tempo { margin: 0; padding: 0.4rem 0.7rem; font-weight: 700; color: #fff; background: var(--erro); border-radius: 0.5rem; }
+	.progresso { height: 0.35rem; margin-top: 0.5rem; overflow: hidden; background: color-mix(in srgb, var(--sobre-tinta) 25%, transparent); border-radius: 1rem; }
+	.preenchido { height: 100%; background: var(--sobre-tinta); border-radius: 1rem; transition: width 0.25s; }
+	.aviso-tempo { margin: 0; padding: 0.4rem 0.7rem; font-weight: 700; color: var(--sobre-erro); background: var(--erro); border-radius: 0.5rem; }
 
-	.folha { padding: 1.4rem clamp(1rem, 3vw, 2rem); background: var(--papel); border: 1px solid var(--borda); border-radius: 0.5rem; box-shadow: 0 2px 0 var(--borda); }
+	.folha { padding: 1.4rem clamp(1rem, 3vw, 2rem); background: var(--papel); border: var(--borda-espessura) var(--borda-estilo) var(--borda-cor); border-radius: var(--raio); box-shadow: var(--sombra); }
 	.q { display: flex; gap: 1rem; align-items: flex-start; }
 	.num { flex: none; font: 800 2.1rem/1 Georgia, serif; color: var(--marca); }
 	.enunciado { margin: 0.15rem 0 0.25rem; font-size: 1.1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
 	[role='radiogroup'] { margin-top: 1rem; border-top: 1px dashed var(--borda); }
 	.op { position: relative; display: grid; grid-template-columns: 2rem 1fr; grid-auto-flow: column; grid-auto-columns: auto; gap: 0.6rem; align-items: center; min-height: 3.4rem; padding: 0.7rem 0.5rem; margin: 0; font-weight: 400; background: transparent; border: 0; border-bottom: 1px dashed var(--borda); border-radius: 0; cursor: pointer; }
-	.op:hover { background: rgb(128 128 128 / 0.07); }
+	.op:hover { background: color-mix(in srgb, var(--texto) 6%, transparent); }
 	/* o rádio de verdade continua no lugar (teclado e leitor de tela), só some da vista */
 	.op input { position: absolute; opacity: 0; width: 1px; height: 1px; }
-	.op:has(input:focus-visible) { outline: 2px solid var(--destaque); outline-offset: -2px; }
+	.op:has(input:focus-visible) { outline: 2px solid var(--primaria); outline-offset: -2px; }
 	.op:has(input:checked) { background: var(--marca-suave); }
 	.op .t { overflow-wrap: anywhere; }
-	.letra { font-weight: 800; color: var(--suave); }
+	.letra { font-weight: 800; color: var(--texto-secundario); }
 	.op:has(input:checked) .letra { color: var(--marca); }
-	.bolha { width: 1.4rem; height: 1.4rem; border: 2px solid var(--suave); border-radius: 50%; }
+	.bolha { width: 1.4rem; height: 1.4rem; border: 2px solid var(--texto-secundario); border-radius: 50%; }
 	.op:has(input:checked) .bolha { border-color: var(--marca); background: radial-gradient(var(--marca) 45%, transparent 50%); }
-	.certa { box-shadow: inset 0 0 0 2px var(--ok); }
+	.certa { box-shadow: inset 0 0 0 2px var(--sucesso); }
 	.minha { box-shadow: inset 0 0 0 2px var(--erro); }
 	/* no computador as ações também acompanham a rolagem (no celular viram a barra fixa da base) */
 	.acoes { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.2rem; padding: 0.7rem 0; background: var(--papel); border-top: 1px solid var(--borda); }
@@ -567,7 +562,7 @@
 	@media (max-width: 760px) {
 		.caderno { display: block; width: auto; margin-left: 0; padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
 		/* faixa fixa no topo: título e tempo na primeira linha, grade de questões na segunda */
-		.lateral { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.5rem 0.6rem; margin: 0 -1rem 0.75rem; padding: 0.6rem 1rem; border-radius: 0; box-shadow: 0 2px 10px rgb(0 0 0 / 0.25); }
+		.lateral { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.5rem 0.6rem; margin: 0 -1rem 0.75rem; padding: 0.6rem 1rem; border-radius: 0; box-shadow: 0 2px 10px color-mix(in srgb, var(--texto) 30%, transparent); }
 		.ident { grid-column: 1; grid-row: 1; min-width: 0; font-size: 0.9rem; }
 		.tempo { grid-column: 2; grid-row: 1; padding: 0.15rem 0.7rem; border-radius: 99px; }
 		.tempo small { display: none; }
@@ -583,7 +578,7 @@
 		.q .num { font-size: 1.8rem; }
 		.op { min-height: 3.6rem; }
 		/* ações fixas embaixo, ao alcance do polegar */
-		.acoes { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; flex-wrap: nowrap; margin: 0; padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom)); background: var(--papel); border-top: 1px solid var(--borda); box-shadow: 0 -6px 16px rgb(0 0 0 / 0.15); }
+		.acoes { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; flex-wrap: nowrap; margin: 0; padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom)); background: var(--papel); border-top: 1px solid var(--borda); box-shadow: 0 -6px 16px color-mix(in srgb, var(--texto) 18%, transparent); }
 		.acoes button { flex: 1; margin: 0; min-height: 3rem; }
 	}
 </style>

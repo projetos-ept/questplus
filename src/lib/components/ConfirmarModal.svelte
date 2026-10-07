@@ -66,10 +66,11 @@
 		color: var(--texto);
 		background: var(--superficie);
 		border: 1px solid var(--borda);
-		border-radius: 0.7rem;
+		border-radius: var(--raio);
+		box-shadow: var(--sombra);
 	}
 	dialog::backdrop {
-		background: rgb(0 0 0 / 0.5);
+		background: color-mix(in srgb, var(--texto) 55%, transparent);
 	}
 	.corpo {
 		padding: 1.25rem;
@@ -89,7 +90,7 @@
 		margin: 0;
 	}
 	.perigo {
-		color: #fff;
+		color: var(--sobre-erro);
 		background: var(--erro);
 	}
 </style>

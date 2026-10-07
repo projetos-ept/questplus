@@ -30,6 +30,6 @@
 />
 
 <style>
-	.aviso { margin-bottom: 1rem; border-color: var(--ok); }
+	.aviso { margin-bottom: 1rem; border-color: var(--sucesso); }
 	.copia { margin-top: 0.6rem; }
 </style>

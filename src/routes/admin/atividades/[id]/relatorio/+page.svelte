@@ -144,14 +144,14 @@
 	.filtro select { width: auto; margin: 0; }
 	.botoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 	.botoes button, .botao { margin: 0; padding: 0.45rem 0.9rem; font-size: 0.9rem; font-weight: 600; color: var(--texto); text-decoration: none; background: transparent; border: 1px solid var(--borda); border-radius: 0.4rem; cursor: pointer; }
-	.botoes button { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--destaque); }
+	.botoes button { color: var(--sobre-primaria); background: var(--primaria); border-color: var(--primaria); }
 	.marca { margin: 0; font-size: 0.85rem; }
 	h1 { margin: 0.1rem 0 0.25rem; }
 	h2 { margin: 1.5rem 0 0.5rem; font-size: 1.1rem; }
 	.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: 0.75rem; margin-top: 1rem; }
 	.cards .cartao { display: flex; flex-direction: column; gap: 0.15rem; }
 	.cards strong { font-size: 1.5rem; }
-	.rot { font-size: 0.8rem; font-weight: 600; color: var(--suave); }
+	.rot { font-size: 0.8rem; font-weight: 600; color: var(--texto-secundario); }
 	.nota { font-size: 0.85rem; }
 	.atencao { margin-top: 1rem; border-color: var(--erro); }
 	.atencao ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
@@ -159,7 +159,7 @@
 	.dist { width: auto; min-width: 22rem; }
 	.dist th { white-space: nowrap; }
 	.barra-celula { min-width: 8rem; height: 0.7rem; background: var(--borda); border-radius: 1rem; overflow: hidden; }
-	.preench { height: 100%; background: var(--destaque); }
+	.preench { height: 100%; background: var(--primaria); }
 	.aprov { display: flex; gap: 0.6rem; align-items: center; }
 	.aprov .barra-celula { flex: 1; }
 	.num { white-space: nowrap; font-variant-numeric: tabular-nums; }

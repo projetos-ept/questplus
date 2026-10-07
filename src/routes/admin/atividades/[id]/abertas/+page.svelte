@@ -178,5 +178,5 @@
 	.sugestao p { margin: 0.2rem 0; }
 	.alerta { margin: 0.3rem 0; font-weight: 600; color: var(--erro); }
 	.selo { margin-left: 0.5rem; padding: 0.1rem 0.5rem; font-size: 0.8rem; border: 1px solid var(--borda); border-radius: 1rem; }
-	.selo.ok { border-color: var(--destaque); }
+	.selo.ok { border-color: var(--primaria); }
 </style>

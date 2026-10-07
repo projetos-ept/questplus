@@ -44,7 +44,7 @@ As demais fases seguem a tabela da documentação.
 
 > Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.
 
-**Tema:** o padrão é sempre o **claro**, para aluno e professor, independentemente do tema do sistema; o botão troca para o escuro e a escolha fica salva no navegador. As cores são variáveis CSS em `src/routes/+layout.svelte`; use sempre `var(--...)`, nunca cor fixa.
+**Tema visual:** Neumorphism em cartões, paleta azul oceano, **só modo claro** (o botão de tema escuro foi retirado). Os tokens (cores, raio de 20 px, sombras de relevo, tipografia Century Gothic/Avenir/Segoe UI, tempos de transição) ficam em `src/routes/+layout.svelte`; todo o sistema usa só essas variáveis (`--primaria`, `--secundaria`, `--destaque`, `--texto-secundario`, `--sucesso`, `--erro`…). Contraste conferido em AA (texto ≥ 4,5:1, contorno de controles ≥ 3:1), foco sempre visível, `prefers-reduced-motion` respeitado e relevo desligado na impressão. O painel do professor (`/admin`) é um dashboard de cartões: três indicadores, gráfico de tentativas finalizadas por dia (14 dias, com tabela equivalente), lista lateral de atividade recente e tabela das atividades abertas; no celular tudo empilha em uma coluna (pontos de quebra de 960 px e 640 px).
 
 ## Desenvolvimento local
 
@@ -70,7 +70,7 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 
 ## Tela do aluno: "caderno de prova"
 
-Durante a atividade a tela segue o tema **caderno de prova**: no computador, um painel lateral fixo (título, componente curricular, tempo restante, grade de questões com ✔ nas respondidas e contagem) e, ao lado, a "folha" da questão com o número grande, alternativas em linhas pontilhadas com marca de bolha e as ações (Anterior/Próxima/Responder) que acompanham a rolagem. No **celular** o painel vira uma faixa fixa no topo (título, relógio e botões das questões) e Anterior/Próxima ficam fixos na base, com áreas de toque grandes. O texto de apoio abre antes da questão 1 e fica em "Reler" nas demais. Funciona nos temas claro e escuro. Em atividades de navegação sequencial a grade não aparece (só "Questão X de N" e a barra de progresso). Código em `src/lib/components/Tentativa.svelte`.
+Durante a atividade a tela segue o tema **caderno de prova**: no computador, um painel lateral fixo (título, componente curricular, tempo restante, grade de questões com ✔ nas respondidas e contagem) e, ao lado, a "folha" da questão com o número grande, alternativas em linhas pontilhadas com marca de bolha e as ações (Anterior/Próxima/Responder) que acompanham a rolagem. No **celular** o painel vira uma faixa fixa no topo (título, relógio e botões das questões) e Anterior/Próxima ficam fixos na base, com áreas de toque grandes. O texto de apoio abre antes da questão 1 e fica em "Reler" nas demais. Em atividades de navegação sequencial a grade não aparece (só "Questão X de N" e a barra de progresso). Código em `src/lib/components/Tentativa.svelte`.
 
 ## Componente curricular da atividade (0009)
 

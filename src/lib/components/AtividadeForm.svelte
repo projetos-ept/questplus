@@ -207,7 +207,7 @@
 	.linha { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.25rem; }
 	.linha input { flex: 1; min-width: 8rem; margin: 0; font-family: ui-monospace, monospace; }
 	.linha button { margin: 0; }
-	.prefixo { color: var(--suave); font-family: ui-monospace, monospace; }
+	.prefixo { color: var(--texto-secundario); font-family: ui-monospace, monospace; }
 	fieldset { margin: 1rem 0 0; padding: 0.75rem 1rem 1rem; border: 1px solid var(--borda); border-radius: 0.5rem; }
 	legend { padding: 0 0.4rem; font-weight: 600; }
 	.check { display: flex; gap: 0.5rem; align-items: center; font-weight: 400; margin-top: 0.6rem; }
@@ -221,7 +221,7 @@
 	.mov { display: flex; gap: 0.4rem; }
 	.mov button { margin: 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; }
 	/* barra fixa na base da janela: salvar sem rolar a página inteira (some ao chegar ao fim do formulário, onde já está no lugar) */
-	.acoes { position: sticky; bottom: 0; z-index: 5; display: flex; gap: 1rem; align-items: center; margin: 1.25rem -1rem -1rem; padding: 0.75rem 1rem; background: var(--superficie); border-top: 1px solid var(--borda); box-shadow: 0 -4px 12px rgb(0 0 0 / 0.08); border-radius: 0 0 0.6rem 0.6rem; }
+	.acoes { position: sticky; bottom: 0; z-index: 5; display: flex; gap: 1rem; align-items: center; margin: 1.25rem calc(var(--espaco) * -1) calc(var(--espaco) * -1); padding: 0.75rem var(--espaco); background: var(--superficie); border-top: 1px solid var(--borda); box-shadow: 0 -4px 12px color-mix(in srgb, var(--texto) 10%, transparent); border-radius: 0 0 var(--raio) var(--raio); }
 	.acoes button { margin: 0; }
 	.tent { margin-top: 1rem; }
 	.rotulo { display: block; font-weight: 600; }

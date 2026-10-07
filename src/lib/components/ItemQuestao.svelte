@@ -75,12 +75,12 @@
 	.corpo { flex: 1; min-width: 0; }
 	.meta { display: flex; flex-wrap: wrap; gap: 0.35rem 0.6rem; align-items: center; font-size: 0.85rem; }
 	.formato { padding: 0 0.4rem; font-size: 0.75rem; font-weight: 700; border: 1px solid var(--borda); border-radius: 0.3rem; }
-	.disc { padding: 0 0.5rem; font-size: 0.78rem; font-weight: 600; color: var(--sobre-destaque); background: var(--destaque); border-radius: 1rem; }
+	.disc { padding: 0 0.5rem; font-size: 0.78rem; font-weight: 600; color: var(--sobre-primaria); background: var(--primaria); border-radius: 1rem; }
 	.selo { padding: 0 0.5rem; font-size: 0.78rem; border: 1px solid var(--borda); border-radius: 1rem; }
-	.selo.ok { border-color: var(--ok, var(--destaque)); }
+	.selo.ok { border-color: var(--sucesso, var(--primaria)); }
 	.enun { margin: 0.3rem 0; overflow-wrap: anywhere; white-space: pre-wrap; }
 	.tags { margin-bottom: 0.2rem; }
-	.ver { display: inline; margin: 0; padding: 0; font-size: 0.85rem; font-weight: 400; color: var(--destaque); text-decoration: underline; background: none; border: 0; }
+	.ver { display: inline; margin: 0; padding: 0; font-size: 0.85rem; font-weight: 400; color: var(--primaria); text-decoration: underline; background: none; border: 0; }
 	.detalhe { margin-top: 0.4rem; padding: 0.6rem 0.8rem; background: var(--fundo); border: 1px solid var(--borda); border-radius: 0.4rem; }
 	.alts { margin: 0.25rem 0; padding-left: 0; list-style: none; }
 	.alts li.certa { font-weight: 600; }

@@ -216,21 +216,21 @@
 	.topo-acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
 	.topo-acoes button { margin: 0; padding: 0.5rem 0.9rem; }
 	.sec-link { color: var(--texto); background: transparent; border: 1px solid var(--borda); }
-	.botao { padding: 0.55rem 1rem; font-weight: 600; color: var(--sobre-destaque); text-decoration: none; background: var(--destaque); border-radius: 0.4rem; }
-	.aviso { padding: 0.5rem 0.75rem; border: 1px solid var(--ok, var(--destaque)); border-radius: 0.4rem; }
+	.botao { padding: 0.55rem 1rem; font-weight: 600; color: var(--sobre-primaria); text-decoration: none; background: var(--primaria); border-radius: 0.4rem; }
+	.aviso { padding: 0.5rem 0.75rem; border: 1px solid var(--sucesso, var(--primaria)); border-radius: 0.4rem; }
 	.barra { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; align-items: center; margin: 0.5rem 0; padding: 0.6rem 0.9rem; }
-	.barra.ativa { border-color: var(--destaque); }
+	.barra.ativa { border-color: var(--primaria); }
 	.todas { display: flex; gap: 0.4rem; align-items: center; margin: 0; font-weight: 400; }
 	.acoes-lote { display: flex; flex-wrap: wrap; gap: 0.4rem; flex-basis: 100%; }
 	.acoes-lote button { margin: 0; padding: 0.3rem 0.7rem; font-size: 0.85rem; }
 	.painel { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: end; flex-basis: 100%; }
 	.painel label { margin: 0; min-width: 14rem; }
 	.painel button { margin: 0; }
-	.link { display: inline; margin: 0; padding: 0; font-weight: 400; color: var(--destaque); text-decoration: underline; background: none; border: 0; }
+	.link { display: inline; margin: 0; padding: 0; font-weight: 400; color: var(--primaria); text-decoration: underline; background: none; border: 0; }
 	.item { display: flex; gap: 0.75rem; align-items: flex-start; padding: 0.75rem 0.25rem; border-bottom: 1px solid var(--borda); }
 	.corpo { flex: 1; min-width: 0; }
 	.meta { display: flex; flex-wrap: wrap; gap: 0.35rem 0.6rem; align-items: center; font-size: 0.85rem; }
-	.disc { padding: 0 0.5rem; font-size: 0.78rem; font-weight: 600; color: var(--sobre-destaque); background: var(--destaque); border-radius: 1rem; }
+	.disc { padding: 0 0.5rem; font-size: 0.78rem; font-weight: 600; color: var(--sobre-primaria); background: var(--primaria); border-radius: 1rem; }
 	.titulo { margin: 0.3rem 0 0; font-weight: 600; overflow-wrap: anywhere; }
 	.previa { margin: 0.2rem 0; overflow-wrap: anywhere; font-size: 0.9rem; }
 	.mini-img { height: auto; border-radius: 0.25rem; }

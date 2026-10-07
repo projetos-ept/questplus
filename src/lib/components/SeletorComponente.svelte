@@ -145,8 +145,9 @@
 	.linha { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
 	.linha select, .linha input { flex: 1 1 14rem; margin: 0; }
 	.linha button { margin: 0; }
-	dialog { width: min(34rem, calc(100vw - 2rem)); padding: 0; color: var(--texto); background: var(--superficie); border: 1px solid var(--borda); border-radius: 0.7rem; }
-	dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+	dialog { width: min(34rem, calc(100vw - 2rem)); padding: 0; color: var(--texto); background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio);
+		box-shadow: var(--sombra); }
+	dialog::backdrop { background: color-mix(in srgb, var(--texto) 55%, transparent); }
 	.corpo { padding: 1.25rem; }
 	h2 { margin: 0 0 0.75rem; font-size: 1.15rem; }
 	.lista { padding: 0; margin: 0; list-style: none; }
@@ -155,7 +156,7 @@
 	.lista button { margin: 0; padding: 0.25rem 0.6rem; font-size: 0.85rem; }
 	.nome, .aviso { flex: 1 1 12rem; overflow-wrap: anywhere; }
 	.excluir { color: var(--erro); border-color: var(--erro); }
-	.perigo { color: #fff; background: var(--erro); }
+	.perigo { color: var(--sobre-erro); background: var(--erro); }
 	.acoes { display: flex; justify-content: flex-end; margin-top: 1rem; }
 	.acoes button { margin: 0; }
 </style>
