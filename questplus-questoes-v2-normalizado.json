@@ -1,0 +1,625 @@
+{
+  "formato": "questplus-questoes",
+  "versao": 2,
+  "questoes": [
+    {
+      "tipo": "mc",
+      "enunciado": "Com base no texto de apoio, qual porcentagem aproximada dos erros laboratoriais tem sua origem na fase pré-analítica?",
+      "config": {
+        "alternativas": [
+          "Cerca de 10%",
+          "Cerca de 30%",
+          "Cerca de 50%",
+          "Cerca de 70%"
+        ],
+        "correta": 3
+      },
+      "explicacao": "Estudos da Sociedade Brasileira de Patologia Clínica (SBPC/ML) apontam que cerca de 70% dos erros laboratoriais ocorrem na fase pré-analítica. A correta orientação do paciente e execução do procedimento são essenciais para evitar falhas.",
+      "pontos": 1,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "pre-analitica",
+        "erros"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "De acordo com as recomendações da SBPC/ML para coleta de sangue venoso com seringa e agulha, qual é o ângulo de inserção e a posição recomendados para o bisel da agulha durante a punção?",
+      "config": {
+        "alternativas": [
+          "Ângulo de 90 graus com bisel voltado para baixo",
+          "Ângulo de aproximadamente 30 graus com bisel voltado para cima",
+          "Ângulo de 45 graus com bisel voltado para a esquerda",
+          "Ângulo de 10 graus com bisel voltado para baixo"
+        ],
+        "correta": 1
+      },
+      "explicacao": "A agulha deve ser inserida na veia com o bisel voltado para cima e em um ângulo oblíquo de aproximadamente 30 graus ou menos. Essa posição facilita o corte suave da pele e o acompanhamento do trajeto do vaso.",
+      "pontos": 1,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "seringa",
+        "tecnica"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "vf",
+      "enunciado": "Julgue os itens a seguir sobre a influência de variáveis pré-analíticas e hábitos do paciente nos exames de sangue:",
+      "config": {
+        "afirmacoes": [
+          {
+            "texto": "O garroteamento mantido por tempo superior a 1 ou 2 minutos provoca hemoconcentração e alteração falsa nos níveis de células e proteínas.",
+            "valor": true
+          },
+          {
+            "texto": "A ingestão de água pura é proibida durante o período de jejum porque altera o metabolismo da mesma forma que alimentos gordurosos.",
+            "valor": false
+          },
+          {
+            "texto": "O esforço físico intenso realizado antes da coleta pode elevar os níveis sanguíneos de enzimas musculares como a CPK e a AST por até 24 horas.",
+            "valor": true
+          }
+        ]
+      },
+      "explicacao": "O garroteamento prolongado causa estase e hemoconcentração, enquanto o exercício muscular eleva enzimas como CPK e AST. A ingestão de água pura em quantidade moderada não invalida o jejum hídrico.",
+      "pontos": 3,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "pre-analitica",
+        "variaveis"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "Na coleta de sangue venoso com seringa e agulha, qual é a conduta recomendada para realizar a transferência do sangue da seringa para os tubos de coleta com segurança e sem causar hemólise?",
+      "config": {
+        "alternativas": [
+          "Usar um dispositivo de transferência seguro ou retirar a agulha e deixar o sangue escorrer suavemente pela parede do tubo aberto",
+          "Injetar o sangue com força empurrando o êmbolo e perfurando a tampa de borracha com a agulha montada",
+          "Chacoalhar a seringa vigorosamente para misturar o ar antes de injetar o sangue sob pressão",
+          "Reencapar a agulha usada e perfurar diretamente a tampa do tubo sob pressão"
+        ],
+        "correta": 0
+      },
+      "explicacao": "Perfurar a tampa do tubo com a agulha acoplada à seringa empurrando o êmbolo cria pressão positiva que destrói as hemácias (hemólise) e viola a NR32. Recomenda-se o uso do dispositivo de transferência ou escorrer o sangue suavemente no tubo aberto.",
+      "pontos": 1,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "seringa",
+        "biosseguranca"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "As diretrizes da SBPC/ML e do CLSI determinam uma sequência padronizada para o preenchimento de tubos de plástico para evitar contaminação por aditivos. Qual das alternativas apresenta a sequência correta?",
+      "config": {
+        "alternativas": [
+          "EDTA (Roxo) -> Citrato de Sódio (Azul) -> Soro (Amarelo) -> Fluoreto de Sódio (Cinza)",
+          "Soro (Amarelo) -> EDTA (Roxo) -> Citrato de Sódio (Azul) -> Hemocultura",
+          "Fluoreto de Sódio (Cinza) -> Heparina (Verde) -> EDTA (Roxo) -> Citrato de Sódio (Azul)",
+          "Hemocultura -> Citrato de Sódio (Azul) -> Soro com ativador/gel (Amarelo ou Vermelho) -> Heparina (Verde) -> EDTA (Roxo) -> Fluoreto de Sódio (Cinza)"
+        ],
+        "correta": 3
+      },
+      "explicacao": "A ordem de coleta padronizada inicia-se pela hemocultura, seguida por citrato de sódio (azul), soro com ativador/gel (amarelo/vermelho), heparina (verde), EDTA (roxo) e fluoreto de sódio (cinza). Isso evita a transferência de aditivos pela agulha.",
+      "pontos": 1,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "tubos",
+        "sequencia"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "vf",
+      "enunciado": "Analise as afirmações abaixo referentes à diferenciação entre soro e plasma e à escolha dos tubos com aditivos:",
+      "config": {
+        "afirmacoes": [
+          {
+            "texto": "O plasma é a porção líquida do sangue obtida pela centrifugação de uma amostra colhida com anticoagulante, mantendo os fatores de coagulação.",
+            "valor": true
+          },
+          {
+            "texto": "O soro é a porção líquida do sangue obtida após a formação completa do coágulo em um tubo sem anticoagulante.",
+            "valor": true
+          },
+          {
+            "texto": "O tubo de tampa roxa contém EDTA, sendo o tubo padronizado para a realização do hemograma na hematologia.",
+            "valor": true
+          },
+          {
+            "texto": "O tubo de tampa cinza contém Citrato de Sódio, aditivo utilizado para exames de provas de coagulação como TAP e TTPA.",
+            "valor": false
+          }
+        ]
+      },
+      "explicacao": "O plasma preserva os fatores de coagulação devido à ação do anticoagulante, enquanto o soro é obtido após retração do coágulo. O tubo de tampa cinza contém fluoreto de sódio (para glicose), ao passo que o citrato de sódio encontra-se no tubo de tampa azul.",
+      "pontos": 4,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "tubos",
+        "soro-plasma"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "Ao realizar a coleta de sangue em um tubo de tampa azul (Citrato de Sódio) para exames de coagulação, qual cuidado relativo ao volume é indispensável?",
+      "config": {
+        "alternativas": [
+          "Preencher apenas até a metade do tubo, pois o volume de sangue não afeta a coagulação",
+          "Respeitar rigorosamente a proporção exata de 9 partes de sangue para 1 parte de anticoagulante",
+          "Completar o tubo com soro fisiológico quando a veia do paciente produzir pouco sangue",
+          "Adicionar anticoagulante EDTA no tubo de citrato caso o sangue demore a fluir"
+        ],
+        "correta": 1
+      },
+      "explicacao": "O teste de coagulação no tubo azul exige a proporção exata de 9:1 entre sangue e citrato de sódio. A falta de preenchimento correto deixa excesso de anticoagulante livre e altera os exames como TAP e TTPA.",
+      "pontos": 1,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "tubos",
+        "citrato"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "A Norma Regulamentadora 32 (NR32) trata da segurança e saúde no trabalho em serviços de saúde. Qual conduta é expressamente PROIBIDA ao profissional de coleta após a venopunção?",
+      "config": {
+        "alternativas": [
+          "Acionar a trava de segurança da agulha logo após retirá-la do braço do paciente",
+          "Descartar o conjunto de perfurocortante na caixa rígida apropriada",
+          "Reencapar manualmente a agulha utilizada antes de realizar o descarte",
+          "Higienizar as mãos com água e sabão ou álcool em gel ao término do atendimento"
+        ],
+        "correta": 2
+      },
+      "explicacao": "A NR32 veda expressamente o reencape e a desconexão manual de agulhas usadas devido ao alto risco de acidentes com perfurocortantes e contaminação biológica.",
+      "pontos": 1,
+      "etiquetas": [
+        "biosseguranca",
+        "coleta",
+        "biosseguranca",
+        "nr32"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "vf",
+      "enunciado": "Considere as afirmações a respeito da manipulação dos tubos de sangue e prevenção de erros mecânicos durante a punção com seringa:",
+      "config": {
+        "afirmacoes": [
+          {
+            "texto": "Os tubos contendo anticoagulante ou ativador de coágulo devem ser homogeneizados por inversão suave de 5 a 10 vezes.",
+            "valor": true
+          },
+          {
+            "texto": "Chacoalhar energicamente os tubos após a coleta garante a dissolução do anticoagulante e evita a quebra das hemácias.",
+            "valor": false
+          },
+          {
+            "texto": "Puxar o êmbolo da seringa com força rápida e excessiva gera pressão negativa violenta, provocando a hemólise da amostra.",
+            "valor": true
+          }
+        ]
+      },
+      "explicacao": "A homogeneização por inversão suave garante a ação do aditivo sem danificar as células. Agitar os tubos com força ou aspirar o êmbolo da seringa bruscamente causa turbilhonamento e destruição celular (hemólise).",
+      "pontos": 3,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "seringa",
+        "hemolise"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "A fase pré-analítica exige rigor na identificação do paciente para impedir erros graves de troca de exames. Como deve ser realizada a Identificação Positiva?",
+      "config": {
+        "alternativas": [
+          "Pedir que o paciente diga seu nome completo e data de nascimento em voz alta, conferindo no pedido e etiquetando os tubos na sua frente",
+          "Chamar o paciente na recepção pelo primeiro nome e iniciar a coleta sem conferir documentos",
+          "Perguntar 'Sua data de nascimento é 10/05/1985?' aguardando apenas um aceno afirmativo do paciente",
+          "Colar as etiquetas nos tubos no início do dia e preenchê-los pela ordem de chegada dos pacientes na sala"
+        ],
+        "correta": 0
+      },
+      "explicacao": "A Identificação Positiva requer a confirmação verbal ativa por parte do paciente fornecendo nome completo e data de nascimento, além da conferência das etiquetas e identificação dos tubos na presença do paciente.",
+      "pontos": 1,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "pre-analitica",
+        "identificacao"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "aberta",
+      "enunciado": "Explique como o garroteamento prolongado (superior a 1 minuto) interfere nos resultados laboratoriais do paciente e quais alterações físico-químicas ele provoca na amostra de sangue.",
+      "config": {
+        "referencia": "O garroteamento prolongado estagna o fluxo sanguíneo venoso local, provocando o extravasamento de água e pequenos íons dos vasos para o tecido intersticial. Esse processo gera a hemoconcentração, resultando no aumento falso da concentração de hemácias, proteínas, cálcio e de analitos ligados a proteínas. Para evitar essa interferência pré-analítica, o garrote deve ser mantido pelo tempo estritamente necessário, não ultrapassando 1 minuto.",
+        "conceitos": [
+          {
+            "nome": "hemoconcentração",
+            "sinonimos": [
+              "concentração do sangue",
+              "estase venosa",
+              "aumento de concentração de células"
+            ]
+          },
+          {
+            "nome": "extravasamento de água para tecidos",
+            "sinonimos": [
+              "saída de líquido do vaso",
+              "perda de água para o interstício",
+              "fluxo de plasma para os tecidos"
+            ]
+          },
+          {
+            "nome": "elevação falsa de proteínas e analitos",
+            "sinonimos": [
+              "aumento artificial de proteínas",
+              "elevação de cálcio e hemácias",
+              "falso aumento de proteínas"
+            ]
+          },
+          {
+            "nome": "tempo máximo de garroteamento",
+            "sinonimos": [
+              "garrote por até 1 minuto",
+              "limite de 1 minuto no garrote",
+              "desgarroteamento rápido"
+            ]
+          }
+        ],
+        "oposicoes": [
+          [
+            "aumento",
+            "redução"
+          ],
+          [
+            "elevação",
+            "diminuição"
+          ]
+        ],
+        "min_chars": 30,
+        "pontos_por_nivel": [
+          0,
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "explicacao": null,
+      "pontos": 3,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "garrote",
+        "pre-analitica",
+        "hemoconcentracao"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "aberta",
+      "enunciado": "Durante uma punção venosa com seringa e agulha, o profissional aspira o sangue puxando o êmbolo de forma rápida e violenta. Explique o impacto dessa falha técnica sobre a integridade das células sanguíneas e sobre a qualidade da amostra.",
+      "config": {
+        "referencia": "A aspiração rápida e forçada do êmbolo da seringa gera uma forte pressão negativa e um turbilhonamento mecânico do sangue ao passar pelo calibre fino da agulha. Esse estresse mecânico rompe a membrana plasmática das hemácias, desencadeando a hemólise. Com a lise celular, componentes intracelulares como potássio, LDH e hemoglobina são liberados no plasma, invalidando exames bioquímicos e exigindo uma nova coleta do paciente.",
+        "conceitos": [
+          {
+            "nome": "pressão negativa excessiva",
+            "sinonimos": [
+              "alta sucção no êmbolo",
+              "pressão forte na seringa",
+              "sucção brusca"
+            ]
+          },
+          {
+            "nome": "turbilhonamento mecânico",
+            "sinonimos": [
+              "choque físico nas células",
+              "estresse mecânico",
+              "trauma mecânico"
+            ]
+          },
+          {
+            "nome": "hemólise",
+            "sinonimos": [
+              "rompimento de hemácias",
+              "destruição dos glóbulos vermelhos",
+              "lise celular"
+            ]
+          },
+          {
+            "nome": "extravasamento de potássio e LDH",
+            "sinonimos": [
+              "liberação de componentes intracelulares",
+              "aumento de potássio e enzimas",
+              "saída de conteúdo celular"
+            ]
+          }
+        ],
+        "oposicoes": [
+          [
+            "hemólise",
+            "preservação celular"
+          ]
+        ],
+        "min_chars": 30,
+        "pontos_por_nivel": [
+          0,
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "explicacao": null,
+      "pontos": 3,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "hemolise",
+        "seringa",
+        "puncao"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "aberta",
+      "enunciado": "Explique de que maneira a realização de exercício físico intenso poucas horas antes da coleta de sangue atua como um interferente pré-analítico nos exames laboratoriais.",
+      "config": {
+        "referencia": "A atividade física intensa provoca esforço muscular acentuado com microlesões na musculatura e alteração do fluxo hídrico entre os compartimentos corporais. Isso leva à liberação fisiológica de enzimas musculares na corrente sanguínea, provocando a elevação acentuada e transitória dos níveis de Creatinoquinase (CK), AST e LDH por até 24 horas. Além disso, pode ocorrer alteração na contagem de leucócitos e hemácias, exigindo que o paciente seja instruído a colher em estado de repouso basal.",
+        "conceitos": [
+          {
+            "nome": "microlesões na musculatura",
+            "sinonimos": [
+              "esforço muscular intenso",
+              "trauma muscular",
+              "danos ao tecido muscular"
+            ]
+          },
+          {
+            "nome": "liberação de enzimas na corrente sanguínea",
+            "sinonimos": [
+              "extravasamento de enzimas musculares",
+              "aumento de enzimas no sangue",
+              "passagem de enzimas para o plasma"
+            ]
+          },
+          {
+            "nome": "elevação de CK e AST",
+            "sinonimos": [
+              "aumento de creatinoquinase",
+              "elevação de CK e transaminases",
+              "aumento de CK, AST e LDH"
+            ]
+          },
+          {
+            "nome": "necessidade de repouso basal",
+            "sinonimos": [
+              "coleta em repouso",
+              "orientação de repouso ao paciente",
+              "ausência de exercício antes da coleta"
+            ]
+          }
+        ],
+        "oposicoes": [
+          [
+            "elevação",
+            "redução"
+          ]
+        ],
+        "min_chars": 30,
+        "pontos_por_nivel": [
+          0,
+          25,
+          50,
+          75,
+          100
+        ]
+      },
+      "explicacao": null,
+      "pontos": 3,
+      "etiquetas": [
+        "coleta-de-materiais",
+        "coleta",
+        "pre-analitica",
+        "interferentes",
+        "exercicio"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "vf",
+      "enunciado": "Sobre o Controle Interno da Qualidade (CIQ) e o Controle Externo da Qualidade (CEQ), julgue os itens a seguir:",
+      "config": {
+        "afirmacoes": [
+          {
+            "texto": "O CIQ é realizado pelo próprio laboratório a cada corrida analítica e tem como foco principal a precisão do método.",
+            "valor": true
+          },
+          {
+            "texto": "No CEQ, o laboratório recebe do provedor uma amostra cujo valor esperado é informado previamente, para que o analista possa ajustar o equipamento.",
+            "valor": false
+          },
+          {
+            "texto": "O CEQ, por comparar o laboratório com uma referência externa, dispensa a realização do CIQ na rotina.",
+            "valor": false
+          },
+          {
+            "texto": "A amostra do ensaio de proficiência deve ser processada da mesma forma que a amostra de um paciente.",
+            "valor": true
+          },
+          {
+            "texto": "O critério de aceitação de um ensaio de proficiência costuma ser mais largo do que a faixa própria do CIQ calculada pelo laboratório.",
+            "valor": true
+          }
+        ]
+      },
+      "explicacao": "No CEQ a amostra é cega, com valor desconhecido pelo laboratório, e deve ser tratada como amostra de paciente. CIQ e CEQ são complementares: o primeiro acompanha a precisão a cada corrida, e o segundo avalia a exatidão frente a uma referência externa, com tolerância mais larga.",
+      "pontos": 5,
+      "etiquetas": [
+        "controle-de-qualidade",
+        "ciq",
+        "ceq",
+        "ensaio-de-proficiencia"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "vf",
+      "enunciado": "Com base na RDC nº 978/2025 da Anvisa e na conduta esperada do técnico em análises clínicas, julgue os itens a seguir:",
+      "config": {
+        "afirmacoes": [
+          {
+            "texto": "O CIQ e o CEQ devem ser processados no próprio serviço e em todos os equipamentos em uso na rotina.",
+            "valor": true
+          },
+          {
+            "texto": "O CEQ de uma unidade pode ser processado pela matriz ou por um laboratório de apoio, desde que o resultado seja registrado na unidade de origem.",
+            "valor": false
+          },
+          {
+            "texto": "O certificado de cada novo lote do material de controle deve ser verificado e registrado antes de o lote ser colocado em uso na rotina.",
+            "valor": true
+          },
+          {
+            "texto": "Quando apenas um dos níveis de controle é reprovado, os resultados dos pacientes podem ser liberados, desde que o outro nível esteja dentro da faixa aceitável.",
+            "valor": false
+          },
+          {
+            "texto": "Enquanto o controle não estiver adequado, os resultados dos pacientes daquela corrida não devem ser liberados.",
+            "valor": true
+          }
+        ]
+      },
+      "explicacao": "A norma exige CIQ e CEQ realizados in loco, sem transferência para matriz ou laboratório de apoio, e a verificação do certificado de cada novo lote de controle. A liberação dos resultados depende da aprovação de todos os níveis de controle utilizados.",
+      "pontos": 5,
+      "etiquetas": [
+        "controle-de-qualidade",
+        "rdc-978-2025",
+        "legislacao-sanitaria",
+        "conduta-profissional"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "Sobre a acreditação laboratorial, assinale a alternativa correta.",
+      "config": {
+        "alternativas": [
+          "É um processo obrigatório, realizado pela Anvisa, sem o qual o laboratório não pode executar CIQ nem CEQ.",
+          "É um processo voluntário e periódico, realizado por entidade independente, que avalia o sistema de gestão da qualidade do laboratório de forma ampla.",
+          "Avalia exclusivamente o desempenho analítico dos equipamentos na bancada, sem considerar estrutura, documentação ou treinamento.",
+          "Substitui a participação em ensaios de proficiência, pois já atesta a exatidão dos resultados do laboratório."
+        ],
+        "correta": 1
+      },
+      "explicacao": "A acreditação é voluntária e periódica, conduzida por entidades independentes como DICQ, PALC, ONA ou CAP, e avalia estrutura, equipamentos, treinamento, documentação, rastreabilidade e gestão de riscos. Um laboratório pode realizar CIQ e CEQ regularmente sem ser acreditado.",
+      "pontos": 1,
+      "etiquetas": [
+        "controle-de-qualidade",
+        "acreditacao",
+        "gestao-da-qualidade"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "Um controle de sódio com valor verdadeiro de 145 mmol/L foi processado cinco vezes seguidas no mesmo equipamento, com os resultados 138, 139, 138, 140 e 138 mmol/L. Essa situação caracteriza leituras:",
+      "config": {
+        "alternativas": [
+          "precisas, mas não exatas.",
+          "exatas, mas não precisas.",
+          "precisas e exatas.",
+          "nem precisas nem exatas."
+        ],
+        "correta": 0
+      },
+      "explicacao": "Os resultados são muito próximos entre si, o que indica boa precisão, mas todos estão afastados do valor verdadeiro de 145 mmol/L, o que indica falta de exatidão.",
+      "pontos": 1,
+      "etiquetas": [
+        "controle-de-qualidade",
+        "precisao",
+        "exatidao"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "mc",
+      "enunciado": "Ao acompanhar o controle de glicose de um equipamento, o técnico observa que os resultados sobem de forma contínua ao longo de oito corridas seguidas, afastando-se cada vez mais da média. Esse padrão indica:",
+      "config": {
+        "alternativas": [
+          "variação aleatória normal, compatível com a liberação da rotina.",
+          "melhora da exatidão do método, pois os valores se afastam da média anterior.",
+          "deriva (tendência), sugestiva de problema progressivo de reagente, calibração ou equipamento.",
+          "erro exclusivo da fase pré-analítica, sem relação com o equipamento."
+        ],
+        "correta": 2
+      },
+      "explicacao": "A subida contínua dos resultados ao longo das corridas caracteriza deriva ou tendência, padrão típico de problema progressivo de reagente, calibração ou equipamento. Deve ser investigado antes da liberação de qualquer resultado de paciente.",
+      "pontos": 1,
+      "etiquetas": [
+        "controle-de-qualidade",
+        "grafico-de-controle",
+        "tendencia",
+        "ciq"
+      ],
+      "ativa": true
+    },
+    {
+      "tipo": "vf",
+      "enunciado": "Com base no gráfico de controle apresentado no texto de apoio, julgue os itens a seguir:",
+      "config": {
+        "afirmacoes": [
+          {
+            "texto": "O resultado da corrida 7 ultrapassou o limite superior de rejeição (+3 DP).",
+            "valor": true
+          },
+          {
+            "texto": "Os resultados das dez corridas mostram uma subida contínua, o que caracteriza deriva (tendência).",
+            "valor": false
+          },
+          {
+            "texto": "Com exceção da corrida 7, todos os resultados estão dentro da faixa de alerta (±2 DP).",
+            "valor": true
+          },
+          {
+            "texto": "Como o controle voltou a ficar próximo da média na corrida 8, os resultados dos pacientes da corrida 7 podem ser liberados sem investigação.",
+            "valor": false
+          },
+          {
+            "texto": "O limite superior de rejeição de 109 mg/dL corresponde à média somada a três desvios padrão.",
+            "valor": true
+          }
+        ]
+      },
+      "explicacao": "A corrida 7 (112 mg/dL) está acima de 109 mg/dL, que é a média mais 3 DP (100 + 9), enquanto as demais variam de forma aleatória entre 96 e 103 mg/dL, dentro da faixa de alerta e sem tendência. Um controle fora da faixa de rejeição exige investigação, e os resultados dos pacientes daquela corrida não devem ser liberados enquanto o controle não estiver adequado.",
+      "pontos": 5,
+      "etiquetas": [
+        "controle-de-qualidade",
+        "grafico-de-controle",
+        "desvio-padrao",
+        "ciq"
+      ],
+      "ativa": true
+    }
+  ]
+}
