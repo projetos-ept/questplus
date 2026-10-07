@@ -220,7 +220,9 @@
 	.pts input { width: 5rem; margin: 0; }
 	.mov { display: flex; gap: 0.4rem; }
 	.mov button { margin: 0; padding: 0.3rem 0.6rem; font-size: 0.85rem; }
-	.acoes { display: flex; gap: 1rem; align-items: center; }
+	/* barra fixa na base da janela: salvar sem rolar a página inteira (some ao chegar ao fim do formulário, onde já está no lugar) */
+	.acoes { position: sticky; bottom: 0; z-index: 5; display: flex; gap: 1rem; align-items: center; margin: 1.25rem -1rem -1rem; padding: 0.75rem 1rem; background: var(--superficie); border-top: 1px solid var(--borda); box-shadow: 0 -4px 12px rgb(0 0 0 / 0.08); border-radius: 0 0 0.6rem 0.6rem; }
+	.acoes button { margin: 0; }
 	.tent { margin-top: 1rem; }
 	.rotulo { display: block; font-weight: 600; }
 	.num { display: flex; gap: 0.5rem; align-items: center; margin-top: 0.4rem; }
