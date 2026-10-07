@@ -32,6 +32,15 @@
 	let salva = $state<{ id: number; token: string } | null>(null);
 	let estado = $state<Estado | null>(null);
 	let atual = $state(0);
+	// ao trocar de questão (grade, Anterior, Próxima) a página volta ao topo: sem isso o aluno cai no meio da questão nova
+	let questaoVista = 0;
+	$effect(() => {
+		const i = atual;
+		if (i !== questaoVista) {
+			questaoVista = i;
+			window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+		}
+	});
 	let rascunho = $state<Record<number, number | string | null | (boolean | null)[]>>({});
 	let erro = $state('');
 	let ocupado = $state(false);
