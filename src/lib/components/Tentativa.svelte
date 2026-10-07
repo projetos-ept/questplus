@@ -285,44 +285,54 @@
 	</form>
 
 {:else if fase === 'respondendo' && estado && q}
-	<header class="barra">
-		<span>Questão {atual + 1} de {estado.questoes.length}</span>
-		{#if restante !== null}<span class="relogio" aria-label="Tempo restante" role="timer">⏱ {relogioTexto}</span>{/if}
-	</header>
-	{#if avisoTempo}<p class="aviso-tempo" role="status">⏱ {avisoTempo}</p>{/if}
-	<div class="progresso" role="progressbar" aria-label="Progresso da atividade" aria-valuemin="1" aria-valuemax={estado.questoes.length} aria-valuenow={atual + 1} aria-valuetext="Questão {atual + 1} de {estado.questoes.length}">
-		<div class="preenchido" style="width: {((atual + 1) / estado.questoes.length) * 100}%"></div>
-	</div>
-	<p class="respondidas suave">{respondidas} de {estado.questoes.length} respondidas</p>
-
-	{#if estado.atividade.navegacao === 'livre'}
-		<nav class="pontos" aria-label="Questões">
-			{#each estado.questoes as x, i (x.id)}
-				<button type="button" class="sec" aria-current={i === atual} aria-label="Questão {i + 1}{completa(x.id) ? ', respondida' : estado.respostas[x.id] ? ', incompleta' : ''}" onclick={() => (atual = i)}>
-					{i + 1}{completa(x.id) ? '✔' : estado.respostas[x.id] ? '◐' : ''}
-				</button>
-			{/each}
-		</nav>
-	{/if}
-
-	{#key q.id}
-		<section class="questao">
-			<!-- o texto de apoio é da atividade: aberto antes da questão 1 e recolhido (para reler) nas outras -->
-			{#if estado.suporte}
-				{#if atual === 0}
-					<div class="suporte cartao">
-						<strong>Texto de apoio: {estado.suporte.titulo}</strong>
-						<div class="md" use:diagramas={estado.suporte.texto}>{@html renderSuporte(estado.suporte.texto, imagensDe(estado.suporte)).html}</div>
-					</div>
-				{:else}
-					<details class="suporte cartao reler">
-						<summary>📄 Reler o texto de apoio: {estado.suporte.titulo}</summary>
-						<div class="md" use:diagramas={estado.suporte.texto}>{@html renderSuporte(estado.suporte.texto, imagensDe(estado.suporte)).html}</div>
-					</details>
-				{/if}
+	<!-- "caderno de prova": painel lateral (identificação, tempo, grade de questões) + folha da questão; no celular o painel vira uma faixa fixa no topo e as ações ficam fixas embaixo -->
+	<div class="caderno">
+		<aside class="lateral">
+			<div class="ident">
+				<strong class="atv">{titulo}</strong>
+				{#if componente}<span class="comp">{componente}</span>{/if}
+			</div>
+			{#if restante !== null}
+				<div class="tempo"><small>Tempo restante</small><span class="relogio" aria-label="Tempo restante" role="timer">⏱ {relogioTexto}</span></div>
 			{/if}
+			<div class="grade">
+				<p class="barra"><span>Questão {atual + 1} de {estado.questoes.length}</span></p>
+				{#if estado.atividade.navegacao === 'livre'}
+					<nav class="pontos" aria-label="Questões">
+						{#each estado.questoes as x, i (x.id)}
+							<button type="button" class="sec" class:feita={completa(x.id)} aria-current={i === atual} aria-label="Questão {i + 1}{completa(x.id) ? ', respondida' : estado.respostas[x.id] ? ', incompleta' : ''}" onclick={() => (atual = i)}>
+								{i + 1}{completa(x.id) ? '✔' : estado.respostas[x.id] ? '◐' : ''}
+							</button>
+						{/each}
+					</nav>
+				{/if}
+				<p class="respondidas">{respondidas} de {estado.questoes.length} respondidas</p>
+				<div class="progresso" role="progressbar" aria-label="Progresso da atividade" aria-valuemin="1" aria-valuemax={estado.questoes.length} aria-valuenow={atual + 1} aria-valuetext="Questão {atual + 1} de {estado.questoes.length}">
+					<div class="preenchido" style="width: {((atual + 1) / estado.questoes.length) * 100}%"></div>
+				</div>
+			</div>
+			{#if avisoTempo}<p class="aviso-tempo" role="status">⏱ {avisoTempo}</p>{/if}
+		</aside>
 
-			<p class="enunciado">{q.enunciado}</p>
+		<div class="principal">
+			{#key q.id}
+				<section class="questao folha">
+					<!-- o texto de apoio é da atividade: aberto antes da questão 1 e recolhido (para reler) nas outras -->
+					{#if estado.suporte}
+						{#if atual === 0}
+							<div class="suporte cartao">
+								<strong>Texto de apoio: {estado.suporte.titulo}</strong>
+								<div class="md" use:diagramas={estado.suporte.texto}>{@html renderSuporte(estado.suporte.texto, imagensDe(estado.suporte)).html}</div>
+							</div>
+						{:else}
+							<details class="suporte cartao reler">
+								<summary>📄 Reler o texto de apoio: {estado.suporte.titulo}</summary>
+								<div class="md" use:diagramas={estado.suporte.texto}>{@html renderSuporte(estado.suporte.texto, imagensDe(estado.suporte)).html}</div>
+							</details>
+						{/if}
+					{/if}
+
+					<div class="q"><span class="num" aria-hidden="true">{atual + 1}</span><p class="enunciado">{q.enunciado}</p></div>
 			<FiguraQuestao imagem={q.imagem} />
 			<p class="suave">{pts(q.pontos)} ponto{q.pontos === 1 ? '' : 's'}</p>
 
@@ -332,10 +342,11 @@
 						{@const gab = resp?.feedback && 'correta' in resp.feedback.gabarito ? resp.feedback.gabarito.correta : null}
 						<label class="op" class:certa={gab === i} class:minha={resp?.resposta.escolha === i && gab !== i && !!resp?.feedback}>
 							<input type="radio" name="q{q.id}" value={i} bind:group={rascunho[q.id] as number | null} disabled={travada || ocupado} onchange={() => aoMudar()} />
-							<span class="letra">{LETRAS[i]}</span>
+							<span class="letra">{LETRAS[i]})</span>
 							<span class="t">{texto}</span>
 							{#if gab === i}<span class="sel">✔ Gabarito</span>{/if}
 							{#if resp?.resposta.escolha === i && gab !== i && resp.feedback}<span class="sel">✘ Sua resposta</span>{/if}
+							<span class="bolha" aria-hidden="true"></span>
 						</label>
 					{/each}
 				</div>
@@ -386,14 +397,16 @@
 				{#if imediato && !travada}<button type="button" onclick={responder} disabled={!pode || ocupado}>{ocupado ? 'Enviando…' : 'Responder'}</button>{/if}
 				{#if estado.atividade.navegacao === 'livre' && atual > 0}<button type="button" class="sec" onclick={() => (atual -= 1)}>Anterior</button>{/if}
 				{#if atual < estado.questoes.length - 1}
-					<button type="button" class="sec" onclick={() => (atual += 1)} disabled={estado.atividade.navegacao === 'sequencial' && !resp}>Próxima</button>
+					<button type="button" onclick={() => (atual += 1)} disabled={estado.atividade.navegacao === 'sequencial' && !resp}>Próxima</button>
 				{/if}
 			</div>
-		</section>
-	{/key}
+				</section>
+			{/key}
 
-	<div class="finalizar">
-		<button type="button" class="sec" onclick={() => finalizar()} disabled={ocupado}>Finalizar atividade ({respondidas} de {estado.questoes.length} respondidas)</button>
+			<div class="finalizar">
+				<button type="button" class="sec" onclick={() => finalizar()} disabled={ocupado}>Finalizar atividade ({respondidas} de {estado.questoes.length} respondidas)</button>
+			</div>
+		</div>
 	</div>
 
 {:else if fase === 'fim' && estado}
@@ -464,40 +477,104 @@
 	h1 { font-size: 1.4rem; }
 	.aviso { font-size: 0.9rem; }
 	.regras ul { margin: 0.4rem 0 0; padding-left: 1.2rem; }
-	.barra { display: flex; justify-content: space-between; align-items: center; font-weight: 600; }
-	.relogio { font-variant-numeric: tabular-nums; }
-	.progresso { height: 0.6rem; margin-top: 0.5rem; overflow: hidden; background: var(--borda); border-radius: 1rem; }
-	.preenchido { height: 100%; background: var(--destaque); border-radius: 1rem; transition: width 0.25s; }
-	.aviso-tempo { margin: 0.5rem 0 0; padding: 0.4rem 0.7rem; font-weight: 700; border: 2px solid var(--erro); border-radius: 0.4rem; }
 	.aberta textarea { width: 100%; box-sizing: border-box; font: inherit; }
 	.alerta-curta { margin: 0.35rem 0 0; padding: 0.5rem 0.75rem; font-weight: 600; color: var(--erro); border: 1px solid var(--erro); border-radius: 0.4rem; }
 	.contador { margin: 0.25rem 0 0; text-align: right; font-size: 0.85rem; }
-	.respondidas { margin: 0.35rem 0 0; font-size: 0.85rem; }
 	.obrigado { font-size: 1.1rem; }
 	.incentivo { margin: 1rem 0; border-color: var(--destaque); }
-	.pontos { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.75rem 0; }
-	.pontos button { margin: 0; min-width: 2.75rem; min-height: 2.75rem; padding: 0.2rem 0.5rem; }
-	.pontos button[aria-current='true'] { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--destaque); }
 	.suporte { margin: 0.75rem 0; }
 	.reler summary { cursor: pointer; font-weight: 600; }
 	.md { overflow-wrap: anywhere; }
-	.enunciado { margin: 0.75rem 0 0.25rem; font-size: 1.05rem; white-space: pre-wrap; overflow-wrap: anywhere; }
-	.op { display: flex; gap: 0.6rem; align-items: flex-start; min-height: 2.75rem; padding: 0.6rem 0.75rem; margin-top: 0.5rem; font-weight: 400; background: var(--superficie); border: 1px solid var(--borda); border-radius: 0.5rem; cursor: pointer; }
-	.op input { margin-top: 0.3rem; flex: none; }
 	.op .t { flex: 1; overflow-wrap: anywhere; }
-	.letra { font-weight: 700; }
 	.sel { font-size: 0.85rem; font-weight: 700; }
-	.certa { border: 2px solid var(--ok); }
-	.minha { border: 2px solid var(--erro); }
 	.afirm { margin: 0.6rem 0 0; padding: 0.6rem 0.75rem; background: var(--superficie); border: 1px solid var(--borda); border-radius: 0.5rem; }
 	.afirm legend { padding: 0 0.3rem; font-weight: 600; overflow-wrap: anywhere; }
 	.vfop { display: inline-flex; gap: 0.4rem; align-items: center; min-height: 2.75rem; margin: 0 1rem 0 0; font-weight: 400; }
 	.feedback { margin-top: 1rem; }
 	.explic { margin: 0.5rem 0 0; }
-	.acoes { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-	.acoes button, .finalizar button { min-height: 2.75rem; }
-	.finalizar { margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--borda); }
 	.resultado { font-size: 1.1rem; }
 	.revisao { padding-left: 1.2rem; }
 	.revisao li { margin-bottom: 1.2rem; }
+
+	/* ---------- caderno de prova ---------- */
+	.caderno {
+		--tinta: #1f3a5f;
+		--sobre-tinta: #eef3fa;
+		--marca: #a4402b;
+		--marca-suave: #f6e3dc;
+		--papel: var(--superficie);
+		display: grid;
+		grid-template-columns: 15.5rem minmax(0, 1fr);
+		gap: 1.25rem;
+		align-items: start;
+		/* sai da coluna estreita da página para ter espaço para o painel */
+		width: min(62rem, calc(100vw - 2rem));
+		margin-left: calc(50% - min(31rem, 50vw - 1rem));
+	}
+	:global(:root[data-tema='escuro']) .caderno {
+		--tinta: #16253b;
+		--marca: #f0917a;
+		--marca-suave: #3a2420;
+	}
+	.lateral { position: sticky; top: 1rem; display: flex; flex-direction: column; gap: 1rem; padding: 1.1rem 1rem; color: var(--sobre-tinta); background: var(--tinta); border-radius: 0.7rem; }
+	.atv { display: block; line-height: 1.25; overflow-wrap: anywhere; }
+	.comp { display: block; margin-top: 0.15rem; font-size: 0.85rem; opacity: 0.8; }
+	.tempo { padding: 0.6rem 0.8rem; text-align: center; background: rgb(255 255 255 / 0.1); border-radius: 0.7rem; }
+	.tempo small { display: block; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; opacity: 0.75; }
+	.relogio { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+	.barra { margin: 0 0 0.5rem; font-size: 0.85rem; font-weight: 600; opacity: 0.85; }
+	.pontos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin: 0; }
+	.pontos button { min-width: 0; min-height: 2.6rem; margin: 0; padding: 0.1rem 0; font-weight: 700; color: var(--sobre-tinta); background: transparent; border: 1.5px solid rgb(255 255 255 / 0.35); border-radius: 0.6rem; }
+	.pontos button.feita { color: #7ee2a8; border-color: #7ee2a8; }
+	.pontos button[aria-current='true'] { color: var(--tinta); background: #fff; border-color: #fff; }
+	.respondidas { margin: 0.6rem 0 0; font-size: 0.82rem; opacity: 0.8; }
+	.progresso { height: 0.35rem; margin-top: 0.5rem; overflow: hidden; background: rgb(255 255 255 / 0.2); border-radius: 1rem; }
+	.preenchido { height: 100%; background: #fff; border-radius: 1rem; transition: width 0.25s; }
+	.aviso-tempo { margin: 0; padding: 0.4rem 0.7rem; font-weight: 700; color: #fff; background: var(--erro); border-radius: 0.5rem; }
+
+	.folha { padding: 1.4rem clamp(1rem, 3vw, 2rem); background: var(--papel); border: 1px solid var(--borda); border-radius: 0.5rem; box-shadow: 0 2px 0 var(--borda); }
+	.q { display: flex; gap: 1rem; align-items: flex-start; }
+	.num { flex: none; font: 800 2.1rem/1 Georgia, serif; color: var(--marca); }
+	.enunciado { margin: 0.15rem 0 0.25rem; font-size: 1.1rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+	[role='radiogroup'] { margin-top: 1rem; border-top: 1px dashed var(--borda); }
+	.op { position: relative; display: grid; grid-template-columns: 2rem 1fr; grid-auto-flow: column; grid-auto-columns: auto; gap: 0.6rem; align-items: center; min-height: 3.4rem; padding: 0.7rem 0.5rem; margin: 0; font-weight: 400; background: transparent; border: 0; border-bottom: 1px dashed var(--borda); border-radius: 0; cursor: pointer; }
+	.op:hover { background: rgb(128 128 128 / 0.07); }
+	/* o rádio de verdade continua no lugar (teclado e leitor de tela), só some da vista */
+	.op input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+	.op:has(input:focus-visible) { outline: 2px solid var(--destaque); outline-offset: -2px; }
+	.op:has(input:checked) { background: var(--marca-suave); }
+	.op .t { overflow-wrap: anywhere; }
+	.letra { font-weight: 800; color: var(--suave); }
+	.op:has(input:checked) .letra { color: var(--marca); }
+	.bolha { width: 1.4rem; height: 1.4rem; border: 2px solid var(--suave); border-radius: 50%; }
+	.op:has(input:checked) .bolha { border-color: var(--marca); background: radial-gradient(var(--marca) 45%, transparent 50%); }
+	.certa { box-shadow: inset 0 0 0 2px var(--ok); }
+	.minha { box-shadow: inset 0 0 0 2px var(--erro); }
+	/* no computador as ações também acompanham a rolagem (no celular viram a barra fixa da base) */
+	.acoes { position: sticky; bottom: 0; display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 1.2rem; padding: 0.7rem 0; background: var(--papel); border-top: 1px solid var(--borda); }
+	.acoes button, .finalizar button { min-height: 2.75rem; }
+	.finalizar { margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--borda); }
+
+	@media (max-width: 760px) {
+		.caderno { display: block; width: auto; margin-left: 0; padding-bottom: calc(5.5rem + env(safe-area-inset-bottom)); }
+		/* faixa fixa no topo: título e tempo na primeira linha, grade de questões na segunda */
+		.lateral { position: sticky; top: 0; z-index: 10; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 0.5rem 0.6rem; margin: 0 -1rem 0.75rem; padding: 0.6rem 1rem; border-radius: 0; box-shadow: 0 2px 10px rgb(0 0 0 / 0.25); }
+		.ident { grid-column: 1; grid-row: 1; min-width: 0; font-size: 0.9rem; }
+		.tempo { grid-column: 2; grid-row: 1; padding: 0.15rem 0.7rem; border-radius: 99px; }
+		.tempo small { display: none; }
+		.relogio { font-size: 1rem; }
+		.grade { grid-column: 1 / -1; grid-row: 2; }
+		.respondidas { display: none; }
+		.barra { margin: 0 0 0.35rem; font-size: 0.78rem; }
+		.pontos { gap: 0.35rem; }
+		.pontos button { min-height: 2.4rem; }
+		.progresso { margin-top: 0.4rem; }
+		.aviso-tempo { grid-column: 1 / -1; grid-row: 3; text-align: center; }
+		.folha { padding: 1rem 0.9rem; border-radius: 0.7rem; }
+		.q .num { font-size: 1.8rem; }
+		.op { min-height: 3.6rem; }
+		/* ações fixas embaixo, ao alcance do polegar */
+		.acoes { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; flex-wrap: nowrap; margin: 0; padding: 0.6rem 0.75rem calc(0.6rem + env(safe-area-inset-bottom)); background: var(--papel); border-top: 1px solid var(--borda); box-shadow: 0 -6px 16px rgb(0 0 0 / 0.15); }
+		.acoes button { flex: 1; margin: 0; min-height: 3rem; }
+	}
 </style>
