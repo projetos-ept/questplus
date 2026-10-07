@@ -1,0 +1,6 @@
+CREATE TABLE componentes (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	nome TEXT NOT NULL UNIQUE COLLATE NOCASE,
+	criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+);
+ALTER TABLE atividades ADD COLUMN componente_id INTEGER REFERENCES componentes(id);

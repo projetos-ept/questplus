@@ -23,7 +23,7 @@
 	};
 
 	type Regras = { modo: 'treino' | 'prova'; tempo_total: number | null; tentativas_max: number | null; mostra_nota: boolean };
-	let { codigo, titulo, turmas, fecha_em, regras }: { codigo: string; titulo: string; turmas: { id: number; nome: string }[]; fecha_em: string | null; regras: Regras } = $props();
+	let { codigo, titulo, componente = null, turmas, fecha_em, regras }: { codigo: string; titulo: string; componente?: string | null; turmas: { id: number; nome: string }[]; fecha_em: string | null; regras: Regras } = $props();
 
 	const CHAVE = $derived(`qp_t_${codigo.toLowerCase()}`);
 	const LETRAS = ['A', 'B', 'C', 'D', 'E'];
@@ -247,6 +247,7 @@
 
 {:else if fase === 'inicio'}
 	<h1>{titulo}</h1>
+	{#if componente}<p class="componente">{componente}</p>{/if}
 	{#if fecha_em}<p class="suave">Disponível até {formatarData(fecha_em)}.</p>{/if}
 	<div class="cartao regras">
 		<strong>{regras.modo === 'prova' ? 'Prova' : 'Treino'}</strong>

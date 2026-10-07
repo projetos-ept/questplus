@@ -45,6 +45,7 @@
 <header class="titulo">
 	<p class="suave marca">QuestPlus · Relatório da atividade</p>
 	<h1>{data.atividade.titulo}</h1>
+	{#if data.atividade.componente}<p class="componente">{data.atividade.componente}</p>{/if}
 	<p class="suave">
 		{data.atividade.modo === 'prova' ? 'Prova' : 'Treino'} · código <code>{data.atividade.codigo}</code>
 		{#if turmaAtual} · turma {turmaAtual}{/if}

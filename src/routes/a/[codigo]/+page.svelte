@@ -16,12 +16,14 @@
 		<p><a href="/">Digitar outro código</a></p>
 	{:else if data.estado === 'antes'}
 		<h1>{data.titulo}</h1>
+		{#if data.componente}<p class="componente">{data.componente}</p>{/if}
 		<p>Esta atividade ainda não abriu. Ela abre em <strong>{formatarData(data.abre_em)}</strong>.</p>
 	{:else if data.estado === 'encerrada'}
 		<h1>{data.titulo}</h1>
+		{#if data.componente}<p class="componente">{data.componente}</p>{/if}
 		<p>O prazo desta atividade acabou em <strong>{formatarData(data.fecha_em)}</strong>.</p>
 	{:else}
-		<Tentativa codigo={data.codigo} titulo={data.titulo} turmas={data.turmas} fecha_em={data.fecha_em} regras={data.regras} />
+		<Tentativa codigo={data.codigo} titulo={data.titulo} componente={data.componente} turmas={data.turmas} fecha_em={data.fecha_em} regras={data.regras} />
 	{/if}
 </main>
 

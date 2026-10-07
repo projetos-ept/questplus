@@ -5,6 +5,7 @@
 	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
 	import CopiarLink from './CopiarLink.svelte';
+	import SeletorComponente from './SeletorComponente.svelte';
 	import SeletorSuporte from './SeletorSuporte.svelte';
 	import SeletorQuestoes, { type Escolhida } from './SeletorQuestoes.svelte';
 
@@ -12,6 +13,7 @@
 	type Inicial = {
 		titulo: string; codigo: string; ativa: boolean; embaralhar: boolean; abre_em: string | null; fecha_em: string | null; questoes: QuestaoSel[]; turmas: number[];
 		suporte_id?: number | null;
+		componente_id?: number | null;
 		modo: Modo; tempo_total: number | null; tentativas_max: number | null; navegacao: Navegacao; mostra_nota: boolean;
 	};
 	type Turma = { id: number; nome: string; ativa: boolean };
@@ -44,11 +46,12 @@
 	let fecha = $state(paraInputLocal(i0.fecha_em));
 	let turmasSel = $state<number[]>([...i0.turmas]);
 	let suporteId = $state<number | null>(i0.suporte_id ?? null);
+	let componenteId = $state<number | null>(i0.componente_id ?? null);
 	let questoes = $state<QuestaoSel[]>(i0.questoes.map((q) => ({ ...q })));
 	let erros = $state<string[]>([]);
 	let salvando = $state(false);
 	const estadoAtual = () =>
-		JSON.stringify([titulo, codigo, ativa, embaralhar, modo, tempoMin, ilimitadas, tentativas, navegacao, mostraNota, abre, fecha, turmasSel, suporteId, questoes.map((q) => [q.questao_id, q.pontos])]);
+		JSON.stringify([titulo, codigo, ativa, embaralhar, modo, tempoMin, ilimitadas, tentativas, navegacao, mostraNota, abre, fecha, turmasSel, suporteId, componenteId, questoes.map((q) => [q.questao_id, q.pontos])]);
 	const original = untrack(estadoAtual);
 	let salvo = false;
 	protegerSaida(() => !salvo && estadoAtual() !== original);
@@ -83,7 +86,8 @@
 					abre_em: deInputLocal(abre), fecha_em: deInputLocal(fecha),
 					questoes: questoes.map((q) => ({ questao_id: q.questao_id, pontos: q.pontos })),
 					turmas: turmasSel,
-					suporte_id: suporteId
+					suporte_id: suporteId,
+					componente_id: componenteId
 				})
 			});
 			const corpo = (await r.json().catch(() => ({}))) as { id?: number; erros?: string[] };
@@ -103,6 +107,8 @@
 
 <form onsubmit={salvar} class="cartao">
 	<label>Título <input bind:value={titulo} required maxlength="200" placeholder="Revisão de parasitologia" /></label>
+
+	<SeletorComponente bind:valor={componenteId} />
 
 	<div class="bloco">
 		<label for="codigo">Código e link para os alunos</label>

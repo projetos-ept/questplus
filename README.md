@@ -68,6 +68,10 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 - Imports de componentes usam `#lib/components/...`; o resto de `#lib/...` aponta para arquivos `.ts`.
 - Não existe mais `event.platform`. Bindings e segredos vêm de `import { env } from 'cloudflare:workers'`, encapsulado em `src/lib/server/env.ts`.
 
+## Componente curricular da atividade (0009)
+
+Cada atividade pode ter um **componente curricular** (opcional), escolhido logo abaixo do título no formulário. Ele é cadastrado ali mesmo (**Novo**) e fica numa lista suspensa; **Gerenciar** abre um modal com os componentes cadastrados, onde se pode **editar** o nome ou **excluir** (se há atividades usando, o modal avisa quantas e elas ficam sem componente). O aluno vê o componente **abaixo do título da atividade** (na entrada e durante a prova); nos relatórios (da atividade, individual e no JSON de resultados) ele também aparece, e a lista de atividades mostra sob o título. Sem componente escolhido, nada muda. Não afeta questões nem textos de apoio. API: `/api/admin/componentes` (GET, POST) e `/api/admin/componentes/[id]` (PUT, DELETE; em uso exige `?desvincular=1`, senão 409). O relatório mostra o nome atual (renomear ou excluir muda também os relatórios antigos). Exige `migrations/0009_componentes_curriculares.sql` no banco **antes** de publicar (roteiro em `docs/roteiro-extensao-componentes.md`).
+
 ## Publicar o apoio na atividade (0008)
 
 Antes do deploy, no D1 `questplus` (Console, **uma instrução por vez**, conferindo com `PRAGMA table_info(<tabela>)`): as 3 de `migrations/0008_apoio_na_atividade.sql`. Roteiro em `docs/roteiro-extensao-apoio-na-atividade.md`. Só depois publique o código.

@@ -137,6 +137,8 @@ export type AtividadeValida = {
 	fecha_em: string | null;
 	/** Texto de apoio da atividade (aparece antes da questão 1); null = sem apoio. */
 	suporte_id: number | null;
+	/** Componente curricular da atividade (aparece sob o título); null = sem componente. */
+	componente_id: number | null;
 	questoes: { questao_id: number; pontos: number | null }[];
 	turmas: number[];
 };
@@ -235,13 +237,22 @@ export function validarAtividade(entrada: unknown): Resultado<AtividadeValida> {
 		}
 	}
 
+	let componente_id: number | null = null;
+	if (!vazio(e.componente_id)) {
+		componente_id = Number(e.componente_id);
+		if (!Number.isInteger(componente_id) || componente_id < 1) {
+			erros.push('Componente curricular inválido.');
+			componente_id = null;
+		}
+	}
+
 	if (erros.length) return { ok: false, erros };
 	return {
 		ok: true,
 		valor: {
 			titulo, codigo: codigoBruto || null, ativa: e.ativa !== false, modo, tempo_total, tentativas_max,
 			navegacao: navegacao as Navegacao, embaralhar: e.embaralhar === true, mostra_nota: modo === 'prova' && e.mostra_nota === true,
-			abre_em, fecha_em, suporte_id, questoes, turmas
+			abre_em, fecha_em, suporte_id, componente_id, questoes, turmas
 		}
 	};
 }
@@ -260,4 +271,12 @@ export function validarInicio(entrada: unknown): Resultado<{ codigo: string; nom
 	if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 120) erros.push('Informe um e-mail válido.');
 	if (erros.length) return { ok: false, erros };
 	return { ok: true, valor: { codigo, nome, turma_id, email } };
+}
+
+/** Nome de um componente curricular: texto de 2 a 100 caracteres, espaços repetidos viram um só. */
+export function validarComponente(entrada: unknown): Resultado<{ nome: string }> {
+	const e = (entrada && typeof entrada === 'object' ? entrada : {}) as Record<string, unknown>;
+	const nome = typeof e.nome === 'string' ? e.nome.replace(/\s+/g, ' ').trim() : '';
+	if (nome.length < 2 || nome.length > 100) return { ok: false, erros: ['O nome do componente curricular deve ter de 2 a 100 caracteres.'] };
+	return { ok: true, valor: { nome } };
 }

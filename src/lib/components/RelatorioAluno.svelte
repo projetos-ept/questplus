@@ -12,7 +12,7 @@
 
 	export type DadosRelatorio = {
 		id: number;
-		atividade: { titulo: string; codigo: string; modo: string };
+		atividade: { titulo: string; codigo: string; modo: string; componente?: string | null };
 		aluno: { nome: string; email: string; turma: string };
 		status: string;
 		anulada: boolean;
@@ -42,6 +42,7 @@
 	<header class="cab">
 		<p class="suave marca">QuestPlus · Relatório individual</p>
 		<h2>{dados.atividade.titulo}</h2>
+		{#if dados.atividade.componente}<p class="componente">{dados.atividade.componente}</p>{/if}
 		<dl>
 			<div><dt>Aluno</dt><dd>{dados.aluno.nome}</dd></div>
 			<div><dt>Turma</dt><dd>{dados.aluno.turma}</dd></div>

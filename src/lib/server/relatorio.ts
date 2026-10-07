@@ -112,7 +112,7 @@ export async function relatorioDaTentativa(id: number) {
 	const numero = irmas.filter((x) => x.id <= id).length;
 	return {
 		id: t.id,
-		atividade: { id: a!.id, titulo: a!.titulo, codigo: a!.codigo, modo: a!.modo },
+		atividade: { id: a!.id, titulo: a!.titulo, componente: a!.componente, codigo: a!.codigo, modo: a!.modo },
 		aluno: { nome: t.nome, email: t.email, turma: turma?.nome ?? '' },
 		status: t.status,
 		anulada: t.anulada === 1,
@@ -175,7 +175,7 @@ export async function exportarResultadosJson(atividadeId: number, turmaId?: numb
 		formato: 'questplus-resultados',
 		versao: 1,
 		exportado_em: new Date().toISOString(),
-		atividade: { id: a.id, titulo: a.titulo, codigo: a.codigo, modo: a.modo, tempo_total: a.tempo_total, tentativas_max: a.tentativas_max, abre_em: a.abre_em, fecha_em: a.fecha_em },
+		atividade: { id: a.id, titulo: a.titulo, componente: a.componente, codigo: a.codigo, modo: a.modo, tempo_total: a.tempo_total, tentativas_max: a.tentativas_max, abre_em: a.abre_em, fecha_em: a.fecha_em },
 		turma,
 		criterio: 'vale a maior nota de cada aluno (identificado pelo e-mail); tentativas anuladas ou em andamento não contam',
 		alunos: alunos.map((x) => ({ nome: x.nome, email: x.email, turma: x.turma, tentativas: x.tentativas, tentativa_considerada: x.melhor.id, maior_nota: x.melhor.nota, pontos_max: x.melhor.pontos_max, percentual: x.percentual, tempo_segundos: x.tempoSegundos }))

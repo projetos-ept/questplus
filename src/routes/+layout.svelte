@@ -146,6 +146,12 @@
 		font-weight: 600;
 		color: var(--erro);
 	}
+	/* componente curricular, logo abaixo do título da atividade (aluno e relatórios) */
+	:global(.componente) {
+		margin: -0.3rem 0 0.8rem;
+		font-weight: 600;
+		color: var(--suave, #5b6570);
+	}
 	:global(.suporte-img) {
 		margin: 0.75rem 0;
 		text-align: center;

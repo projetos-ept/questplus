@@ -109,7 +109,7 @@
 			<tbody>
 				{#each lista as a (a.id)}
 					<tr class:inativa={a.estado === 'inativa'}>
-						<td><a href="/admin/atividades/{a.id}">{a.titulo}</a></td>
+						<td><a href="/admin/atividades/{a.id}">{a.titulo}</a>{#if a.componente}<div class="suave">{a.componente}</div>{/if}</td>
 						<td class="suave turmas">{nasTurmas(a)}</td>
 						<td class="cod"><code>{a.codigo}</code> <button class="sec mini" onclick={() => copiar(a.id, a.codigo)}>{copiado === a.id ? 'Link copiado' : 'Copiar link'}</button></td>
 						<td>{#if a.abre_em}<div>abre {formatarData(a.abre_em)}</div>{/if}<div>{a.fecha_em ? `fecha ${formatarData(a.fecha_em)}` : 'sem prazo'}</div></td>

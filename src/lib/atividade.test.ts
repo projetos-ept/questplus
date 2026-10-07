@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { deInputLocal, paraInputLocal } from './data';
 import {
-	embaralhar, estadoAtividade, expirou, feedbackDoModo, gerarCodigo, montarSnapshot, prazoDaTentativa, validarAtividade, validarInicio, validarTurma, versaoAluno
+	embaralhar, estadoAtividade, expirou, feedbackDoModo, gerarCodigo, montarSnapshot, prazoDaTentativa, validarAtividade, validarComponente, validarInicio, validarTurma, versaoAluno
 } from './atividade';
 
 const T = (s: string) => Date.parse(s);
@@ -61,6 +61,14 @@ describe('snapshot', () => {
 
 describe('validarAtividade', () => {
 	const ok = { titulo: 'T', questoes: [{ questao_id: 1 }, { questao_id: 2, pontos: 3 }], turmas: [1] };
+	it('componente curricular é opcional e precisa ser um id válido', () => {
+		const sem = validarAtividade(ok);
+		expect(sem.ok && sem.valor.componente_id).toBeNull();
+		const com = validarAtividade({ ...ok, componente_id: '3' });
+		expect(com.ok && com.valor.componente_id).toBe(3);
+		expect(validarAtividade({ ...ok, componente_id: 'x' }).ok).toBe(false);
+		expect(validarAtividade({ ...ok, componente_id: 0 }).ok).toBe(false);
+	});
 	it('aceita o mínimo e normaliza datas', () => {
 		const r = validarAtividade({ ...ok, fecha_em: '2026-10-20T15:00:00-03:00' });
 		expect(r.ok && r.valor.fecha_em).toBe('2026-10-20T18:00:00.000Z');
@@ -139,5 +147,15 @@ describe('datas locais', () => {
 		expect(deInputLocal(paraInputLocal(iso))).toBe(iso);
 		expect(paraInputLocal(null)).toBe('');
 		expect(deInputLocal('')).toBeNull();
+	});
+});
+
+describe('validarComponente', () => {
+	it('limpa espaços e exige de 2 a 100 caracteres', () => {
+		const r = validarComponente({ nome: '  Hematologia   Clínica ' });
+		expect(r.ok && r.valor.nome).toBe('Hematologia Clínica');
+		expect(validarComponente({ nome: 'a' }).ok).toBe(false);
+		expect(validarComponente({ nome: 'x'.repeat(101) }).ok).toBe(false);
+		expect(validarComponente({}).ok).toBe(false);
 	});
 });
