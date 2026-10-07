@@ -250,7 +250,7 @@
 	{#if componente}<p class="componente">{componente}</p>{/if}
 	{#if fecha_em}<p class="suave">Disponível até {formatarData(fecha_em)}.</p>{/if}
 	<div class="cartao regras">
-		<strong>{regras.modo === 'prova' ? 'Prova' : 'Treino'}</strong>
+		<strong>Instruções:</strong>
 		<ul>
 			<li>{regras.tempo_total ? `Tempo: ${Math.round(regras.tempo_total / 60)} minutos, contados a partir do clique em Começar.` : 'Sem limite de tempo.'}</li>
 			<li>{regras.tentativas_max ? `Tentativas: ${regras.tentativas_max}.` : 'Tentativas ilimitadas.'}</li>
