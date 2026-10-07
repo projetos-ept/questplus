@@ -1,4 +1,5 @@
 import { alertasDe, conferirConceitos, conferirOposicoes, cosseno, nivelValido, percentualDe, pontosDoNivel, similaridadeTexto, triar, type Alerta, type Nivel } from '#lib/aberta';
+import type { ImagemSuporte } from '#lib/imagens';
 import type { Aberta } from '#lib/questao';
 import { obterTentativa } from './atividades';
 import { db } from './env';
@@ -79,7 +80,7 @@ export async function filaDaAtividade(atividadeId: number) {
 			}
 			for (const i of copiou) itens[i].alertas = [...itens[i].alertas, ...alertasDe({ nivel: null, aproximacao: null, oposicoes: [], copia: true })];
 		}
-		return { id: q.id, enunciado: q.enunciado, pontos: q.pontos, itens };
+		return { id: q.id, enunciado: q.enunciado, pontos: q.pontos, imagem: q.imagem ? (JSON.parse(q.imagem) as ImagemSuporte) : null, itens };
 	});
 	return { questoes, emAndamento: andamento?.n ?? 0 };
 }

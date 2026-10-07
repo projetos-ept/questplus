@@ -1,5 +1,6 @@
 import { chaveDuplicada, normalizarQuestao, type SuporteImportado } from '#lib/importacao';
 import { ehDisciplina } from '#lib/disciplinas';
+import { imagemDe } from '#lib/imagens';
 import { formatoDe, type Aberta, type Mc, type Vf } from '#lib/questao';
 import { db, midia } from './env';
 
@@ -36,10 +37,13 @@ export async function processarBloco(
 	const itens: ItemResultado[] = [];
 	const linhas: Linha[] = [];
 
-	brutas.forEach((bruta, i) => {
+	for (const [i, bruta] of brutas.entries()) {
 		const indice = opcoes.inicio + i;
 		const n = normalizarQuestao(bruta);
-		if (!n.ok) return void itens.push({ indice, ok: false, erros: n.erros, duplicada: false });
+		if (!n.ok) {
+			itens.push({ indice, ok: false, erros: n.erros, duplicada: false });
+			continue;
+		}
 		const q = n.valor;
 		const erros: string[] = [];
 		if (q.suporte_ref) {
@@ -57,6 +61,13 @@ export async function processarBloco(
 					? `${LETRAS[(q.config as Mc).correta]}) ${(q.config as Mc).alternativas[(q.config as Mc).correta]}`
 					: (q.config as Vf).afirmacoes.map((a) => (a.valor ? 'V' : 'F')).join(' ');
 		const avisos = q.etiquetas[0] && ehDisciplina(q.etiquetas[0]) ? [] : [q.etiquetas[0] ? `A primeira etiqueta ("${q.etiquetas[0]}") não é uma disciplina da lista.` : 'Sem etiquetas: falta a disciplina (1ª etiqueta).'];
+		// imagem de questão: só vale se o arquivo existir neste sistema; senão a questão entra sem imagem e o preview avisa
+		const img = imagemDe(q.config);
+		if (img && !(await midia()?.head(img.chave))) {
+			const { imagem: _x, ...resto } = q.config as Record<string, unknown>;
+			q.config = resto as typeof q.config;
+			avisos.push('A imagem desta questão não existe neste sistema e foi ignorada; anexe-a depois.');
+		} else if (!img && q.tinha_imagem) avisos.push('Esta questão tinha imagem ([img]) no sistema de origem; anexe-a depois, editando a questão.');
 		itens.push({ indice, ok: erros.length === 0, erros, avisos, duplicada, formato: formatoDe(q.tipo, q.config), enunciado: q.enunciado, gabarito });
 
 		if (erros.length === 0 && !(duplicada && opcoes.pularDuplicadas)) {
@@ -71,7 +82,7 @@ export async function processarBloco(
 				ativa: q.ativa ? 1 : 0
 			});
 		}
-	});
+	}
 
 	let criadas = 0;
 	if (opcoes.gravar && linhas.length) {

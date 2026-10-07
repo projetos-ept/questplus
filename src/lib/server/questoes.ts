@@ -1,3 +1,4 @@
+import { imagemDe } from '#lib/imagens';
 import { filtroDeParams } from '#lib/filtros';
 import { imagensDe, type ImagemSuporte } from '#lib/imagens';
 import type { QuestaoValida, Suporte } from '#lib/questao';
@@ -156,6 +157,7 @@ export async function acaoEmLote(alvo: { ids: number[] } | { filtro: Filtros }, 
 	}
 	const agora = "atualizado_em = datetime('now')";
 	let sql: string;
+	let chavesDasExcluidas: string[] = [];
 	switch (acao) {
 		case 'ativar':
 		case 'inativar':
@@ -172,6 +174,12 @@ export async function acaoEmLote(alvo: { ids: number[] } | { filtro: Filtros }, 
 			sql = `UPDATE questoes SET etiquetas = (SELECT json_group_array(v) FROM (SELECT ? AS v, 0 AS o UNION ALL SELECT value, 1 + key FROM json_each(questoes.etiquetas) WHERE value <> ? ORDER BY o LIMIT 10)), ${agora} WHERE ${ondeId} AND json_extract(etiquetas, '$[0]') IS NOT ?`;
 			break;
 		case 'excluir':
+			chavesDasExcluidas = (
+				await db()
+					.prepare(`SELECT DISTINCT json_extract(config, '$.imagem.chave') AS c FROM questoes WHERE ${ondeId} AND NOT EXISTS (SELECT 1 FROM atividade_questoes aq WHERE aq.questao_id = questoes.id) AND json_extract(config, '$.imagem.chave') IS NOT NULL LIMIT 40`)
+					.bind(...valoresId)
+					.all<{ c: string }>()
+			).results.map((x) => x.c);
 			sql = `DELETE FROM questoes WHERE ${ondeId} AND NOT EXISTS (SELECT 1 FROM atividade_questoes aq WHERE aq.questao_id = questoes.id)`;
 			break;
 	}
@@ -183,6 +191,7 @@ export async function acaoEmLote(alvo: { ids: number[] } | { filtro: Filtros }, 
 				? [valor!, valor!, ...valoresId, valor!]
 				: valoresId;
 	const r = await db().prepare(sql).bind(...params).run();
+	if (chavesDasExcluidas.length) await apagarImagensSemUso(chavesDasExcluidas, 0);
 	return r.meta.changes;
 }
 
@@ -229,12 +238,16 @@ export async function criarQuestao(q: QuestaoValida) {
 }
 
 export async function atualizarQuestao(id: number, q: QuestaoValida) {
+	const antes = (await obterQuestao(id))?.config;
 	const r = await db()
 		.prepare(
 			"UPDATE questoes SET tipo = ?, enunciado = ?, config = ?, explicacao = ?, pontos = ?, suporte_id = ?, etiquetas = ?, ativa = ?, atualizado_em = datetime('now') WHERE id = ?"
 		)
 		.bind(q.tipo, q.enunciado, JSON.stringify(q.config), q.explicacao, q.pontos, q.suporte_id, JSON.stringify(q.etiquetas), q.ativa ? 1 : 0, id)
 		.run();
+	// trocou ou tirou a imagem: o arquivo antigo só sai do R2 se ninguém mais o usa (apoios, provas já feitas, outras questões)
+	const velha = imagemDe(antes)?.chave;
+	if (r.meta.changes > 0 && velha && velha !== imagemDe(q.config)?.chave) await apagarImagensSemUso([velha], 0);
 	return r.meta.changes > 0;
 }
 
@@ -257,7 +270,9 @@ export async function excluirQuestao(id: number): Promise<{ status: 'ok' | 'inex
 		.bind(id)
 		.all<{ titulo: string }>();
 	if (uso.results.length) return { status: 'em-uso', atividades: uso.results.slice(0, 5).map((x) => x.titulo), total: uso.results.length };
+	const chave = imagemDe((await obterQuestao(id))?.config)?.chave;
 	await db().prepare('DELETE FROM questoes WHERE id = ?').bind(id).run();
+	if (chave) await apagarImagensSemUso([chave], 0);
 	return { status: 'ok' };
 }
 
@@ -302,13 +317,15 @@ export async function criarSuporte(s: Suporte) {
  * apagar o arquivo quebraria provas e relatórios antigos.
  */
 async function apagarImagensSemUso(chaves: string[], ignorarSuporteId: number) {
+	// (a imagem de uma questão também conta como uso: ver o terceiro termo)
 	for (const chave of chaves) {
 		const uso = await db()
 			.prepare(
 				`SELECT (SELECT COUNT(*) FROM suportes WHERE id <> ? AND instr(imagens, ?) > 0) +
-				        (SELECT COUNT(*) FROM tentativas WHERE instr(questoes, ?) > 0) AS n`
+				        (SELECT COUNT(*) FROM tentativas WHERE instr(questoes, ?) > 0) +
+				        (SELECT COUNT(*) FROM questoes WHERE instr(config, ?) > 0) AS n`
 			)
-			.bind(ignorarSuporteId, chave, chave)
+			.bind(ignorarSuporteId, chave, chave, chave)
 			.first<{ n: number }>();
 		if (uso!.n === 0) await midia()?.delete(chave);
 	}

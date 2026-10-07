@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import { formatarData } from '#lib/data';
+	import FiguraQuestao from '#lib/components/FiguraQuestao.svelte';
 
 	let { data } = $props();
 	type Item = (typeof data.questoes)[number]['itens'][number];
@@ -109,6 +110,7 @@
 		<section class="questao">
 			<h2>Questão aberta {n + 1} <span class="suave">· {q.pontos} ponto(s)</span></h2>
 			<p class="enunciado">{q.enunciado}</p>
+			<FiguraQuestao imagem={q.imagem} />
 			{#if conf.length > 0}
 				{@const dist = [0, 1, 2, 3, 4].map((k) => conf.filter((i) => i.nivel_final === k).length)}
 				{@const aprox = q.itens.filter((i) => i.aproximacao !== null)}

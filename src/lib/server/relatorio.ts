@@ -28,11 +28,11 @@ export async function turmasComTentativas(atividadeId: number) {
 export async function questoesDaAtividade(atividadeId: number) {
 	const r = await db()
 		.prepare(
-			`SELECT aq.questao_id AS id, q.tipo, q.enunciado, COALESCE(aq.pontos, q.pontos) AS pontos
+			`SELECT aq.questao_id AS id, q.tipo, q.enunciado, COALESCE(aq.pontos, q.pontos) AS pontos, json_extract(q.config, '$.imagem') AS imagem
 			 FROM atividade_questoes aq JOIN questoes q ON q.id = aq.questao_id WHERE aq.atividade_id = ? ORDER BY aq.ordem`
 		)
 		.bind(atividadeId)
-		.all<{ id: number; tipo: string; enunciado: string; pontos: number }>();
+		.all<{ id: number; tipo: string; enunciado: string; pontos: number; imagem: string | null }>();
 	return r.results;
 }
 

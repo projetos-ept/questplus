@@ -1,6 +1,8 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
 	import { nomeDaDisciplina, ehDisciplina } from '#lib/disciplinas';
+	import { imagemDe } from '#lib/imagens';
+	import FiguraQuestao from './FiguraQuestao.svelte';
 	import { formatoDe, type Aberta, type Mc, type Vf } from '#lib/questao';
 
 	export type QuestaoItem = {
@@ -20,6 +22,7 @@
 	const LETRAS = ['A', 'B', 'C', 'D', 'E'];
 	const disciplina = $derived(q.etiquetas[0] && ehDisciplina(q.etiquetas[0]) ? q.etiquetas[0] : null);
 	const outras = $derived(q.etiquetas.filter((e) => e !== disciplina));
+	const imagem = $derived(imagemDe(q.config));
 	let aberto = $state(false);
 	const resumo = (t: string) => (t.length > 180 ? `${t.slice(0, 180)}…` : t);
 </script>
@@ -32,6 +35,7 @@
 			<span class="suave">{q.pontos} ponto{q.pontos === 1 ? '' : 's'}</span>
 			{#if disciplina}<span class="disc">{nomeDaDisciplina(disciplina)}</span>{/if}
 			{#if q.suporte_id}<span class="suave" title="Tem texto de apoio">📎 apoio</span>{/if}
+			{#if imagem}<span class="suave" title="Tem imagem">🖼 imagem</span>{/if}
 			{#if (q.em_atividades ?? 0) > 0}<span class="suave" title="Está em atividades">em {q.em_atividades} atividade{q.em_atividades === 1 ? '' : 's'}</span>{/if}
 			{#if q.ativa === false}<span class="selo">Inativa</span>{/if}
 			{#if jaAdicionada}<span class="selo ok">✔ já adicionada</span>{/if}
@@ -42,6 +46,7 @@
 			<button type="button" class="ver" aria-expanded={aberto} onclick={() => (aberto = !aberto)}>{aberto ? 'Ocultar' : 'Ver questão e gabarito'}</button>
 			{#if aberto}
 				<div class="detalhe">
+					<FiguraQuestao {imagem} />
 					{#if q.tipo === 'mc'}
 						<ol class="alts">
 							{#each (q.config as Mc).alternativas as alt, k}

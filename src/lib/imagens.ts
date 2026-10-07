@@ -69,6 +69,22 @@ export function validarImagens(entrada: unknown): { ok: true; valor: ImagemSupor
 	return erros.length ? { ok: false, erros } : { ok: true, valor: valor.sort((a, b) => a.n - b.n) };
 }
 
+/** Uma imagem só (a da questão): mesma validação do apoio, sem código [imgN] no texto. */
+export function validarImagemUnica(entrada: unknown): { ok: true; valor: ImagemSuporte | null } | { ok: false; erros: string[] } {
+	if (entrada === undefined || entrada === null || entrada === '') return { ok: true, valor: null };
+	if (typeof entrada !== 'object' || Array.isArray(entrada)) return { ok: false, erros: ['A imagem da questão é inválida.'] };
+	const r = validarImagens([{ ...(entrada as object), n: 1 }]);
+	return r.ok ? { ok: true, valor: r.valor[0] } : { ok: false, erros: r.erros.map((e) => e.replace(/^Imagem 1/, 'Imagem da questão')) };
+}
+
+/** A imagem guardada em `config.imagem` de uma questão (ou null). */
+export function imagemDe(config: unknown): ImagemSuporte | null {
+	const i = (config as { imagem?: unknown } | null | undefined)?.imagem;
+	if (!i || typeof i !== 'object') return null;
+	const r = validarImagemUnica(i);
+	return r.ok ? r.valor : null;
+}
+
 /**
  * Imagens de um texto de apoio, aceitando os dois formatos: o novo (`imagens`) e o antigo, de uma imagem só
  * (`imagem_chave`), que ainda existe nas cópias guardadas em tentativas feitas antes desta mudança.

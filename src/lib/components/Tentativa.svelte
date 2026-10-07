@@ -4,10 +4,11 @@
 	import { imagensDe, type ImagemSuporte } from '#lib/imagens';
 	import { renderSuporte } from '#lib/suporte';
 	import { formatarData } from '#lib/data';
+	import FiguraQuestao from './FiguraQuestao.svelte';
 
 	type Fb = { pontos: number; max: number; acertou: 'sim' | 'parcial' | 'nao'; gabarito: { correta: number } | { valores: boolean[] }; explicacao: string | null };
 	type Q = {
-		id: number; tipo: 'mc' | 'vf' | 'aberta'; enunciado: string; pontos: number;
+		id: number; tipo: 'mc' | 'vf' | 'aberta'; enunciado: string; pontos: number; imagem?: ImagemSuporte | null;
 		suporte: { titulo: string; texto: string; imagem_chave?: string | null; imagens?: ImagemSuporte[] } | null;
 		config: { alternativas?: string[]; afirmacoes?: { texto: string }[]; max_chars?: number; min_chars?: number };
 	};
@@ -311,6 +312,7 @@
 			{/if}
 
 			<p class="enunciado">{q.enunciado}</p>
+			<FiguraQuestao imagem={q.imagem} />
 			<p class="suave">{pts(q.pontos)} ponto{q.pontos === 1 ? '' : 's'}</p>
 
 			{#if q.tipo === 'mc'}
@@ -426,6 +428,7 @@
 				{@const r = estado.respostas[x.id]}
 				<li>
 					<p class="enunciado">{x.enunciado}</p>
+					<FiguraQuestao imagem={x.imagem} />
 					{#if r?.feedback}
 						<p><strong>{rotulo(r.feedback)}</strong> · {pts(r.feedback.pontos)} de {pts(r.feedback.max)}</p>
 						{#if x.tipo === 'mc' && 'correta' in r.feedback.gabarito}

@@ -1,3 +1,4 @@
+import { imagemDe, type ImagemSuporte } from './imagens';
 import { MAX_RESPOSTA_ABERTA, type Aberta, type Mc, type Resultado, type Vf } from './questao';
 
 export type Estado = 'inativa' | 'antes' | 'no_prazo' | 'encerrada';
@@ -53,6 +54,8 @@ export type QuestaoSnapshot = {
 };
 
 export type QuestaoAluno = Omit<QuestaoSnapshot, 'config' | 'explicacao'> & {
+	/** Imagem da questão, abaixo do enunciado. */
+	imagem: ImagemSuporte | null;
 	config: { alternativas: string[] } | { afirmacoes: { texto: string }[] } | { max_chars: number; min_chars: number };
 };
 
@@ -76,7 +79,7 @@ export function montarSnapshot(
 			mc.alternativas.map((_, i) => i),
 			rnd
 		);
-		config = { alternativas: ordem.map((i) => mc.alternativas[i]), correta: ordem.indexOf(mc.correta) };
+		config = { ...mc, alternativas: ordem.map((i) => mc.alternativas[i]), correta: ordem.indexOf(mc.correta) };
 	}
 	return {
 		id: q.id,
@@ -98,7 +101,7 @@ export function versaoAluno(s: QuestaoSnapshot): QuestaoAluno {
 			: s.tipo === 'aberta'
 				? { max_chars: MAX_RESPOSTA_ABERTA, min_chars: (s.config as Aberta).min_chars }
 				: { afirmacoes: (s.config as Vf).afirmacoes.map((a) => ({ texto: a.texto })) };
-	return { id: s.id, tipo: s.tipo, enunciado: s.enunciado, pontos: s.pontos, suporte: s.suporte, config };
+	return { id: s.id, tipo: s.tipo, enunciado: s.enunciado, pontos: s.pontos, suporte: s.suporte, imagem: imagemDe(s.config), config };
 }
 
 // ---------- validação de turmas e atividades ----------

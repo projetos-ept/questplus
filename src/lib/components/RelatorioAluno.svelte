@@ -3,6 +3,8 @@
 	import { formatarData } from '#lib/data';
 	import { formatarTempo } from '#lib/relatorio';
 	import { rotuloDoNivel } from '#lib/aberta';
+	import { imagemDe } from '#lib/imagens';
+	import FiguraQuestao from './FiguraQuestao.svelte';
 	import { renderSuporte } from '#lib/suporte';
 	import type { Aberta, Mc, Vf } from '#lib/questao';
 	import type { QuestaoSnapshot } from '#lib/atividade';
@@ -79,6 +81,7 @@
 				</div>
 			{/if}
 			<p class="enunciado">{q.enunciado}</p>
+			<FiguraQuestao imagem={imagemDe(q.config)} />
 
 			{#if q.tipo === 'mc'}
 				{@const c = q.config as Mc}

@@ -1,8 +1,10 @@
 import { ehDisciplina } from './disciplinas';
-import { imagensDe, validarImagens, type ImagemSuporte } from './imagens';
+import { imagemDe, imagensDe, validarImagemUnica, validarImagens, type ImagemSuporte } from './imagens';
 
-export type Mc = { alternativas: string[]; correta: number };
-export type Vf = { afirmacoes: { texto: string; valor: boolean }[] };
+/** `imagem`: uma imagem opcional, mostrada logo abaixo do enunciado e sempre centralizada. */
+export type ComImagem = { imagem?: ImagemSuporte };
+export type Mc = { alternativas: string[]; correta: number } & ComImagem;
+export type Vf = { afirmacoes: { texto: string; valor: boolean }[] } & ComImagem;
 /** Questão aberta, corrigida por rubrica (nível 0 a 4). `pontos_por_nivel` são percentuais da pontuação da questão. */
 export type Aberta = {
 	referencia: string;
@@ -10,7 +12,7 @@ export type Aberta = {
 	oposicoes: [string, string][];
 	min_chars: number;
 	pontos_por_nivel: number[];
-};
+} & ComImagem;
 
 export type QuestaoValida = {
 	tipo: 'mc' | 'vf' | 'aberta';
@@ -146,6 +148,10 @@ export function validarQuestao(entrada: unknown): Resultado<QuestaoValida> {
 		config = { afirmacoes };
 	}
 
+	const img = validarImagemUnica(e.imagem ?? c.imagem);
+	if (!img.ok) erros.push(...img.erros);
+	else if (img.valor) config = { ...config, imagem: img.valor } as typeof config;
+
 	if (erros.length) return { ok: false, erros };
 	return {
 		ok: true,
@@ -173,6 +179,8 @@ export type Formulario = {
 	etiquetas: string;
 	/** Primeira etiqueta: disciplina do curso (ver disciplinas.ts). Vazia em questões antigas. */
 	disciplina: string;
+	/** Imagem opcional da questão (abaixo do enunciado). */
+	imagem: ImagemSuporte | null;
 	ativa: boolean;
 	// questão aberta
 	referencia: string;
@@ -193,6 +201,7 @@ export const formularioVazio = (): Formulario => ({
 	suporte_id: null,
 	etiquetas: '',
 	disciplina: '',
+	imagem: null,
 	ativa: true,
 	referencia: '',
 	conceitos: [{ nome: '', sinonimos: '' }, { nome: '', sinonimos: '' }, { nome: '', sinonimos: '' }],
@@ -220,6 +229,7 @@ export function formularioDe(q: {
 	f.disciplina = primeira && ehDisciplina(primeira) ? primeira : '';
 	f.etiquetas = (f.disciplina ? q.etiquetas.slice(1) : q.etiquetas).join(', ');
 	f.ativa = q.ativa;
+	f.imagem = imagemDe(q.config);
 	if (q.tipo === 'mc') {
 		const c = q.config as Mc;
 		f.formato = c.alternativas.length === 5 ? 'mc5' : 'mc4';
@@ -247,6 +257,7 @@ export function entradaDe(f: Formulario) {
 		pontos: f.pontos,
 		suporte_id: f.suporte_id,
 		etiquetas: [...new Set([...(f.disciplina ? [f.disciplina] : []), ...normalizarEtiquetas(f.etiquetas)])],
+		imagem: f.imagem,
 		ativa: f.ativa
 	};
 	if (f.formato === 'aberta') {

@@ -1,6 +1,10 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { DISCIPLINAS } from '#lib/disciplinas';
+	import { proximoNumero } from '#lib/imagens';
+	import CamposImagem from './CamposImagem.svelte';
+	import EnviarImagem from './EnviarImagem.svelte';
+	import FiguraQuestao from './FiguraQuestao.svelte';
 	import { entradaDe, type Formulario } from '#lib/questao';
 	import { protegerSaida } from '#lib/saida';
 	import { untrack } from 'svelte';
@@ -64,6 +68,22 @@
 	</label>
 
 	<label>Enunciado <textarea bind:value={f.enunciado} required maxlength="4000"></textarea></label>
+
+	<fieldset class="imagem-q">
+		<legend>Imagem da questão (opcional, abaixo do enunciado)</legend>
+		{#if f.imagem}
+			<div class="cartao-imagem">
+				<div class="previa-img"><FiguraQuestao imagem={f.imagem} /></div>
+				<div class="campos-img">
+					<CamposImagem bind:imagem={f.imagem} />
+					<button type="button" class="sec perigo" onclick={() => (f.imagem = null)}>Remover imagem</button>
+				</div>
+			</div>
+		{:else}
+			<p class="suave">A imagem aparece sempre centralizada, logo abaixo do enunciado, para o aluno e nos relatórios. Cada questão tem uma só.</p>
+			<EnviarImagem onenviada={(chave, origem) => (f.imagem = { n: proximoNumero([]) ?? 1, chave, legenda: '', tamanho: 'media', largura: null, origem })} />
+		{/if}
+	</fieldset>
 
 	{#if f.formato === 'aberta'}
 		<fieldset>
@@ -192,6 +212,11 @@
 	}
 	.sub { margin: 0.75rem 0 0; }
 	.niveis { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.5rem; }
+	.imagem-q { margin-top: 1rem; }
+	.cartao-imagem { display: grid; grid-template-columns: minmax(10rem, 1fr) 1fr; gap: 1rem; }
+	@media (max-width: 40rem) { .cartao-imagem { grid-template-columns: 1fr; } }
+	.previa-img { padding: 0.5rem; background: var(--fundo); border: 1px dashed var(--borda); border-radius: 0.4rem; }
+	.perigo { margin-top: 0.75rem; color: var(--erro); border-color: var(--erro); }
 	.acoes {
 		display: flex;
 		gap: 1rem;

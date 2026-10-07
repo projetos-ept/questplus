@@ -1,4 +1,5 @@
 import { DISCIPLINAS } from './disciplinas';
+import { imagemDe } from './imagens';
 import { validarQuestao, validarSuporte, type QuestaoValida, type Resultado, type Suporte } from './questao';
 
 export const FORMATO_ARQUIVO = 'questplus-questoes';
@@ -8,7 +9,8 @@ export const MAX_QUESTOES_POR_ARQUIVO = 1000;
 export const TAMANHO_BLOCO = 40;
 
 export type SuporteImportado = Suporte & { ref: string };
-export type QuestaoNormalizada = QuestaoValida & { suporte_ref: string | null };
+/** `tinha_imagem`: o arquivo trazia a observação "[img]" (a imagem não viaja no arquivo exportado). */
+export type QuestaoNormalizada = QuestaoValida & { suporte_ref: string | null; tinha_imagem: boolean };
 
 // ---------- ler o arquivo (ou o texto colado) ----------
 
@@ -144,9 +146,10 @@ export function normalizarQuestao(bruta: unknown): Resultado<QuestaoNormalizada>
 
 	const suporteRef = o.suporte === null || o.suporte === undefined || o.suporte === '' ? null : String(o.suporte).trim();
 	const r = validarQuestao({
-		tipo, enunciado: o.enunciado, config, explicacao: o.explicacao, pontos: o.pontos, etiquetas: o.etiquetas, ativa: o.ativa, suporte_id: null
+		tipo, enunciado: o.enunciado, config, explicacao: o.explicacao, pontos: o.pontos, etiquetas: o.etiquetas, ativa: o.ativa, suporte_id: null, imagem: o.imagem ?? c.imagem
 	});
-	return r.ok ? { ok: true, valor: { ...r.valor, suporte_ref: suporteRef } } : r;
+	const tinhaImagem = typeof o.observacao === 'string' && /\[img\]/i.test(o.observacao);
+	return r.ok ? { ok: true, valor: { ...r.valor, suporte_ref: suporteRef, tinha_imagem: tinhaImagem } } : r;
 }
 
 /** Chave para achar questões repetidas: mesmo formato e enunciado, ignorando caixa, acentos e espaços. */
@@ -165,16 +168,22 @@ export function montarExportacao(questoes: QuestaoExportavel[], suportes: Suport
 		versao: VERSAO_ARQUIVO,
 		exportado_em: quando.toISOString(),
 		suportes: suportes.map((s) => ({ ref: refDe(s.id), titulo: s.titulo, texto: s.texto, imagens: s.imagens })),
-		questoes: questoes.map((q) => ({
+		questoes: questoes.map((q) => {
+			// a imagem não viaja no arquivo (o arquivo dela fica no R2 deste sistema): sai sem ela e com a observação "[img]"
+			const imagem = imagemDe(q.config);
+			const { imagem: _fora, ...config } = (q.config ?? {}) as Record<string, unknown>;
+			return {
 			tipo: q.tipo,
 			enunciado: q.enunciado,
-			config: q.config,
+			config: imagem ? config : q.config,
+			...(imagem && { observacao: `[img] Esta questão tem uma imagem${imagem.legenda ? ` (legenda: ${imagem.legenda})` : ''} que não vai neste arquivo. Anexe-a de novo depois de importar.` }),
 			explicacao: q.explicacao,
 			pontos: q.pontos,
 			etiquetas: q.etiquetas,
 			ativa: q.ativa,
 			suporte: q.suporte_id === null ? null : refDe(q.suporte_id)
-		}))
+			};
+		})
 	};
 }
 
