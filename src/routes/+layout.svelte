@@ -230,6 +230,34 @@
 		font-weight: 600;
 		color: var(--texto-secundario);
 	}
+	/* logo da atividade: quadrado de 22 mm (mínimo de 84 px na tela) no canto do cabeçalho; a imagem se ajusta sem cortar */
+	:global(.logo-quadrado) {
+		display: grid;
+		flex: none;
+		place-items: center;
+		width: 22mm;
+		height: 22mm;
+		min-width: 84px;
+		min-height: 84px;
+		overflow: hidden;
+		background: #fff;
+		border: 1px solid color-mix(in srgb, var(--borda) 60%, #fff);
+		border-radius: 4px;
+	}
+	:global(.logo-quadrado img) {
+		width: 100%;
+		height: 100%;
+		object-fit: contain;
+	}
+	:global(.cab-topo) {
+		display: flex;
+		gap: 14px;
+		align-items: flex-start;
+	}
+	:global(.cab-topo > div:not(.logo-quadrado)) {
+		min-width: 0;
+		flex: 1;
+	}
 	/* professor(a), logo abaixo do componente curricular nos relatórios */
 	:global(.professor) {
 		margin: -0.5rem 0 0.8rem;

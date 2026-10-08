@@ -2,6 +2,7 @@
 	import { percentualDe } from '#lib/relatorio';
 	import { onDestroy, onMount } from 'svelte';
 	import { imagensDe, type ImagemSuporte } from '#lib/imagens';
+	import LogoCabecalho from './LogoCabecalho.svelte';
 	import { diagramas } from '#lib/diagramas';
 	import { renderSuporte } from '#lib/suporte';
 	import { formatarData } from '#lib/data';
@@ -23,7 +24,7 @@
 	};
 
 	type Regras = { modo: 'treino' | 'prova'; tempo_total: number | null; tentativas_max: number | null; mostra_nota: boolean };
-	let { codigo, titulo, componente = null, turmas, fecha_em, regras }: { codigo: string; titulo: string; componente?: string | null; turmas: { id: number; nome: string }[]; fecha_em: string | null; regras: Regras } = $props();
+	let { codigo, titulo, componente = null, logo = null, turmas, fecha_em, regras }: { codigo: string; titulo: string; componente?: string | null; logo?: string | null; turmas: { id: number; nome: string }[]; fecha_em: string | null; regras: Regras } = $props();
 
 	const CHAVE = $derived(`qp_t_${codigo.toLowerCase()}`);
 	const LETRAS = ['A', 'B', 'C', 'D', 'E'];
@@ -255,6 +256,7 @@
 	<p class="suave" aria-busy="true">Carregando…</p>
 
 {:else if fase === 'inicio'}
+	{#if logo}<LogoCabecalho chave={logo} />{/if}
 	<h1>{titulo}</h1>
 	{#if componente}<p class="componente">{componente}</p>{/if}
 	{#if fecha_em}<p class="suave">Disponível até {formatarData(fecha_em)}.</p>{/if}

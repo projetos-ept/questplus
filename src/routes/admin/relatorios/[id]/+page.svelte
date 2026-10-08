@@ -2,6 +2,7 @@
 	import { goto, invalidateAll } from '$app/navigation';
 	import { onMount, untrack } from 'svelte';
 	import { formatarData } from '#lib/data';
+	import LogoCabecalho from '#lib/components/LogoCabecalho.svelte';
 	import { formatarTempo, formatarUmaCasa, notaComPeso, validarPeso } from '#lib/relatorio';
 
 	let { data } = $props();
@@ -84,17 +85,22 @@
 </div>
 
 <header class="titulo">
-	<p class="suave marca">QuestPlus · Relatório da atividade</p>
-	<h1>{data.atividade.titulo}</h1>
-	{#if data.atividade.componente}<p class="componente">{data.atividade.componente}</p>{/if}
-	{#if data.professor}<p class="professor">Professor(a): {data.professor}</p>{/if}
-	<p class="suave">
-		{data.atividade.modo === 'prova' ? 'Prova' : 'Treino'} · código <code>{data.atividade.codigo}</code>
-		{#if pesoAtual !== null} · peso da atividade {formatarUmaCasa(pesoAtual)}{/if}
-		{#if turmaAtual} · turma {turmaAtual}{/if}
-		{#if data.atividade.fecha_em} · prazo {formatarData(data.atividade.fecha_em)}{/if}
-		{#if emitido} · emitido em {emitido}{/if}
-	</p>
+	<div class="cab-topo">
+		{#if data.atividade.logo_chave}<LogoCabecalho chave={data.atividade.logo_chave} />{/if}
+		<div>
+		<p class="suave marca">QuestPlus · Relatório da atividade</p>
+		<h1>{data.atividade.titulo}</h1>
+		{#if data.atividade.componente}<p class="componente">{data.atividade.componente}</p>{/if}
+		{#if data.professor}<p class="professor">Professor(a): {data.professor}</p>{/if}
+		<p class="suave">
+			{data.atividade.modo === 'prova' ? 'Prova' : 'Treino'} · código <code>{data.atividade.codigo}</code>
+			{#if pesoAtual !== null} · peso da atividade {formatarUmaCasa(pesoAtual)}{/if}
+			{#if turmaAtual} · turma {turmaAtual}{/if}
+			{#if data.atividade.fecha_em} · prazo {formatarData(data.atividade.fecha_em)}{/if}
+			{#if emitido} · emitido em {emitido}{/if}
+		</p>
+		</div>
+	</div>
 </header>
 
 <dialog bind:this={modalImpressao} class="nao-imprimir" aria-labelledby="t-imprimir">

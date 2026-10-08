@@ -159,3 +159,15 @@ describe('validarComponente', () => {
 		expect(validarComponente({}).ok).toBe(false);
 	});
 });
+
+describe('logo da atividade', () => {
+	const ok = { titulo: 'T', questoes: [{ questao_id: 1 }], turmas: [1] };
+	it('é opcional e precisa ser um id válido', () => {
+		const sem = validarAtividade(ok);
+		expect(sem.ok && sem.valor.logo_id).toBeNull();
+		const com = validarAtividade({ ...ok, logo_id: '2' });
+		expect(com.ok && com.valor.logo_id).toBe(2);
+		expect(validarAtividade({ ...ok, logo_id: 'x' }).ok).toBe(false);
+		expect(validarAtividade({ ...ok, logo_id: 0 }).ok).toBe(false);
+	});
+});

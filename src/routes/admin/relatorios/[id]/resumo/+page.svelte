@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { formatarData } from '#lib/data';
+	import LogoCabecalho from '#lib/components/LogoCabecalho.svelte';
 	import { formatarUmaCasa } from '#lib/relatorio';
 
 	let { data } = $props();
@@ -33,11 +34,14 @@
 
 <article class="folha {densidade}">
 	<header class="cab">
-		<div>
+		<div class="cab-topo">
+			{#if a.logo_chave}<LogoCabecalho chave={a.logo_chave} />{/if}
+			<div>
 			<p class="marca">QuestPlus · Relatório resumido</p>
 			<h1>{a.titulo}</h1>
 			{#if a.componente}<p class="comp">{a.componente}</p>{/if}
 			{#if data.professor}<p class="prof">Professor(a): {data.professor}</p>{/if}
+			</div>
 		</div>
 		<div class="sel">{r.alunos} aluno(s)<br />Média {String(r.mediaPercentual).replace('.', ',')}%</div>
 	</header>

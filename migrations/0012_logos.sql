@@ -1,0 +1,7 @@
+CREATE TABLE logos (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	nome TEXT NOT NULL,
+	chave TEXT NOT NULL,
+	criado_em TEXT NOT NULL DEFAULT (datetime('now'))
+);
+ALTER TABLE atividades ADD COLUMN logo_id INTEGER REFERENCES logos(id);

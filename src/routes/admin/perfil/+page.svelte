@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { invalidateAll } from '$app/navigation';
 	import { untrack } from 'svelte';
+	import LogosPerfil from '#lib/components/LogosPerfil.svelte';
 	import { validarNomeProfessor } from '#lib/relatorio';
 
 	let { data } = $props();
@@ -45,8 +46,11 @@
 	<button type="submit" disabled={salvando}>{salvando ? 'Salvando…' : 'Salvar'}</button>
 </form>
 
+<div class="cartao logos-cartao"><LogosPerfil /></div>
+
 <style>
 	form { max-width: 34rem; margin-top: 1rem; }
+	.logos-cartao { max-width: 56rem; margin-top: 1rem; }
 	h2 { margin: 0 0 0.25rem; font-size: var(--escala-h3); }
 	.ok-msg { color: var(--sucesso); font-weight: var(--peso-acao); }
 </style>

@@ -5,6 +5,7 @@
 	import { rotuloDoNivel } from '#lib/aberta';
 	import { imagemDe } from '#lib/imagens';
 	import FiguraQuestao from './FiguraQuestao.svelte';
+	import LogoCabecalho from './LogoCabecalho.svelte';
 	import { diagramas } from '#lib/diagramas';
 	import { renderSuporte } from '#lib/suporte';
 	import type { Aberta, Mc, Vf } from '#lib/questao';
@@ -12,7 +13,7 @@
 
 	export type DadosRelatorio = {
 		id: number;
-		atividade: { titulo: string; codigo: string; modo: string; componente?: string | null; peso?: number | null };
+		atividade: { titulo: string; codigo: string; modo: string; componente?: string | null; peso?: number | null; logo?: string | null };
 		aluno: { nome: string; email: string; turma: string };
 		status: string;
 		anulada: boolean;
@@ -44,10 +45,15 @@
 
 <article class="relatorio">
 	<header class="cab">
-		<p class="suave marca">QuestPlus · Relatório individual</p>
-		<h2>{dados.atividade.titulo}</h2>
-		{#if dados.atividade.componente}<p class="componente">{dados.atividade.componente}</p>{/if}
-		{#if dados.professor}<p class="professor">Professor(a): {dados.professor}</p>{/if}
+		<div class="cab-topo">
+			{#if dados.atividade.logo}<LogoCabecalho chave={dados.atividade.logo} />{/if}
+			<div>
+				<p class="suave marca">QuestPlus · Relatório individual</p>
+				<h2>{dados.atividade.titulo}</h2>
+				{#if dados.atividade.componente}<p class="componente">{dados.atividade.componente}</p>{/if}
+				{#if dados.professor}<p class="professor">Professor(a): {dados.professor}</p>{/if}
+			</div>
+		</div>
 		<dl>
 			<div><dt>Aluno</dt><dd>{dados.aluno.nome}</dd></div>
 			<div><dt>Turma</dt><dd>{dados.aluno.turma}</dd></div>

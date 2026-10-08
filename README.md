@@ -10,6 +10,7 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 - **Professor(a), página Relatórios, relatório resumido** de 1 folha A4 e modal de impressão. [Detalhes](#professora-página-relatórios-e-relatório-resumido-0011)
 - **Endereços dos relatórios** em `/admin/relatorios/[id]` (os antigos redirecionam). [Detalhes](#endereços-dos-relatórios)
 - **Tentativas:** Anular com confirmação em modal e **Excluir** tentativa anulada. [Detalhes](#excluir-tentativa-anulada)
+- **Logo** (até 6, escolhido em cada atividade) no cabeçalho dos relatórios e na abertura do aluno. [Detalhes](#logos-nos-relatórios-e-na-abertura-da-atividade-0012)
 - **Visual:** tema Neumorphism em cartões, azul oceano, só modo claro; painel em dashboard; tela do aluno no estilo **caderno de prova** (números das questões no estilo dos botões) e **visualizador de imagens** com zoom. [Detalhes](#tela-do-aluno-caderno-de-prova)
 - **Atalhos úteis:** nova atividade com botão de salvar fixo na base da janela; ao trocar de questão a tela do aluno volta ao topo.
 
@@ -83,6 +84,10 @@ Outros comandos: `npm test` (vitest), `npm run check` (svelte-check).
 
 Durante a atividade a tela segue o tema **caderno de prova**: no computador, um painel lateral fixo (título, componente curricular, tempo restante, grade de questões com ✔ nas respondidas e contagem) e, ao lado, a "folha" da questão com o número grande, alternativas em linhas pontilhadas com marca de bolha e as ações (Anterior/Próxima/Responder) que acompanham a rolagem. No **celular** o painel vira uma faixa fixa no topo (título, relógio e botões das questões) e Anterior/Próxima ficam fixos na base, com áreas de toque grandes. Os números das questões usam o estilo dos botões do sistema, sem brilho: contorno claro (não respondida), botão claro com ✔ verde (respondida) e laranja de destaque (atual). O texto de apoio abre antes da questão 1 e fica em "Reler" nas demais. **Imagens** de questão e de texto de apoio abrem ampliadas ao clicar ou tocar (Enter/Espaço no teclado), com zoom por roda do mouse, botões + e −, pinça no celular, duplo clique e arrastar para mover; fecham no X, clicando fora ou com Esc (componente `Lightbox.svelte`, montado no layout raiz). Em atividades de navegação sequencial a grade não aparece (só "Questão X de N" e a barra de progresso). Código em `src/lib/components/Tentativa.svelte`.
 
+## Logos nos relatórios e na abertura da atividade (0012)
+
+Em **Perfil** (`/admin/perfil`) fica a seção **Logos**: começa com 1 espaço, "+ Adicionar logo" cria outros até o limite de **6**, e cada logo tem nome, **Trocar imagem** e **Excluir**. PNG, JPG ou WEBP de até 1 MB (SVG e GIF não são aceitos; o tipo é conferido pelos bytes). A imagem fica no R2 e se ajusta dentro de um quadrado sem cortar. Na **atividade** há o campo **Logo** (opcional, ao lado do componente curricular): com logo, ele sai num quadrado de 22 mm no canto superior esquerdo do cabeçalho de **todos os relatórios** da atividade (da atividade, individuais, todos os alunos e resumido) e **acima do título na abertura da atividade para o aluno** (inclusive "ainda não abriu" e "encerrada"); durante as questões não aparece. Sem logo, nada muda (só o nome QuestPlus). Clonar a atividade mantém o logo. Excluir um logo em uso avisa quantas atividades o usam e elas ficam sem logo; trocar a imagem de um logo atualiza todas as atividades que o usam. API: `GET/POST /api/admin/logos` (multipart `arquivo` e `nome`), `PUT/DELETE /api/admin/logos/[id]` (em uso exige `?desvincular=1`, senão 409). Exige `migrations/0012_logos.sql` no banco **antes** de publicar (`docs/roteiro-extensao-logos.md`).
+
 ## Endereços dos relatórios
 
 Os relatórios moram em **Relatórios**, não em Atividades: relatório da atividade `/admin/relatorios/[id]`, individuais de todos os alunos `/admin/relatorios/[id]/individuais`, resumido para imprimir `/admin/relatorios/[id]/resumo` (`?turma=ID` filtra; `?imprimir=1` já abre a impressão) e o de um aluno `/admin/tentativas/[id]/relatorio`. O menu marca **Relatórios** em todos eles, o "← Relatórios" do topo volta para a lista com a busca e a turma que estavam filtradas (guardadas no navegador) e o relatório do aluno volta ao relatório da atividade. Os endereços antigos (`/admin/atividades/[id]/relatorio`, `/relatorios`, `/resumo`) continuam funcionando: redirecionam (308) para os novos mantendo a consulta. **Tentativas** (anular e excluir) e **Corrigir abertas** continuam sob Atividades, e a exportação (`/api/admin/atividades/[id]/respostas`) não mudou. Sem alteração no banco.
@@ -111,7 +116,7 @@ As 3 instruções de `migrations/0008_apoio_na_atividade.sql` (já aplicadas em 
 
 ## Migrações do banco
 
-Todas as migrações abaixo já foram aplicadas no D1 de produção. Regra: **o SQL vem antes do deploy**; no D1 `questplus` (Console) execute **uma instrução por vez** e confira. Cada mudança que mexe no banco traz o texto pronto para a extensão em `docs/roteiro-extensao-*.md`, e o commit que publica o código só sai depois da confirmação (até lá, o commit leva a expressão de pular CI).
+Todas as migrações abaixo, **exceto a 0012**, já foram aplicadas no D1 de produção. Regra: **o SQL vem antes do deploy**; no D1 `questplus` (Console) execute **uma instrução por vez** e confira. Cada mudança que mexe no banco traz o texto pronto para a extensão em `docs/roteiro-extensao-*.md`, e o commit que publica o código só sai depois da confirmação (até lá, o commit leva a expressão de pular CI).
 
 | Migração | O que cria | Roteiro / observação |
 | --- | --- | --- |
@@ -126,6 +131,7 @@ Todas as migrações abaixo já foram aplicadas no D1 de produção. Regra: **o 
 | `0009_componentes_curriculares` | `componentes`, `atividades.componente_id` | `docs/roteiro-extensao-componentes.md` |
 | `0010_peso_da_atividade` | `atividades.peso` | `docs/roteiro-extensao-peso.md` |
 | `0011_configuracoes` | `configuracoes` (nome do professor) | `docs/roteiro-extensao-professor.md` |
+| `0012_logos` | `logos`, `atividades.logo_id` | `docs/roteiro-extensao-logos.md` (aguardando aplicar em produção) |
 
 Mudanças recentes **sem** alteração no banco: tema visual, caderno de prova, visualizador de imagens, endereços dos relatórios, relatório resumido (só lê), excluir tentativa anulada.
 

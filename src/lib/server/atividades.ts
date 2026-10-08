@@ -111,6 +111,9 @@ export type AtividadeLinha = {
 	componente_id: number | null;
 	/** Nome do componente curricular (junção); null = sem componente. */
 	componente: string | null;
+	logo_id: number | null;
+	/** Chave da imagem do logo (junção); null = sem logo. */
+	logo_chave: string | null;
 	/** Peso da atividade (0 a 10, uma casa); null = sem peso. */
 	peso: number | null;
 	criado_em: string;
@@ -122,7 +125,7 @@ const atividade = (r: AtividadeBruta): AtividadeLinha => ({ ...r, ativa: r.ativa
 export async function listarAtividades() {
 	const r = await db()
 		.prepare(
-			`SELECT a.*, (SELECT nome FROM componentes c WHERE c.id = a.componente_id) AS componente,
+			`SELECT a.*, (SELECT nome FROM componentes c WHERE c.id = a.componente_id) AS componente, (SELECT chave FROM logos l WHERE l.id = a.logo_id) AS logo_chave,
 				(SELECT COUNT(*) FROM atividade_questoes q WHERE q.atividade_id = a.id) AS n_questoes,
 				(SELECT COUNT(*) FROM tentativas t WHERE t.atividade_id = a.id) AS n_tentativas,
 				(SELECT json_group_array(json_object('id', tu.id, 'nome', tu.nome, 'ativa', tu.ativa)) FROM atividade_turmas at JOIN turmas tu ON tu.id = at.turma_id WHERE at.atividade_id = a.id) AS turmas
@@ -139,12 +142,12 @@ export async function listarAtividades() {
 }
 
 export async function obterAtividade(id: number) {
-	const a = await db().prepare('SELECT a.*, (SELECT nome FROM componentes c WHERE c.id = a.componente_id) AS componente FROM atividades a WHERE a.id = ?').bind(id).first<AtividadeBruta>();
+	const a = await db().prepare('SELECT a.*, (SELECT nome FROM componentes c WHERE c.id = a.componente_id) AS componente, (SELECT chave FROM logos l WHERE l.id = a.logo_id) AS logo_chave FROM atividades a WHERE a.id = ?').bind(id).first<AtividadeBruta>();
 	return a ? atividade(a) : null;
 }
 
 export async function obterAtividadePorCodigo(codigo: string) {
-	const a = await db().prepare('SELECT a.*, (SELECT nome FROM componentes c WHERE c.id = a.componente_id) AS componente FROM atividades a WHERE a.codigo = ?').bind(codigo).first<AtividadeBruta>();
+	const a = await db().prepare('SELECT a.*, (SELECT nome FROM componentes c WHERE c.id = a.componente_id) AS componente, (SELECT chave FROM logos l WHERE l.id = a.logo_id) AS logo_chave FROM atividades a WHERE a.codigo = ?').bind(codigo).first<AtividadeBruta>();
 	return a ? atividade(a) : null;
 }
 
@@ -176,12 +179,13 @@ export async function turmasDaAtividade(id: number) {
 /** Confere se as questões existem e se as novas (não vinculadas antes) estão ativas; e se as turmas existem. */
 export async function conferirVinculos(v: AtividadeValida, atividadeId: number | null) {
 	const ids = JSON.stringify(v.questoes.map((q) => q.questao_id));
-	const [q, t, antes, sup, comp] = await db().batch([
+	const [q, t, antes, sup, comp, logo] = await db().batch([
 		db().prepare('SELECT id, ativa FROM questoes WHERE id IN (SELECT value FROM json_each(?))').bind(ids),
 		db().prepare('SELECT id FROM turmas WHERE id IN (SELECT value FROM json_each(?))').bind(JSON.stringify(v.turmas)),
 		db().prepare('SELECT questao_id FROM atividade_questoes WHERE atividade_id = ?').bind(atividadeId ?? -1),
 		db().prepare('SELECT id FROM suportes WHERE id = ?').bind(v.suporte_id ?? -1),
-		db().prepare('SELECT id FROM componentes WHERE id = ?').bind(v.componente_id ?? -1)
+		db().prepare('SELECT id FROM componentes WHERE id = ?').bind(v.componente_id ?? -1),
+		db().prepare('SELECT id FROM logos WHERE id = ?').bind(v.logo_id ?? -1)
 	]);
 	const erros: string[] = [];
 	const existentes = new Map((q.results as { id: number; ativa: number }[]).map((x) => [x.id, x.ativa === 1]));
@@ -193,6 +197,7 @@ export async function conferirVinculos(v: AtividadeValida, atividadeId: number |
 	if (t.results.length !== v.turmas.length) erros.push('Alguma turma escolhida não existe.');
 	if (v.suporte_id !== null && sup.results.length === 0) erros.push('O texto de apoio escolhido não existe.');
 	if (v.componente_id !== null && comp.results.length === 0) erros.push('O componente curricular escolhido não existe.');
+	if (v.logo_id !== null && logo.results.length === 0) erros.push('O logo escolhido não existe.');
 	return erros;
 }
 
@@ -212,10 +217,10 @@ export async function criarAtividade(v: AtividadeValida): Promise<{ id: number; 
 		try {
 			const r = await db()
 				.prepare(
-					`INSERT INTO atividades (titulo, codigo, ativa, modo, tempo_total, tentativas_max, feedback, navegacao, embaralhar, conta_nota, mostra_nota, abre_em, fecha_em, suporte_id, componente_id)
-					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
+					`INSERT INTO atividades (titulo, codigo, ativa, modo, tempo_total, tentativas_max, feedback, navegacao, embaralhar, conta_nota, mostra_nota, abre_em, fecha_em, suporte_id, componente_id, logo_id)
+					 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) RETURNING id`
 				)
-				.bind(v.titulo, codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, v.suporte_id, v.componente_id)
+				.bind(v.titulo, codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, v.suporte_id, v.componente_id, v.logo_id)
 				.first<{ id: number }>();
 			const id = r!.id;
 			await db().batch([db().prepare(sqlQuestoes).bind(id, vinculosQuestoes(v)), db().prepare(sqlTurmas).bind(id, JSON.stringify(v.turmas))]);
@@ -236,9 +241,9 @@ export async function atualizarAtividade(id: number, v: AtividadeValida): Promis
 			db()
 				.prepare(
 					`UPDATE atividades SET titulo = ?, codigo = ?, ativa = ?, modo = ?, tempo_total = ?, tentativas_max = ?, feedback = ?, navegacao = ?,
-					 embaralhar = ?, conta_nota = ?, mostra_nota = ?, abre_em = ?, fecha_em = ?, suporte_id = ?, componente_id = ?, atualizado_em = datetime('now') WHERE id = ?`
+					 embaralhar = ?, conta_nota = ?, mostra_nota = ?, abre_em = ?, fecha_em = ?, suporte_id = ?, componente_id = ?, logo_id = ?, atualizado_em = datetime('now') WHERE id = ?`
 				)
-				.bind(v.titulo, v.codigo ?? atual.codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, v.suporte_id, v.componente_id, id),
+				.bind(v.titulo, v.codigo ?? atual.codigo, v.ativa ? 1 : 0, v.modo, v.tempo_total, v.tentativas_max, feedbackDoModo(v.modo), v.navegacao, v.embaralhar ? 1 : 0, v.modo === 'prova' ? 1 : 0, v.mostra_nota ? 1 : 0, v.abre_em, v.fecha_em, v.suporte_id, v.componente_id, v.logo_id, id),
 			db().prepare('DELETE FROM atividade_questoes WHERE atividade_id = ?').bind(id),
 			db().prepare('DELETE FROM atividade_turmas WHERE atividade_id = ?').bind(id),
 			db().prepare(sqlQuestoes).bind(id, vinculosQuestoes(v)),
@@ -462,6 +467,7 @@ export async function clonarAtividade(id: number): Promise<{ id: number; codigo:
 		fecha_em: null,
 		suporte_id: a.suporte_id,
 		componente_id: a.componente_id,
+		logo_id: a.logo_id,
 		questoes: det.questoes.map((q) => ({ questao_id: q.questao_id, pontos: q.pontos })),
 		turmas: det.turmas
 	});

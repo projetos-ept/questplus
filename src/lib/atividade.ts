@@ -139,6 +139,8 @@ export type AtividadeValida = {
 	suporte_id: number | null;
 	/** Componente curricular da atividade (aparece sob o título); null = sem componente. */
 	componente_id: number | null;
+	/** Logo da atividade (cabeçalho dos relatórios e abertura do aluno); null = sem logo. */
+	logo_id: number | null;
 	questoes: { questao_id: number; pontos: number | null }[];
 	turmas: number[];
 };
@@ -246,13 +248,22 @@ export function validarAtividade(entrada: unknown): Resultado<AtividadeValida> {
 		}
 	}
 
+	let logo_id: number | null = null;
+	if (!vazio(e.logo_id)) {
+		logo_id = Number(e.logo_id);
+		if (!Number.isInteger(logo_id) || logo_id < 1) {
+			erros.push('Logo inválido.');
+			logo_id = null;
+		}
+	}
+
 	if (erros.length) return { ok: false, erros };
 	return {
 		ok: true,
 		valor: {
 			titulo, codigo: codigoBruto || null, ativa: e.ativa !== false, modo, tempo_total, tentativas_max,
 			navegacao: navegacao as Navegacao, embaralhar: e.embaralhar === true, mostra_nota: modo === 'prova' && e.mostra_nota === true,
-			abre_em, fecha_em, suporte_id, componente_id, questoes, turmas
+			abre_em, fecha_em, suporte_id, componente_id, logo_id, questoes, turmas
 		}
 	};
 }

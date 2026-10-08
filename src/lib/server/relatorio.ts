@@ -130,7 +130,7 @@ export async function relatorioDaTentativa(id: number) {
 	return {
 		id: t.id,
 		professor: await nomeDoProfessor(),
-		atividade: { id: a!.id, titulo: a!.titulo, componente: a!.componente, codigo: a!.codigo, modo: a!.modo, peso: a!.peso },
+		atividade: { id: a!.id, titulo: a!.titulo, componente: a!.componente, codigo: a!.codigo, modo: a!.modo, peso: a!.peso, logo: a!.logo_chave },
 		aluno: { nome: t.nome, email: t.email, turma: turma?.nome ?? '' },
 		status: t.status,
 		anulada: t.anulada === 1,
