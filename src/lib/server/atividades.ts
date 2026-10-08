@@ -424,6 +424,22 @@ export async function acrescentarTempo(id: number, minutos: number): Promise<'ok
 	return 'ok';
 }
 
+/**
+ * Exclui de vez uma tentativa já **anulada** (apaga as respostas e as correções de abertas dela). Tentativa que ainda conta
+ * (em andamento ou finalizada) não é excluída: primeiro se anula. Não mexe em questões, apoios nem nas outras tentativas do aluno.
+ */
+export async function excluirTentativaAnulada(id: number): Promise<'ok' | 'inexistente' | 'nao-anulada'> {
+	const t = await db().prepare('SELECT anulada FROM tentativas WHERE id = ?').bind(id).first<{ anulada: number }>();
+	if (!t) return 'inexistente';
+	if (t.anulada !== 1) return 'nao-anulada';
+	await db().batch([
+		db().prepare('DELETE FROM correcoes_abertas WHERE tentativa_id = ?').bind(id),
+		db().prepare('DELETE FROM respostas WHERE tentativa_id = ?').bind(id),
+		db().prepare('DELETE FROM tentativas WHERE id = ? AND anulada = 1').bind(id)
+	]);
+	return 'ok';
+}
+
 // ---------- clonar e excluir atividade ----------
 
 /** Cópia inativa, sem datas e com código novo; mantém questões (com pontos próprios), turmas e as opções do modo. */
