@@ -8,7 +8,7 @@
 <svelte:head><title>Relatório de {data.dados.aluno.nome} · QuestPlus</title></svelte:head>
 
 <div class="nao-imprimir barra">
-	<a href="/admin/atividades/{data.dados.atividade.id}/tentativas">← Tentativas</a>
+	<a href="/admin/relatorios/{data.dados.atividade.id}">← Relatório da atividade</a> · <a href="/admin/atividades/{data.dados.atividade.id}/tentativas">Tentativas</a>
 	<label class="check"><input type="checkbox" bind:checked={gabarito} /> Mostrar gabarito e explicações</label>
 	<label class="check"><input type="checkbox" bind:checked={apoio} /> Mostrar textos de apoio</label>
 	<button type="button" onclick={() => window.print()}>Imprimir / salvar em PDF</button>

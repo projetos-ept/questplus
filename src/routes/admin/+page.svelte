@@ -129,7 +129,7 @@
 							<td><a href="/admin/atividades/{a.id}">{a.titulo}</a>{#if a.componente}<div class="suave">{a.componente}</div>{/if}</td>
 							<td><code>{a.codigo}</code></td>
 							<td>{a.n_tentativas}</td>
-							<td><a href="/admin/atividades/{a.id}/relatorio">Relatório</a></td>
+							<td><a href="/admin/relatorios/{a.id}">Relatório</a></td>
 						</tr>
 					{/each}
 				</tbody>

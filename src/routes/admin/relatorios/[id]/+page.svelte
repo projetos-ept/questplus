@@ -7,7 +7,14 @@
 	let { data } = $props();
 	let emitido = $state('');
 	let modalImpressao: HTMLDialogElement;
-	onMount(() => (emitido = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })));
+	let voltar = $state('/admin/relatorios');
+	onMount(() => {
+		emitido = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+		try {
+			const q = sessionStorage.getItem('qp_rel_consulta');
+			if (q) voltar = `/admin/relatorios?${q}`;
+		} catch {}
+	});
 
 	// peso da atividade (0 a 10, uma casa): vazio = relatórios sem peso. Nota = pontos obtidos ÷ pontos possíveis × peso.
 	let pesoTxt = $state(untrack(() => (data.atividade.peso === null ? '' : formatarUmaCasa(data.atividade.peso))));
@@ -61,7 +68,7 @@
 <svelte:head><title>Relatório · {data.atividade.titulo}</title></svelte:head>
 
 <div class="nao-imprimir barra">
-	<a href="/admin/atividades">← Atividades</a>
+	<a href={voltar}>← Relatórios</a>
 	<label class="filtro">Turma
 		<select aria-label="Filtrar por turma" onchange={filtrar} value={data.turmaId ?? ''}>
 			<option value="">Todas</option>
@@ -72,7 +79,7 @@
 		<button type="button" onclick={() => modalImpressao.showModal()}>Imprimir</button>
 		<a class="botao" href="/api/admin/atividades/{data.atividade.id}/respostas?formato=json{consulta ? `&${consulta}` : ''}" download>Exportar JSON</a>
 		<a class="botao" href="/api/admin/atividades/{data.atividade.id}/respostas?formato=csv{consulta ? `&${consulta}` : ''}" download>Exportar CSV</a>
-		<a class="botao" href="/admin/atividades/{data.atividade.id}/relatorios{consulta ? `?${consulta}` : ''}">Relatórios individuais</a>
+		<a class="botao" href="/admin/relatorios/{data.atividade.id}/individuais{consulta ? `?${consulta}` : ''}">Relatórios individuais</a>
 	</div>
 </div>
 
@@ -95,7 +102,7 @@
 		<h2 id="t-imprimir">Imprimir relatório</h2>
 		<p class="suave">Escolha o formato da impressão.</p>
 		<div class="opcoes">
-			<button type="button" class="opc" onclick={() => goto(`/admin/atividades/${data.atividade.id}/resumo?imprimir=1${data.turmaId ? `&turma=${data.turmaId}` : ''}`)}>
+			<button type="button" class="opc" onclick={() => goto(`/admin/relatorios/${data.atividade.id}/resumo?imprimir=1${data.turmaId ? `&turma=${data.turmaId}` : ''}`)}>
 				<strong>Resumido, 1 página</strong>
 				<span>Cabeçalho da atividade e lista: estudante, e-mail, data e hora e nota final.</span>
 			</button>

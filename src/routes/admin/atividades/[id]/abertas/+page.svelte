@@ -80,7 +80,7 @@
 
 <svelte:head><title>Questões abertas · {data.atividade.titulo} · QuestPlus</title></svelte:head>
 
-<p class="suave"><a href="/admin/atividades/{data.atividade.id}">← {data.atividade.titulo}</a> · <a href="/admin/atividades/{data.atividade.id}/relatorio">Relatório</a></p>
+<p class="suave"><a href="/admin/atividades/{data.atividade.id}">← {data.atividade.titulo}</a> · <a href="/admin/relatorios/{data.atividade.id}">Relatório</a></p>
 <h1>Correção das questões abertas</h1>
 
 {#if data.questoes.length === 0}

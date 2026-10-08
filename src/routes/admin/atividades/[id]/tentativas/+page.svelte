@@ -71,7 +71,7 @@
 
 <p><a href="/admin/atividades/{data.atividade.id}">← {data.atividade.titulo}</a></p>
 <h1>Tentativas <span class="suave">({data.tentativas.length})</span></h1>
-<p><a href="/admin/atividades/{data.atividade.id}/relatorio">Ver relatório da atividade (notas, exportar, imprimir)</a></p>
+<p><a href="/admin/relatorios/{data.atividade.id}">Ver relatório da atividade (notas, exportar, imprimir)</a></p>
 <p class="suave">
 	{data.atividade.modo === 'prova' ? 'Prova' : 'Treino'} ·
 	{data.atividade.tempo_total ? `${Math.round(data.atividade.tempo_total / 60)} min` : 'sem limite de tempo'} ·

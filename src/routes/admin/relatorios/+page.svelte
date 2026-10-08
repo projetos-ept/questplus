@@ -30,6 +30,9 @@
 		if (situacao !== 'todas') p.set('s', situacao);
 		if (ordem !== 'recentes') p.set('ordem', ordem);
 		const alvo = p.size ? `?${p}` : location.pathname;
+		try {
+			sessionStorage.setItem('qp_rel_consulta', p.toString()); // o relatório devolve para esta lista, com a mesma busca e turma
+		} catch {}
 		untrack(() => goto(alvo, { replace: true, reset: false }));
 	});
 
@@ -91,7 +94,7 @@
 	{#each lista as a (a.id)}
 		<li class="cartao item">
 			<div>
-				<h2><a href="/admin/atividades/{a.id}/relatorio">{#each marcar(a.titulo) as parte}{#if parte.m}<mark>{parte.t}</mark>{:else}{parte.t}{/if}{/each}</a></h2>
+				<h2><a href="/admin/relatorios/{a.id}">{#each marcar(a.titulo) as parte}{#if parte.m}<mark>{parte.t}</mark>{:else}{parte.t}{/if}{/each}</a></h2>
 				{#if a.componente}<p class="comp">{a.componente}</p>{/if}
 				<div class="chips">
 					<span class="chip e-{estado[a.estado][1]}">{estado[a.estado][0]}</span>
@@ -105,8 +108,8 @@
 			</div>
 			<div>{#if a.abertas_pendentes > 0}<span class="pend">⚠ {a.abertas_pendentes} aberta(s) a corrigir</span>{:else}<span class="suave">código <code>{a.codigo}</code></span>{/if}</div>
 			<div class="acoes">
-				<a class="botao" href="/admin/atividades/{a.id}/relatorio">Relatório</a>
-				<a class="botao sec" href="/admin/atividades/{a.id}/relatorios">Individuais</a>
+				<a class="botao" href="/admin/relatorios/{a.id}">Relatório</a>
+				<a class="botao sec" href="/admin/relatorios/{a.id}/individuais">Individuais</a>
 				{#if a.abertas_pendentes > 0}<a class="botao sec" href="/admin/atividades/{a.id}/abertas">Corrigir abertas</a>{/if}
 			</div>
 		</li>

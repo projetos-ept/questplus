@@ -27,7 +27,7 @@
 <svelte:head><title>Relatório resumido · {a.titulo}</title></svelte:head>
 
 <div class="nao-imprimir barra">
-	<a href="/admin/atividades/{a.id}/relatorio{data.turmaId ? `?turma=${data.turmaId}` : ''}">← Relatório da atividade</a>
+	<a href="/admin/relatorios/{a.id}{data.turmaId ? `?turma=${data.turmaId}` : ''}">← Relatório da atividade</a>
 	<button type="button" onclick={() => window.print()}>Imprimir</button>
 </div>
 

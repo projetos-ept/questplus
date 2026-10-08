@@ -11,7 +11,13 @@
 		{ href: '/admin/atividades', nome: 'Atividades' },
 		{ href: '/admin/relatorios', nome: 'Relatórios' }
 	];
-	const atual = (href: string) => (href === '/admin' ? page.url.pathname === '/admin' : page.url.pathname === href || page.url.pathname.startsWith(`${href}/`));
+	const atual = (href: string) => {
+		const c = page.url.pathname;
+		if (href === '/admin') return c === '/admin';
+		// o relatório individual de um aluno (/admin/tentativas/…) também pertence a Relatórios
+		if (href === '/admin/relatorios' && c.startsWith('/admin/tentativas/')) return true;
+		return c === href || c.startsWith(`${href}/`);
+	};
 
 	// Sessão vencida (dura 12 h): em vez de um erro genérico no formulário, volta ao login com uma explicação.
 	onMount(() => {

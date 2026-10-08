@@ -34,7 +34,7 @@
 <svelte:head><title>Relatórios individuais · {data.atividade.titulo}</title></svelte:head>
 
 <div class="nao-imprimir barra">
-	<a href="/admin/atividades/{data.atividade.id}/relatorio">← Relatório da atividade</a>
+	<a href="/admin/relatorios/{data.atividade.id}">← Relatório da atividade</a>
 	<label class="check">Turma
 		<select aria-label="Filtrar por turma" onchange={filtrarTurma} value={data.turmaId ?? ''}>
 			<option value="">Todas</option>
