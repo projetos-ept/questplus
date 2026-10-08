@@ -116,7 +116,7 @@ As 3 instruções de `migrations/0008_apoio_na_atividade.sql` (já aplicadas em 
 
 ## Migrações do banco
 
-Todas as migrações abaixo, **exceto a 0012**, já foram aplicadas no D1 de produção. Regra: **o SQL vem antes do deploy**; no D1 `questplus` (Console) execute **uma instrução por vez** e confira. Cada mudança que mexe no banco traz o texto pronto para a extensão em `docs/roteiro-extensao-*.md`, e o commit que publica o código só sai depois da confirmação (até lá, o commit leva a expressão de pular CI).
+Todas as migrações abaixo já foram aplicadas no D1 de produção. Regra: **o SQL vem antes do deploy**; no D1 `questplus` (Console) execute **uma instrução por vez** e confira. Cada mudança que mexe no banco traz o texto pronto para a extensão em `docs/roteiro-extensao-*.md`, e o commit que publica o código só sai depois da confirmação (até lá, o commit leva a expressão de pular CI).
 
 | Migração | O que cria | Roteiro / observação |
 | --- | --- | --- |
@@ -131,7 +131,7 @@ Todas as migrações abaixo, **exceto a 0012**, já foram aplicadas no D1 de pro
 | `0009_componentes_curriculares` | `componentes`, `atividades.componente_id` | `docs/roteiro-extensao-componentes.md` |
 | `0010_peso_da_atividade` | `atividades.peso` | `docs/roteiro-extensao-peso.md` |
 | `0011_configuracoes` | `configuracoes` (nome do professor) | `docs/roteiro-extensao-professor.md` |
-| `0012_logos` | `logos`, `atividades.logo_id` | `docs/roteiro-extensao-logos.md` (aguardando aplicar em produção) |
+| `0012_logos` | `logos`, `atividades.logo_id` | `docs/roteiro-extensao-logos.md` |
 
 Mudanças recentes **sem** alteração no banco: tema visual, caderno de prova, visualizador de imagens, endereços dos relatórios, relatório resumido (só lê), excluir tentativa anulada.
 
