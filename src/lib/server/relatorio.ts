@@ -1,6 +1,7 @@
 import { notaComPeso, aproveitamentoPorQuestao, consolidar, nomesComEmailsDiferentes, resumir, tempoGasto, percentualDe, valida, type TentativaResumo } from '#lib/relatorio';
 import type { QuestaoSnapshot } from '#lib/atividade';
 import { obterAtividade, obterTentativa } from './atividades';
+import { nomeDoProfessor } from './configuracoes';
 import { db } from './env';
 
 type LinhaTentativa = Omit<TentativaResumo, 'turma'> & { turma_id: number; turma: string };
@@ -57,6 +58,7 @@ export async function relatorioDaAtividade(atividadeId: number, turmaId?: number
 	const atividade = await obterAtividade(atividadeId);
 	if (!atividade) return null;
 	const [tentativas, turmas, questoes] = await Promise.all([tentativasDaAtividade(atividadeId, turmaId), turmasComTentativas(atividadeId), questoesDaAtividade(atividadeId)]);
+	const professor = await nomeDoProfessor();
 	const alunos = consolidar(tentativas);
 	const pontos = await pontosPorTentativa(alunos.map((a) => a.melhor.id));
 	const aproveitamento = aproveitamentoPorQuestao(alunos.map((a) => ({ questoes, pontosPorQuestao: pontos.get(a.melhor.id) ?? new Map() })));
@@ -66,6 +68,7 @@ export async function relatorioDaAtividade(atividadeId: number, turmaId?: number
 		.first<{ n: number }>();
 	return {
 		atividade,
+		professor,
 		abertasPendentes: pend?.n ?? 0,
 		turmas,
 		turmaId: turmaId ?? null,
@@ -87,6 +90,19 @@ export async function relatorioDaAtividade(atividadeId: number, turmaId?: number
 			pontosPorQuestao: questoes.map((q) => (pontos.get(a.melhor.id)?.has(q.id) ? (pontos.get(a.melhor.id)!.get(q.id) ?? 0) : null))
 		}))
 	};
+}
+
+/** Por atividade: alunos que finalizaram (tentativas válidas, um por e-mail) e a média percentual da maior nota de cada um. Uma só consulta. */
+export async function resumoPorAtividade() {
+	const r = await db()
+		.prepare(
+			`SELECT atividade_id, COUNT(*) AS alunos, AVG(pct) AS media
+			 FROM (SELECT atividade_id, email, MAX(CASE WHEN pontos_max > 0 THEN nota * 100.0 / pontos_max ELSE 0 END) AS pct
+			       FROM tentativas WHERE status = 'finalizada' AND anulada = 0 GROUP BY atividade_id, email)
+			 GROUP BY atividade_id`
+		)
+		.all<{ atividade_id: number; alunos: number; media: number }>();
+	return new Map(r.results.map((x) => [x.atividade_id, { alunos: x.alunos, media: Math.round(x.media * 10) / 10 }]));
 }
 
 // ---------- relatório de uma tentativa ----------
@@ -113,6 +129,7 @@ export async function relatorioDaTentativa(id: number) {
 	const numero = irmas.filter((x) => x.id <= id).length;
 	return {
 		id: t.id,
+		professor: await nomeDoProfessor(),
 		atividade: { id: a!.id, titulo: a!.titulo, componente: a!.componente, codigo: a!.codigo, modo: a!.modo, peso: a!.peso },
 		aluno: { nome: t.nome, email: t.email, turma: turma?.nome ?? '' },
 		status: t.status,
@@ -177,6 +194,7 @@ export async function exportarResultadosJson(atividadeId: number, turmaId?: numb
 		formato: 'questplus-resultados',
 		versao: 1,
 		exportado_em: new Date().toISOString(),
+		professor: await nomeDoProfessor(),
 		atividade: { id: a.id, titulo: a.titulo, componente: a.componente, codigo: a.codigo, modo: a.modo, peso: a.peso, tempo_total: a.tempo_total, tentativas_max: a.tentativas_max, abre_em: a.abre_em, fecha_em: a.fecha_em },
 		turma,
 		criterio: 'vale a maior nota de cada aluno (identificado pelo e-mail); tentativas anuladas ou em andamento não contam',

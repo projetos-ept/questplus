@@ -8,7 +8,8 @@
 		{ href: '/admin/questoes', nome: 'Questões' },
 		{ href: '/admin/suportes', nome: 'Textos de apoio' },
 		{ href: '/admin/turmas', nome: 'Turmas' },
-		{ href: '/admin/atividades', nome: 'Atividades' }
+		{ href: '/admin/atividades', nome: 'Atividades' },
+		{ href: '/admin/relatorios', nome: 'Relatórios' }
 	];
 	const atual = (href: string) => (href === '/admin' ? page.url.pathname === '/admin' : page.url.pathname === href || page.url.pathname.startsWith(`${href}/`));
 
@@ -36,7 +37,7 @@
 			{/each}
 		</nav>
 		<div class="direita">
-			
+			<a class="perfil" href="/admin/perfil" aria-current={page.url.pathname === '/admin/perfil' ? 'page' : undefined}>Perfil</a>
 			<form method="POST" action="/admin/sair"><button type="submit" class="sec">Sair</button></form>
 		</div>
 	</header>
@@ -83,6 +84,9 @@
 		gap: 0.5rem;
 		align-items: center;
 	}
+	.perfil { display: inline-flex; align-items: center; min-height: var(--altura-controle); padding: 0 0.9rem; font-weight: var(--peso-acao); color: var(--texto); text-decoration: none; border-radius: calc(var(--raio) / 2); }
+	.perfil:hover { background: var(--fundo); }
+	.perfil[aria-current='page'] { color: var(--sobre-primaria); background: var(--primaria); box-shadow: var(--sombra-interna); }
 	.direita :global(button) {
 		margin: 0;
 		padding: 0.35rem 0.9rem;

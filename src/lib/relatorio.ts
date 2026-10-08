@@ -203,3 +203,13 @@ export function notaComPeso(nota: number | null, max: number | null, peso: numbe
 
 /** "3,0" (sempre uma casa decimal, vírgula). */
 export const formatarUmaCasa = (n: number) => n.toFixed(1).replace('.', ',');
+
+/** Nome do professor nos relatórios: de 2 a 100 caracteres; vazio apaga. Espaços repetidos viram um só. */
+export function validarNomeProfessor(entrada: unknown): { ok: true; valor: string | null } | { ok: false; erro: string } {
+	if (entrada === null || entrada === undefined) return { ok: true, valor: null };
+	if (typeof entrada !== 'string') return { ok: false, erro: 'Informe o nome como texto.' };
+	const nome = entrada.replace(/\s+/g, ' ').trim();
+	if (nome === '') return { ok: true, valor: null };
+	if (nome.length < 2 || nome.length > 100) return { ok: false, erro: 'O nome deve ter de 2 a 100 caracteres.' };
+	return { ok: true, valor: nome };
+}

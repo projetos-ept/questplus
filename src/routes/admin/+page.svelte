@@ -115,7 +115,7 @@
 </div>
 
 <section class="cartao tabela" aria-labelledby="t-abertas">
-	<h2 id="t-abertas">Atividades abertas agora</h2>
+	<div class="cab-tabela"><h2 id="t-abertas">Atividades abertas agora</h2><a href="/admin/relatorios">Ver relatórios</a></div>
 	{#if data.abertas.length === 0}
 		<p class="suave">Nenhuma atividade aberta no momento. <a href="/admin/atividades">Ver todas</a></p>
 	{:else}
@@ -184,6 +184,7 @@
 	.info .suave { overflow-wrap: anywhere; }
 	.nota { font-weight: var(--peso-titulo); color: var(--primaria); }
 
+	.cab-tabela { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; align-items: baseline; justify-content: space-between; }
 	.rolagem { overflow-x: auto; }
 
 	@media (max-width: 960px) {

@@ -230,6 +230,11 @@
 		font-weight: 600;
 		color: var(--texto-secundario);
 	}
+	/* professor(a), logo abaixo do componente curricular nos relatórios */
+	:global(.professor) {
+		margin: -0.5rem 0 0.8rem;
+		color: var(--texto-secundario);
+	}
 	:global(.suporte-img) {
 		margin: 0.75rem 0;
 		text-align: center;

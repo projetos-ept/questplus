@@ -6,6 +6,7 @@
 
 	let { data } = $props();
 	let emitido = $state('');
+	let modalImpressao: HTMLDialogElement;
 	onMount(() => (emitido = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })));
 
 	// peso da atividade (0 a 10, uma casa): vazio = relatórios sem peso. Nota = pontos obtidos ÷ pontos possíveis × peso.
@@ -68,7 +69,7 @@
 		</select>
 	</label>
 	<div class="botoes">
-		<button type="button" onclick={() => window.print()}>Imprimir</button>
+		<button type="button" onclick={() => modalImpressao.showModal()}>Imprimir</button>
 		<a class="botao" href="/api/admin/atividades/{data.atividade.id}/respostas?formato=json{consulta ? `&${consulta}` : ''}" download>Exportar JSON</a>
 		<a class="botao" href="/api/admin/atividades/{data.atividade.id}/respostas?formato=csv{consulta ? `&${consulta}` : ''}" download>Exportar CSV</a>
 		<a class="botao" href="/admin/atividades/{data.atividade.id}/relatorios{consulta ? `?${consulta}` : ''}">Relatórios individuais</a>
@@ -79,6 +80,7 @@
 	<p class="suave marca">QuestPlus · Relatório da atividade</p>
 	<h1>{data.atividade.titulo}</h1>
 	{#if data.atividade.componente}<p class="componente">{data.atividade.componente}</p>{/if}
+	{#if data.professor}<p class="professor">Professor(a): {data.professor}</p>{/if}
 	<p class="suave">
 		{data.atividade.modo === 'prova' ? 'Prova' : 'Treino'} · código <code>{data.atividade.codigo}</code>
 		{#if pesoAtual !== null} · peso da atividade {formatarUmaCasa(pesoAtual)}{/if}
@@ -87,6 +89,24 @@
 		{#if emitido} · emitido em {emitido}{/if}
 	</p>
 </header>
+
+<dialog bind:this={modalImpressao} class="nao-imprimir" aria-labelledby="t-imprimir">
+	<div class="corpo-modal">
+		<h2 id="t-imprimir">Imprimir relatório</h2>
+		<p class="suave">Escolha o formato da impressão.</p>
+		<div class="opcoes">
+			<button type="button" class="opc" onclick={() => goto(`/admin/atividades/${data.atividade.id}/resumo?imprimir=1${data.turmaId ? `&turma=${data.turmaId}` : ''}`)}>
+				<strong>Resumido, 1 página</strong>
+				<span>Cabeçalho da atividade e lista: estudante, e-mail, data e hora e nota final.</span>
+			</button>
+			<button type="button" class="opc" onclick={() => { modalImpressao.close(); setTimeout(() => window.print(), 100); }}>
+				<strong>Completo</strong>
+				<span>Resumo, distribuição, aproveitamento por questão e pontos de cada questão (como antes).</span>
+			</button>
+		</div>
+		<div class="acoes-modal"><button type="button" class="sec" onclick={() => modalImpressao.close()}>Cancelar</button></div>
+	</div>
+</dialog>
 
 <form class="cartao peso nao-imprimir" onsubmit={salvarPeso} aria-labelledby="t-peso">
 	<h2 id="t-peso">Peso da atividade</h2>
@@ -187,6 +207,17 @@
 {/if}
 
 <style>
+	dialog { width: min(30rem, calc(100vw - 2rem)); padding: 0; color: var(--texto); background: var(--superficie); border: 1px solid var(--borda); border-radius: var(--raio); box-shadow: var(--sombra); }
+	dialog::backdrop { background: color-mix(in srgb, var(--texto) 55%, transparent); }
+	.corpo-modal { padding: 1.25rem; }
+	.corpo-modal h2 { margin: 0 0 0.25rem; font-size: var(--escala-h3); }
+	.opcoes { display: grid; gap: 10px; }
+	.opc { display: flex; flex-direction: column; gap: 0.15rem; align-items: flex-start; margin: 0; padding: 12px 14px; color: var(--texto); text-align: left; background: var(--superficie); border: 1px solid var(--borda); border-radius: 14px; box-shadow: none; }
+	.opc strong { color: var(--primaria); }
+	.opc span { font-size: var(--escala-sm); font-weight: 400; color: var(--texto-secundario); }
+	.opc:hover:not(:disabled) { border-color: var(--primaria); }
+	.acoes-modal { display: flex; justify-content: flex-end; margin-top: 14px; }
+	.acoes-modal button { margin: 0; }
 	.peso { margin: 1rem 0; }
 	.peso h2 { margin: 0 0 0.35rem; font-size: var(--escala-h3); }
 	.linha-peso { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: end; }

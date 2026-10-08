@@ -21,6 +21,8 @@
 		tempoSegundos: number | null;
 		nota: number;
 		pontosMax: number;
+		/** Professor(a) do sistema (cabeçalho); null = sem nome cadastrado. */
+		professor?: string | null;
 		percentual: number;
 		/** Nota com o peso da atividade (null = atividade sem peso). */
 		notaPeso?: number | null;
@@ -45,6 +47,7 @@
 		<p class="suave marca">QuestPlus · Relatório individual</p>
 		<h2>{dados.atividade.titulo}</h2>
 		{#if dados.atividade.componente}<p class="componente">{dados.atividade.componente}</p>{/if}
+		{#if dados.professor}<p class="professor">Professor(a): {dados.professor}</p>{/if}
 		<dl>
 			<div><dt>Aluno</dt><dd>{dados.aluno.nome}</dd></div>
 			<div><dt>Turma</dt><dd>{dados.aluno.turma}</dd></div>
