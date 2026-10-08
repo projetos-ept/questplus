@@ -119,7 +119,8 @@
 	.ultra h1 { font-size: 12pt; }
 	.ultra .dados { margin-bottom: 5px; font-size: 8pt; }
 	.ultra .resumo { margin-bottom: 5px; }
-	@media (max-width: 720px) {
+	/* só na tela do celular: na impressão a largura da folha A4 também é menor que 720px e o cabeçalho tem de ficar em 4 colunas */
+	@media screen and (max-width: 720px) {
 		.dados { grid-template-columns: repeat(2, 1fr); }
 		.folha { padding: 1rem; overflow-x: auto; }
 		.c { width: auto; }
