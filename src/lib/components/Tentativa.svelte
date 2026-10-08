@@ -310,7 +310,7 @@
 					<nav class="pontos" aria-label="Questões">
 						{#each estado.questoes as x, i (x.id)}
 							<button type="button" class="sec" class:feita={completa(x.id)} aria-current={i === atual} aria-label="Questão {i + 1}{completa(x.id) ? ', respondida' : estado.respostas[x.id] ? ', incompleta' : ''}" onclick={() => (atual = i)}>
-								{i + 1}{completa(x.id) ? '✔' : estado.respostas[x.id] ? '◐' : ''}
+								{i + 1}{#if completa(x.id)}<span class="ck" aria-hidden="true">✔</span>{:else if estado.respostas[x.id]}<span class="ck" aria-hidden="true">◐</span>{/if}
 							</button>
 						{/each}
 					</nav>
@@ -528,9 +528,17 @@
 	.relogio { font-size: 1.4rem; font-weight: 800; font-variant-numeric: tabular-nums; }
 	.barra { margin: 0 0 0.5rem; font-size: 0.85rem; font-weight: 600; opacity: 0.85; }
 	.pontos { display: grid; grid-template-columns: repeat(5, 1fr); gap: 0.4rem; margin: 0; }
-	.pontos button { min-width: 0; min-height: 2.6rem; margin: 0; padding: 0.1rem 0; font-weight: 700; color: var(--sobre-tinta); background: transparent; border: 1.5px solid color-mix(in srgb, var(--sobre-tinta) 40%, transparent); border-radius: 0.6rem; }
-	.pontos button.feita { border-color: var(--sobre-tinta); border-width: 2.5px; }
-	.pontos button[aria-current='true'] { color: var(--tinta); background: var(--sobre-tinta); border-color: var(--sobre-tinta); }
+	/* números das questões: mesmos botões do sistema (raio, peso, hover e pressionado), sem brilho */
+	.pontos button { min-width: 0; min-height: var(--altura-controle); margin: 0; padding: 0; font-weight: var(--peso-acao); color: var(--sobre-tinta); background: transparent; border: 2px solid color-mix(in srgb, var(--sobre-tinta) 75%, transparent); border-radius: calc(var(--raio) / 2); box-shadow: none; }
+	.pontos button:hover:not(:disabled) { background: color-mix(in srgb, var(--sobre-tinta) 14%, transparent); box-shadow: none; }
+	.pontos button:active:not(:disabled) { box-shadow: none; }
+	.pontos button .ck { margin-left: 0.1rem; }
+	.pontos button.feita { color: var(--tinta); background: var(--superficie); border-color: var(--superficie); }
+	.pontos button.feita:hover:not(:disabled) { background: var(--superficie); }
+	.pontos button.feita .ck { color: var(--sucesso); }
+	.pontos button[aria-current='true'] { color: var(--sobre-destaque); background: var(--destaque); border-color: var(--sobre-tinta); }
+	.pontos button[aria-current='true']:hover:not(:disabled) { background: var(--destaque); }
+	.pontos button[aria-current='true'] .ck { color: var(--sobre-destaque); }
 	.respondidas { margin: 0.6rem 0 0; font-size: 0.82rem; opacity: 0.8; }
 	.progresso { height: 0.35rem; margin-top: 0.5rem; overflow: hidden; background: color-mix(in srgb, var(--sobre-tinta) 25%, transparent); border-radius: 1rem; }
 	.preenchido { height: 100%; background: var(--sobre-tinta); border-radius: 1rem; transition: width 0.25s; }

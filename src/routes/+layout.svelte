@@ -1,9 +1,11 @@
 <script lang="ts">
 	import './impressao.css';
+	import Lightbox from '#lib/components/Lightbox.svelte';
 	let { children } = $props();
 </script>
 
 {@render children()}
+<Lightbox />
 
 <style>
 	/* Tema: Neumorphism, layout em cartões, azul oceano, modo claro. Só cores destes tokens. */
@@ -233,6 +235,7 @@
 		text-align: center;
 	}
 	:global(.suporte-img img) {
+		cursor: zoom-in;
 		display: block;
 		margin: 0 auto;
 		max-width: 100%;
