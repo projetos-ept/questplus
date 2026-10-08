@@ -2,6 +2,17 @@
 
 Atividades e provas pelo celular, correção automática, correção de abertas por IA e relatório impresso. Tudo no Cloudflare (plano gratuito). Especificação completa em [`Sistema de Atividades documentação do projeto.md`](<Sistema de Atividades documentação do projeto.md>).
 
+## Novidades recentes (outubro de 2026)
+
+- **Texto de apoio pertence à atividade** (um por atividade, aberto antes da questão 1; "Reler" nas outras), com **diagramas Mermaid**, disciplina, etiquetas, filtros, ações em lote e JSON próprio de importação/exportação. [Detalhes](#publicar-o-apoio-na-atividade-0008)
+- **Componente curricular** da atividade, cadastrado ali mesmo, aparece sob o título para o aluno e nos relatórios. [Detalhes](#componente-curricular-da-atividade-0009)
+- **Peso da atividade** (0 a 10): nota ponderada nos relatórios. [Detalhes](#peso-da-atividade-nos-relatórios-0010)
+- **Professor(a), página Relatórios, relatório resumido** de 1 folha A4 e modal de impressão. [Detalhes](#professora-página-relatórios-e-relatório-resumido-0011)
+- **Endereços dos relatórios** em `/admin/relatorios/[id]` (os antigos redirecionam). [Detalhes](#endereços-dos-relatórios)
+- **Tentativas:** Anular com confirmação em modal e **Excluir** tentativa anulada. [Detalhes](#excluir-tentativa-anulada)
+- **Visual:** tema Neumorphism em cartões, azul oceano, só modo claro; painel em dashboard; tela do aluno no estilo **caderno de prova** (números das questões no estilo dos botões) e **visualizador de imagens** com zoom. [Detalhes](#tela-do-aluno-caderno-de-prova)
+- **Atalhos úteis:** nova atividade com botão de salvar fixo na base da janela; ao trocar de questão a tela do aluno volta ao topo.
+
 ## Estado
 
 - **Fase 1 (base)**: SvelteKit no Pages, D1, login do professor (JWT + PBKDF2). Em produção.
@@ -96,9 +107,29 @@ Cada atividade pode ter um **componente curricular** (opcional), escolhido logo 
 
 ## Publicar o apoio na atividade (0008)
 
-Antes do deploy, no D1 `questplus` (Console, **uma instrução por vez**, conferindo com `PRAGMA table_info(<tabela>)`): as 3 de `migrations/0008_apoio_na_atividade.sql`. Roteiro em `docs/roteiro-extensao-apoio-na-atividade.md`. Só depois publique o código.
+As 3 instruções de `migrations/0008_apoio_na_atividade.sql` (já aplicadas em produção; no D1, uma por vez, conferindo com `PRAGMA table_info(<tabela>)`). Roteiro em `docs/roteiro-extensao-apoio-na-atividade.md`. Só depois publique o código.
 
-## Ordem para publicar as Fases 4 a 6 (a 0007 da Fase 7 já foi aplicada em produção em 06/10/2026)
+## Migrações do banco
+
+Todas as migrações abaixo já foram aplicadas no D1 de produção. Regra: **o SQL vem antes do deploy**; no D1 `questplus` (Console) execute **uma instrução por vez** e confira. Cada mudança que mexe no banco traz o texto pronto para a extensão em `docs/roteiro-extensao-*.md`, e o commit que publica o código só sai depois da confirmação (até lá, o commit leva a expressão de pular CI).
+
+| Migração | O que cria | Roteiro / observação |
+| --- | --- | --- |
+| `0001_usuarios` | professores (login) | `docs/roteiro-extensao-chrome.md` |
+| `0002_banco_questoes` | `suportes`, `questoes` | idem |
+| `0003_atividades` | turmas, atividades, tentativas, respostas | `docs/roteiro-extensao-fase2-3.md` |
+| `0004_modo_prova` | opções do modo Prova | idem |
+| `0005_suportes_imagens` | imagens dos textos de apoio | idem |
+| `0006_limites` | limites contra abuso | idem |
+| `0007_correcoes_abertas` | correção de abertas por IA | `docs/roteiro-extensao-fase7.md` |
+| `0008_apoio_na_atividade` | `atividades.suporte_id`, `tentativas.suporte`, `suportes.etiquetas` | `docs/roteiro-extensao-apoio-na-atividade.md` |
+| `0009_componentes_curriculares` | `componentes`, `atividades.componente_id` | `docs/roteiro-extensao-componentes.md` |
+| `0010_peso_da_atividade` | `atividades.peso` | `docs/roteiro-extensao-peso.md` |
+| `0011_configuracoes` | `configuracoes` (nome do professor) | `docs/roteiro-extensao-professor.md` |
+
+Mudanças recentes **sem** alteração no banco: tema visual, caderno de prova, visualizador de imagens, endereços dos relatórios, relatório resumido (só lê), excluir tentativa anulada.
+
+## Histórico: ordem para publicar as Fases 4 a 6 (a 0007 da Fase 7 já foi aplicada em produção em 06/10/2026)
 
 > **Estado:** as migrações 0004, 0005 e 0006 já foram aplicadas no D1 de produção e conferidas. O commit que publica as Fases 4 a 6 foi enviado depois delas.
 
@@ -144,5 +175,11 @@ Só podem ser feitas no painel do Cloudflare (ou com `wrangler` autenticado):
 | `src/routes/a/[codigo]`, `src/routes/[codigo]` | Tela do aluno e link curto |
 | `src/routes/api/tentativas` | API pública do aluno: iniciar, ler, responder, finalizar (protegida pelo token da tentativa) |
 | `src/routes/api/admin/{turmas,atividades}` | API do painel; `PUT /atividades/[id]/situacao` é o interruptor manual |
-| `migrations/` | Migrações do D1 |
+| `src/routes/admin/{relatorios,perfil}` | Página Relatórios, relatórios da atividade (`/[id]`, `/individuais`, `/resumo`) e nome do professor |
+| `src/routes/api/admin/{componentes,perfil}` | Componentes curriculares (CRUD) e nome do professor; `PUT /atividades/[id]/peso`; `DELETE /tentativas/[id]` (só anuladas) |
+| `src/lib/server/{suportes,componentes,configuracoes,painel,relatorio,midia-uso}.ts` | Consultas dos apoios, componentes, configurações, painel, relatórios e uso de imagens |
+| `src/lib/{relatorio,diagramas,importacao-suportes}.ts` | Cálculos dos relatórios (peso, nota ponderada), diagramas Mermaid e JSON dos textos de apoio |
+| `src/lib/components/{Tentativa,Lightbox,SeletorComponente,SeletorSuporte,RelatorioAluno}.svelte` | Tela do aluno (caderno de prova), visualizador de imagens, seletores da atividade e relatório individual |
+| `docs/` | Roteiros para a extensão (um por mudança de banco), prompts e instruções do projeto Claude (`docs/instrucoes-projeto-claude.md`) |
+| `migrations/` | Migrações do D1 (tabela na seção "Migrações do banco") |
 | `scripts/gerar-admin.mjs` | Gera o SQL do primeiro professor |
