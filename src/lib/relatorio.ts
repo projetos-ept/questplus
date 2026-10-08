@@ -183,3 +183,23 @@ export function nomesComEmailsDiferentes(alunos: Pick<AlunoConsolidado, 'nome' |
 	}
 	return [...por.values()].filter((g) => g.emails.size > 1).map((g) => ({ nome: g.nome, emails: [...g.emails].sort(), turmas: [...g.turmas].sort() }));
 }
+
+// ---------- peso da atividade ----------
+
+/** Peso de 0 a 10 com uma casa decimal; vazio = sem peso (o relatório continua como antes). Aceita vírgula. */
+export function validarPeso(entrada: unknown): { ok: true; valor: number | null } | { ok: false; erro: string } {
+	if (entrada === null || entrada === undefined || (typeof entrada === 'string' && entrada.trim() === '')) return { ok: true, valor: null };
+	const n = typeof entrada === 'number' ? entrada : Number(String(entrada).trim().replace(',', '.'));
+	if (!Number.isFinite(n) || n < 0 || n > 10) return { ok: false, erro: 'O peso deve estar entre 0 e 10.' };
+	if (Math.abs(n * 10 - Math.round(n * 10)) > 1e-9) return { ok: false, erro: 'Use no máximo uma casa decimal (por exemplo 3,5).' };
+	return { ok: true, valor: Math.round(n * 10) / 10 };
+}
+
+/** Nota da atividade com peso: (pontos obtidos ÷ pontos possíveis) × peso, com uma casa decimal. Sem peso ou sem pontos possíveis: null. */
+export function notaComPeso(nota: number | null, max: number | null, peso: number | null | undefined): number | null {
+	if (peso === null || peso === undefined || !max || max <= 0) return null;
+	return Math.round(((nota ?? 0) / max) * peso * 10 + 1e-9) / 10;
+}
+
+/** "3,0" (sempre uma casa decimal, vírgula). */
+export const formatarUmaCasa = (n: number) => n.toFixed(1).replace('.', ',');

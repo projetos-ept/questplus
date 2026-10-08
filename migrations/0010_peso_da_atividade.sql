@@ -1,0 +1,1 @@
+ALTER TABLE atividades ADD COLUMN peso REAL;

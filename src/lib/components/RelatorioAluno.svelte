@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { imagensDe } from '#lib/imagens';
 	import { formatarData } from '#lib/data';
-	import { formatarTempo } from '#lib/relatorio';
+	import { formatarTempo, formatarUmaCasa } from '#lib/relatorio';
 	import { rotuloDoNivel } from '#lib/aberta';
 	import { imagemDe } from '#lib/imagens';
 	import FiguraQuestao from './FiguraQuestao.svelte';
@@ -12,7 +12,7 @@
 
 	export type DadosRelatorio = {
 		id: number;
-		atividade: { titulo: string; codigo: string; modo: string; componente?: string | null };
+		atividade: { titulo: string; codigo: string; modo: string; componente?: string | null; peso?: number | null };
 		aluno: { nome: string; email: string; turma: string };
 		status: string;
 		anulada: boolean;
@@ -22,6 +22,8 @@
 		nota: number;
 		pontosMax: number;
 		percentual: number;
+		/** Nota com o peso da atividade (null = atividade sem peso). */
+		notaPeso?: number | null;
 		tentativaNumero: number;
 		tentativasTotal: number;
 		melhor: boolean;
@@ -52,10 +54,19 @@
 			<div><dt>Tempo gasto</dt><dd>{formatarTempo(dados.tempoSegundos)}</dd></div>
 			<div><dt>Tentativa</dt><dd>{dados.tentativaNumero} de {dados.tentativasTotal}{dados.melhor && dados.tentativasTotal > 1 ? ' (maior nota)' : ''}</dd></div>
 		</dl>
-		<p class="nota">
-			Nota: <strong>{pts(dados.nota)} de {pts(dados.pontosMax)} pontos</strong> ({String(dados.percentual).replace('.', ',')}%)
-			{#if dados.anulada}<span class="aviso">Tentativa anulada</span>{:else if dados.status !== 'finalizada'}<span class="aviso">Em andamento</span>{/if}
-		</p>
+		{#if dados.notaPeso !== null && dados.notaPeso !== undefined && dados.atividade.peso !== null && dados.atividade.peso !== undefined}
+			<div class="nota com-peso">
+				<p>Score: <strong>{pts(dados.nota)} de {pts(dados.pontosMax)} pontos</strong> ({String(dados.percentual).replace('.', ',')}%)</p>
+				<p>Pontuação da atividade: <strong>{formatarUmaCasa(dados.atividade.peso)}</strong></p>
+				<p class="nota-final">Nota: <strong>{formatarUmaCasa(dados.notaPeso)}</strong></p>
+				{#if dados.anulada}<span class="aviso">Tentativa anulada</span>{:else if dados.status !== 'finalizada'}<span class="aviso">Em andamento</span>{/if}
+			</div>
+		{:else}
+			<p class="nota">
+				Nota: <strong>{pts(dados.nota)} de {pts(dados.pontosMax)} pontos</strong> ({String(dados.percentual).replace('.', ',')}%)
+				{#if dados.anulada}<span class="aviso">Tentativa anulada</span>{:else if dados.status !== 'finalizada'}<span class="aviso">Em andamento</span>{/if}
+			</p>
+		{/if}
 	</header>
 
 	{#if apoio && dados.suporte}
@@ -134,6 +145,12 @@
 	dl div { display: flex; flex-direction: column; }
 	dt { font-size: 0.78rem; color: var(--texto-secundario); }
 	dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+	.com-peso p { margin: 0.15rem 0; }
+	.com-peso .nota-final { display: inline-block; margin-top: 0.5rem; padding: 0.35rem 1rem; font-size: 1.6rem; color: var(--sobre-secundaria); background: var(--secundaria); border-radius: calc(var(--raio) / 2); }
+	@media print {
+		.com-peso .nota-final { color: #000; background: #fff; border: 2px solid #000; }
+	}
+	.com-peso .nota-final strong { font-size: 1.9rem; letter-spacing: var(--tracking); }
 	.nota { margin: 0.75rem 0 1rem; padding: 0.6rem 0.8rem; font-size: 1.1rem; border: 2px solid var(--borda); border-radius: 0.5rem; }
 	.aviso { margin-left: 0.75rem; font-size: 0.85rem; font-weight: 700; }
 	.questao { margin: 1.1rem 0; padding-top: 0.75rem; border-top: 1px solid var(--borda); }

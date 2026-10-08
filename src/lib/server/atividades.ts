@@ -111,6 +111,8 @@ export type AtividadeLinha = {
 	componente_id: number | null;
 	/** Nome do componente curricular (junção); null = sem componente. */
 	componente: string | null;
+	/** Peso da atividade (0 a 10, uma casa); null = sem peso. */
+	peso: number | null;
 	criado_em: string;
 	atualizado_em: string;
 };
@@ -254,6 +256,11 @@ export async function definirAtividadeAtiva(id: number, ativa: boolean) {
 		.prepare("UPDATE atividades SET ativa = ?, atualizado_em = datetime('now') WHERE id = ?")
 		.bind(ativa ? 1 : 0, id)
 		.run();
+	return r.meta.changes > 0;
+}
+
+export async function definirPeso(id: number, peso: number | null) {
+	const r = await db().prepare("UPDATE atividades SET peso = ?, atualizado_em = datetime('now') WHERE id = ?").bind(peso, id).run();
 	return r.meta.changes > 0;
 }
 

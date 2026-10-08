@@ -1,12 +1,45 @@
 <script lang="ts">
-	import { goto } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { goto, invalidateAll } from '$app/navigation';
+	import { onMount, untrack } from 'svelte';
 	import { formatarData } from '#lib/data';
-	import { formatarTempo } from '#lib/relatorio';
+	import { formatarTempo, formatarUmaCasa, notaComPeso, validarPeso } from '#lib/relatorio';
 
 	let { data } = $props();
 	let emitido = $state('');
 	onMount(() => (emitido = new Date().toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })));
+
+	// peso da atividade (0 a 10, uma casa): vazio = relatórios sem peso. Nota = pontos obtidos ÷ pontos possíveis × peso.
+	let pesoTxt = $state(untrack(() => (data.atividade.peso === null ? '' : formatarUmaCasa(data.atividade.peso))));
+	let pesoErro = $state('');
+	let pesoMsg = $state('');
+	let salvandoPeso = $state(false);
+	const pesoAtual = $derived(data.atividade.peso);
+	const exemploPeso = $derived.by(() => {
+		const v = validarPeso(pesoTxt);
+		const a = data.alunos[0];
+		return v.ok && v.valor !== null && a ? { peso: v.valor, nota: notaComPeso(a.nota, a.pontosMax, v.valor), score: a } : null;
+	});
+	async function salvarPeso(e: SubmitEvent) {
+		e.preventDefault();
+		pesoErro = pesoMsg = '';
+		const v = validarPeso(pesoTxt);
+		if (!v.ok) return void (pesoErro = v.erro);
+		salvandoPeso = true;
+		try {
+			const r = await fetch(`/api/admin/atividades/${data.atividade.id}/peso`, { method: 'PUT', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ peso: v.valor }) });
+			const j = (await r.json().catch(() => ({}))) as { erros?: string[] };
+			if (!r.ok) pesoErro = j.erros?.[0] ?? 'Não foi possível salvar o peso.';
+			else {
+				pesoTxt = v.valor === null ? '' : formatarUmaCasa(v.valor);
+				await invalidateAll();
+				pesoMsg = v.valor === null ? 'Peso removido: os relatórios voltam a mostrar só a pontuação.' : `Peso ${formatarUmaCasa(v.valor)} salvo.`;
+			}
+		} catch {
+			pesoErro = 'Falha de conexão. Tente de novo.';
+		} finally {
+			salvandoPeso = false;
+		}
+	}
 
 	const MAX_COLUNAS = 25; // acima disso a grade de pontos por questão não cabe na página
 	const r = $derived(data.resumo);
@@ -48,11 +81,27 @@
 	{#if data.atividade.componente}<p class="componente">{data.atividade.componente}</p>{/if}
 	<p class="suave">
 		{data.atividade.modo === 'prova' ? 'Prova' : 'Treino'} · código <code>{data.atividade.codigo}</code>
+		{#if pesoAtual !== null} · peso da atividade {formatarUmaCasa(pesoAtual)}{/if}
 		{#if turmaAtual} · turma {turmaAtual}{/if}
 		{#if data.atividade.fecha_em} · prazo {formatarData(data.atividade.fecha_em)}{/if}
 		{#if emitido} · emitido em {emitido}{/if}
 	</p>
 </header>
+
+<form class="cartao peso nao-imprimir" onsubmit={salvarPeso} aria-labelledby="t-peso">
+	<h2 id="t-peso">Peso da atividade</h2>
+	<div class="linha-peso">
+		<label for="peso">Peso (0 a 10, uma casa decimal)</label>
+		<input id="peso" inputmode="decimal" autocomplete="off" placeholder="Sem peso" bind:value={pesoTxt} aria-describedby="ajuda-peso" aria-invalid={!!pesoErro} />
+		<button type="submit" disabled={salvandoPeso}>{salvandoPeso ? 'Salvando…' : 'Salvar peso'}</button>
+	</div>
+	<p id="ajuda-peso" class="suave">
+		Vazio: os relatórios ficam como estão. Com peso, a nota é <strong>pontos obtidos ÷ pontos possíveis × peso</strong>
+		{#if exemploPeso}· por exemplo, {pts(exemploPeso.score.nota)} de {pts(exemploPeso.score.pontosMax)} pontos com peso {formatarUmaCasa(exemploPeso.peso)} = nota <strong>{formatarUmaCasa(exemploPeso.nota ?? 0)}</strong>{/if}.
+	</p>
+	{#if pesoErro}<p class="erro" role="alert">{pesoErro}</p>{/if}
+	{#if pesoMsg}<p class="ok-msg" role="status">{pesoMsg}</p>{/if}
+</form>
 
 {#if data.abertasPendentes > 0}
 	<p class="cartao aviso-abertas" role="status"><strong>{data.abertasPendentes} resposta(s) de questões abertas aguardam sua correção</strong>; as notas abaixo ainda são parciais. <a href="/admin/atividades/{data.atividade.id}/abertas">Corrigir agora</a></p>
@@ -117,7 +166,7 @@
 		<table class="alunos">
 			<thead>
 				<tr>
-					<th>Aluno</th><th>Turma</th><th>E-mail</th><th>Tent.</th><th>Maior nota</th><th>%</th><th>Tempo</th>
+					<th>Aluno</th><th>Turma</th><th>E-mail</th><th>Tent.</th><th>Maior nota</th><th>%</th>{#if pesoAtual !== null}<th title="Nota com o peso {formatarUmaCasa(pesoAtual)}">Nota (peso {formatarUmaCasa(pesoAtual)})</th>{/if}<th>Tempo</th>
 					{#if grade}{#each data.questoes as _, i}<th class="q" title={data.questoes[i].enunciado}>Q{i + 1}</th>{/each}{/if}
 					<th class="nao-imprimir"></th>
 				</tr>
@@ -126,7 +175,7 @@
 				{#each data.alunos as a (a.tentativaId)}
 					<tr>
 						<td>{a.nome}</td><td>{a.turma}</td><td class="email">{a.email}</td><td class="num">{a.tentativas}</td>
-						<td class="num">{pts(a.nota)} / {pts(a.pontosMax)}</td><td class="num">{pct(a.percentual)}</td><td class="num">{formatarTempo(a.tempoSegundos)}</td>
+						<td class="num">{pts(a.nota)} / {pts(a.pontosMax)}</td><td class="num">{pct(a.percentual)}</td>{#if pesoAtual !== null}<td class="num nota-peso">{a.notaPeso === null ? '—' : formatarUmaCasa(a.notaPeso)}</td>{/if}<td class="num">{formatarTempo(a.tempoSegundos)}</td>
 						{#if grade}{#each a.pontosPorQuestao as p, i}<td class="num q" title={p === null ? 'Em branco' : `${pts(p)} de ${pts(data.questoes[i].pontos)}`}>{p === null ? '–' : pts(p)}</td>{/each}{/if}
 						<td class="nao-imprimir"><a href="/admin/tentativas/{a.tentativaId}/relatorio">Detalhe</a></td>
 					</tr>
@@ -138,6 +187,15 @@
 {/if}
 
 <style>
+	.peso { margin: 1rem 0; }
+	.peso h2 { margin: 0 0 0.35rem; font-size: var(--escala-h3); }
+	.linha-peso { display: flex; flex-wrap: wrap; gap: 0.5rem 0.75rem; align-items: end; }
+	.linha-peso label { margin: 0; }
+	.linha-peso input { width: 8rem; margin: 0; }
+	.linha-peso button { margin: 0; }
+	.peso p { margin: 0.5rem 0 0; }
+	.ok-msg { color: var(--sucesso); font-weight: var(--peso-acao); }
+	.nota-peso { font-weight: var(--peso-titulo); color: var(--secundaria); }
 	.aviso-abertas { border-color: var(--erro); }
 	.barra { display: flex; flex-wrap: wrap; gap: 0.5rem 1.25rem; align-items: center; justify-content: space-between; margin-bottom: 1rem; padding: 0.6rem 0.8rem; background: var(--superficie); border: 1px solid var(--borda); border-radius: 0.5rem; }
 	.filtro { display: flex; gap: 0.4rem; align-items: center; margin: 0; font-weight: 600; }

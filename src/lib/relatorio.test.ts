@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { aproveitamentoPorQuestao, celulaCsv, consolidar, formatarTempo, montarCsv, nomesComEmailsDiferentes, percentualDe, resumir, tempoGasto, type TentativaResumo } from './relatorio';
+import { aproveitamentoPorQuestao, celulaCsv, consolidar, formatarTempo, formatarUmaCasa, montarCsv, notaComPeso, validarPeso, nomesComEmailsDiferentes, percentualDe, resumir, tempoGasto, type TentativaResumo } from './relatorio';
 
 let n = 0;
 const t = (nome: string, email: string, nota: number | null, extra: Partial<TentativaResumo> = {}): TentativaResumo => ({
@@ -120,5 +120,31 @@ describe('mesmo nome, e-mails diferentes', () => {
 		expect(nomesComEmailsDiferentes([a('Ana', 'ana@x.com'), a('Ana', 'ANA@x.com')])).toEqual([]);
 		expect(nomesComEmailsDiferentes([a('Ana Lima', 'a@x.com'), a('Ana Souza', 'b@x.com')])).toEqual([]);
 		expect(nomesComEmailsDiferentes([])).toEqual([]);
+	});
+});
+
+describe('peso da atividade', () => {
+	it('valida de 0 a 10 com uma casa e aceita vírgula; vazio tira o peso', () => {
+		expect(validarPeso('')).toEqual({ ok: true, valor: null });
+		expect(validarPeso(null)).toEqual({ ok: true, valor: null });
+		expect(validarPeso('3,0')).toEqual({ ok: true, valor: 3 });
+		expect(validarPeso(4)).toEqual({ ok: true, valor: 4 });
+		expect(validarPeso('0')).toEqual({ ok: true, valor: 0 });
+		expect(validarPeso('10')).toEqual({ ok: true, valor: 10 });
+		expect(validarPeso('10,1').ok).toBe(false);
+		expect(validarPeso('-1').ok).toBe(false);
+		expect(validarPeso('3,25').ok).toBe(false);
+		expect(validarPeso('abc').ok).toBe(false);
+	});
+	it('nota = pontos ÷ possíveis × peso, uma casa; o exemplo do professor (40 de 80, peso 3 = 1,5)', () => {
+		expect(notaComPeso(40, 80, 3)).toBe(1.5);
+		expect(notaComPeso(37.5, 100, 4)).toBe(1.5);
+		expect(notaComPeso(80, 80, 10)).toBe(10);
+		expect(notaComPeso(0, 80, 3)).toBe(0);
+		expect(notaComPeso(1, 3, 10)).toBe(3.3);
+		expect(notaComPeso(40, 80, null)).toBeNull();
+		expect(notaComPeso(40, 0, 3)).toBeNull();
+		expect(formatarUmaCasa(1.5)).toBe('1,5');
+		expect(formatarUmaCasa(3)).toBe('3,0');
 	});
 });
