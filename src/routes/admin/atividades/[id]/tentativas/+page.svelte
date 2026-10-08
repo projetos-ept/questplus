@@ -9,6 +9,8 @@
 	let alvo = $state<(typeof data.tentativas)[number] | null>(null);
 	let ciente = $state(false);
 	let modal: ConfirmarModal;
+	let alvoAnular = $state<(typeof data.tentativas)[number] | null>(null);
+	let modalAnular: ConfirmarModal;
 
 	/** Na Prova vale a maior nota de cada aluno (pelo e-mail), entre as tentativas finalizadas e não anuladas. */
 	const melhores = $derived.by(() => {
@@ -38,8 +40,15 @@
 		erro = ((await r.json().catch(() => ({}))) as { erros?: string[] }).erros?.[0] ?? 'Não foi possível concluir.';
 	}
 
-	function anular(t: (typeof data.tentativas)[number]) {
-		if (confirm(`Anular a tentativa de ${t.nome}? Ela deixa de contar nas tentativas do aluno, que poderá refazer.`)) acao(`/api/admin/tentativas/${t.id}/anular`);
+	function pedirAnulacao(t: (typeof data.tentativas)[number]) {
+		alvoAnular = t;
+		modalAnular.abrir();
+	}
+	async function anular(): Promise<string | void> {
+		if (!alvoAnular) return;
+		const r = await fetch(`/api/admin/tentativas/${alvoAnular.id}/anular`, { method: 'POST' });
+		if (r.ok) return void (await invalidateAll());
+		return ((await r.json().catch(() => ({}))) as { erros?: string[] }).erros?.[0] ?? 'Não foi possível anular a tentativa.';
 	}
 	function pedirExclusao(t: (typeof data.tentativas)[number]) {
 		alvo = t;
@@ -71,6 +80,14 @@
 
 {#if erro}<p class="erro" role="alert">{erro}</p>{/if}
 
+<ConfirmarModal bind:this={modalAnular} titulo="Anular esta tentativa?" rotuloConfirmar="Anular tentativa" perigo onconfirmar={anular}>
+	{#if alvoAnular}
+		<p class="resumo"><strong>{alvoAnular.nome}</strong> · {alvoAnular.email}<br />Início {formatarData(alvoAnular.inicio_em)}</p>
+		<p>A tentativa <strong>deixa de contar</strong> nas notas e nas tentativas do aluno, que poderá refazer. Ela continua na lista, riscada, e depois pode ser excluída de vez.</p>
+		<p class="suave">Anular não pode ser desfeito.</p>
+	{/if}
+</ConfirmarModal>
+
 <ConfirmarModal bind:this={modal} titulo="Excluir esta tentativa?" rotuloConfirmar="Excluir tentativa" perigo bloqueado={!ciente} onconfirmar={excluir}>
 	{#if alvo}
 		<p class="resumo"><strong>{alvo.nome}</strong> · {alvo.email}<br />Início {formatarData(alvo.inicio_em)}</p>
@@ -95,7 +112,7 @@
 						<td class="botoes">
 							{#if emAndamento(t) && t.prazo_em}<button class="sec" onclick={() => acrescentar(t)}>+ tempo</button>{/if}
 							<a class="rel" href="/admin/tentativas/{t.id}/relatorio">Relatório</a>
-							{#if !t.anulada}<button class="sec" onclick={() => anular(t)}>Anular</button>{:else}<button class="sec excluir" onclick={() => pedirExclusao(t)}>Excluir</button>{/if}
+							{#if !t.anulada}<button class="sec" onclick={() => pedirAnulacao(t)}>Anular</button>{:else}<button class="sec excluir" onclick={() => pedirExclusao(t)}>Excluir</button>{/if}
 						</td>
 					</tr>
 				{/each}
