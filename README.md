@@ -5,6 +5,7 @@ Atividades e provas pelo celular, correção automática, correção de abertas 
 ## Novidades recentes (outubro de 2026)
 
 - **Texto de apoio pertence à atividade** (um por atividade, aberto antes da questão 1; "Reler" nas outras), com **diagramas Mermaid**, disciplina, etiquetas, filtros, ações em lote e JSON próprio de importação/exportação. [Detalhes](#publicar-o-apoio-na-atividade-0008)
+- **QR code no painel:** a tabela "Atividades abertas agora" tem uma coluna **QR code** entre Atividade e Código; clicar abre o QR ampliado (link `…/CODIGO`) para o aluno apontar a câmera do celular para a tela do professor. Fecha no Fechar, clicando fora ou com Esc. Gerado no navegador pela biblioteca `qrcode-generator` (sem serviço externo); componente `src/lib/components/QrAtividade.svelte`. Sem alteração no banco.
 - **Componente curricular** da atividade, cadastrado ali mesmo, aparece sob o título para o aluno e nos relatórios. [Detalhes](#componente-curricular-da-atividade-0009)
 - **Peso da atividade** (0 a 10): nota ponderada nos relatórios. [Detalhes](#peso-da-atividade-nos-relatórios-0010)
 - **Professor(a), página Relatórios, relatório resumido** de 1 folha A4 e modal de impressão. [Detalhes](#professora-página-relatórios-e-relatório-resumido-0011)
@@ -56,7 +57,7 @@ As demais fases seguem a tabela da documentação.
 
 > Atenção ao escrever mensagens de commit: o Cloudflare Pages pula o build se a mensagem contiver a expressão de pular CI entre colchetes, **mesmo citada em uma frase** (isso já aconteceu aqui). Só use essa expressão quando quiser mesmo pular o deploy.
 
-**Tema visual:** Neumorphism em cartões, paleta azul oceano, **só modo claro** (o botão de tema escuro foi retirado). Os tokens (cores, raio de 20 px, sombras de relevo, tipografia Century Gothic/Avenir/Segoe UI, tempos de transição) ficam em `src/routes/+layout.svelte`; todo o sistema usa só essas variáveis (`--primaria`, `--secundaria`, `--destaque`, `--texto-secundario`, `--sucesso`, `--erro`…). Contraste conferido em AA (texto ≥ 4,5:1, contorno de controles ≥ 3:1), foco sempre visível, `prefers-reduced-motion` respeitado e relevo desligado na impressão. O painel do professor (`/admin`) é um dashboard de cartões: três indicadores, gráfico de tentativas finalizadas por dia (14 dias, com tabela equivalente), lista lateral de atividade recente e tabela das atividades abertas; no celular tudo empilha em uma coluna (pontos de quebra de 960 px e 640 px).
+**Tema visual:** Neumorphism em cartões, paleta azul oceano, **só modo claro** (o botão de tema escuro foi retirado). Os tokens (cores, raio de 20 px, sombras de relevo, tipografia Century Gothic/Avenir/Segoe UI, tempos de transição) ficam em `src/routes/+layout.svelte`; todo o sistema usa só essas variáveis (`--primaria`, `--secundaria`, `--destaque`, `--texto-secundario`, `--sucesso`, `--erro`…). Contraste conferido em AA (texto ≥ 4,5:1, contorno de controles ≥ 3:1), foco sempre visível, `prefers-reduced-motion` respeitado e relevo desligado na impressão. O painel do professor (`/admin`) é um dashboard de cartões: três indicadores, gráfico de tentativas finalizadas por dia (14 dias, com tabela equivalente), lista lateral de atividade recente e tabela das atividades abertas (com QR code do link de cada uma); no celular tudo empilha em uma coluna (pontos de quebra de 960 px e 640 px).
 
 ## Desenvolvimento local
 

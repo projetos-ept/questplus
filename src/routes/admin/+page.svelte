@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { formatarData } from '#lib/data';
+	import QrAtividade from '#lib/components/QrAtividade.svelte';
 
 	let { data } = $props();
 	const n = $derived(data.numeros);
@@ -122,11 +123,12 @@
 		<div class="rolagem" tabindex="-1">
 			<table>
 				<caption class="so-leitor">Atividades abertas agora</caption>
-				<thead><tr><th scope="col">Atividade</th><th scope="col">Código</th><th scope="col">Tentativas</th><th scope="col"><span class="so-leitor">Ações</span></th></tr></thead>
+				<thead><tr><th scope="col">Atividade</th><th scope="col">QR code</th><th scope="col">Código</th><th scope="col">Tentativas</th><th scope="col"><span class="so-leitor">Ações</span></th></tr></thead>
 				<tbody>
 					{#each data.abertas as a (a.id)}
 						<tr>
 							<td><a href="/admin/atividades/{a.id}">{a.titulo}</a>{#if a.componente}<div class="suave">{a.componente}</div>{/if}</td>
+							<td><QrAtividade codigo={a.codigo} titulo={a.titulo} /></td>
 							<td><code>{a.codigo}</code></td>
 							<td>{a.n_tentativas}</td>
 							<td><a href="/admin/relatorios/{a.id}">Relatório</a></td>
